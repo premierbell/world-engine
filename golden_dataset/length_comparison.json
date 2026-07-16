@@ -1,0 +1,26 @@
+{
+  "spring_n1": {
+    "topic": "Spring/JPA",
+    "title": "Spring Boot JPA N+1 문제 해결하기",
+    "summary": "Spring Boot JPA N+1 문제 해결하기. 연관 엔티티를 조회할 때 발생하는 N+1 쿼리 문제를 Fetch Join과 배치 사이즈 설정으로 해결하는 방법을 정리한다.",
+    "body": "Spring Boot JPA N+1 문제 해결하기. 연관 엔티티를 조회할 때 발생하는 N+1 쿼리 문제를 Fetch Join과 배치 사이즈 설정으로 해결하는 방법을 정리한다. JPA는 기본적으로 지연 로딩을 사용하기 때문에 컬렉션을 순회하며 연관 엔티티를 조회하면 조회 1번마다 추가 쿼리가 발생한다. 이를 해결하기 위해 JPQL Fetch Join을 사용하거나 hibernate.default_batch_fetch_size를 설정해 IN 절로 한 번에 가져오는 방법이 있다. 실무에서는 두 방법을 상황에 맞게 조합해서 쓰는 경우가 많다."
+  },
+  "spring_fetch_join": {
+    "topic": "Spring/JPA",
+    "title": "JPA Fetch Join으로 성능 개선하기",
+    "summary": "JPA Fetch Join으로 성능 개선하기. 연관관계를 한 번의 쿼리로 조회해 N+1 문제를 근본적으로 줄이는 Fetch Join 사용법과 주의사항을 다룬다.",
+    "body": "JPA Fetch Join으로 성능 개선하기. 연관관계를 한 번의 쿼리로 조회해 N+1 문제를 근본적으로 줄이는 Fetch Join 사용법과 주의사항을 다룬다. Fetch Join은 JPQL에서 join fetch 키워드로 사용하며, 컬렉션을 페치 조인할 경우 페이징이 애플리케이션 메모리에서 처리되어 성능 이슈가 생길 수 있다. 이런 경우 컬렉션은 별도로 배치 사이즈를 이용해 조회하는 방식을 함께 고려해야 한다."
+  },
+  "redis_cache": {
+    "topic": "Redis",
+    "title": "Redis를 활용한 캐시 전략",
+    "summary": "Redis를 활용한 캐시 전략. 자주 조회되지만 잘 변하지 않는 데이터를 Redis에 캐싱해 DB 부하를 줄이는 기본적인 캐시 전략을 정리한다.",
+    "body": "Redis를 활용한 캐시 전략. 자주 조회되지만 잘 변하지 않는 데이터를 Redis에 캐싱해 DB 부하를 줄이는 기본적인 캐시 전략을 정리한다. Cache Aside 패턴을 기본으로 사용하며, TTL을 설정해 오래된 데이터가 자동으로 만료되도록 한다. 캐시와 DB 사이의 정합성이 깨지는 경우를 대비해 쓰기 시점에 캐시를 무효화하는 전략도 함께 적용한다."
+  },
+  "redis_spring_integration": {
+    "topic": "Redis",
+    "title": "Spring Boot에 Redis 캐시 적용하기",
+    "summary": "Spring Boot에 Redis 캐시 적용하기. @Cacheable 어노테이션과 RedisCacheManager를 이용해 Spring Boot 애플리케이션에 캐시를 붙이는 실전 예제를 다룬다.",
+    "body": "Spring Boot에 Redis 캐시 적용하기. @Cacheable 어노테이션과 RedisCacheManager를 이용해 Spring Boot 애플리케이션에 캐시를 붙이는 실전 예제를 다룬다. spring-boot-starter-data-redis 의존성을 추가하고 CacheManager를 RedisCacheManager로 등록하면 서비스 메서드에 @Cacheable만 붙여도 캐시가 적용된다. 캐시 키 설계와 직렬화 방식(Jackson2JsonRedisSerializer 등)을 신경 써야 실제 운영에서 문제가 안 생긴다."
+  }
+}
