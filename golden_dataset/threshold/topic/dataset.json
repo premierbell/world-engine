@@ -1,0 +1,43 @@
+{
+  "spring_1": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Boot에서 JPA 엔티티 매핑하는 방법. 기본적인 연관관계 매핑 전략과 자주 발생하는 실수를 정리한다."},
+  "spring_2": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Boot JPA 성능 튜닝 체크리스트. N+1 문제, 불필요한 트랜잭션, 캐시 미적용 등 실무에서 자주 만나는 성능 이슈를 점검한다."},
+  "spring_3": {"island": "Backend", "topic": "Spring/JPA", "text": "JPA Lazy Loading과 프록시 이해하기. 지연 로딩이 실제로 어떻게 동작하는지, 프록시 객체의 한계는 무엇인지 살펴본다."},
+  "spring_4": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Data JPA Query Method 작성 가이드. 메서드 이름만으로 쿼리를 생성하는 규칙과 한계를 정리한다."},
+  "spring_5": {"island": "Backend", "topic": "Spring/JPA", "text": "JPA 영속성 컨텍스트와 1차 캐시 이해하기. 엔티티 생명주기와 더티 체킹이 어떻게 동작하는지 설명한다."},
+
+  "redis_1": {"island": "Backend", "topic": "Redis", "text": "Redis를 활용한 캐시 전략 정리. Cache Aside 패턴과 TTL 설정으로 DB 부하를 줄이는 기본기를 다룬다."},
+  "redis_2": {"island": "Backend", "topic": "Redis", "text": "Redis Pub/Sub으로 실시간 알림 구현하기. 채널 구독 방식으로 서버 간 메시지를 전달하는 방법을 정리한다."},
+  "redis_3": {"island": "Backend", "topic": "Redis", "text": "Redis Sorted Set으로 랭킹 시스템 만들기. 점수 기반 정렬과 범위 조회를 활용한 실시간 랭킹 구현법을 다룬다."},
+  "redis_4": {"island": "Backend", "topic": "Redis", "text": "Redis 클러스터 구성과 장애 대응. 마스터-슬레이브 복제와 Sentinel을 이용한 고가용성 설계를 정리한다."},
+  "redis_5": {"island": "Backend", "topic": "Redis", "text": "Redis 메모리 관리와 Eviction 정책. maxmemory 설정과 LRU/LFU 정책의 차이를 비교한다."},
+
+  "kafka_1": {"island": "Backend", "topic": "Kafka", "text": "Kafka Consumer Group 동작 원리. 파티션 리밸런싱과 오프셋 커밋 방식을 예제와 함께 설명한다."},
+  "kafka_2": {"island": "Backend", "topic": "Kafka", "text": "Kafka Producer의 전송 보장 옵션 정리. acks 설정에 따른 메시지 유실 가능성과 성능 트레이드오프를 다룬다."},
+  "kafka_3": {"island": "Backend", "topic": "Kafka", "text": "Kafka 파티션 설계 가이드. 파티션 수를 정할 때 고려해야 할 처리량과 순서 보장 문제를 정리한다."},
+  "kafka_4": {"island": "Backend", "topic": "Kafka", "text": "Kafka Streams로 실시간 데이터 처리하기. 토폴로지 구성과 상태 저장소 활용법을 다룬다."},
+  "kafka_5": {"island": "Backend", "topic": "Kafka", "text": "Kafka Exactly-Once 시맨틱 이해하기. 트랜잭션 프로듀서와 멱등성 설정으로 중복 처리를 막는 방법을 설명한다."},
+
+  "rag_1": {"island": "AI", "topic": "RAG", "text": "RAG로 LLM의 환각 문제 줄이기. 검색 결과를 컨텍스트에 주입해 답변 근거를 명확히 하는 구조를 설명한다."},
+  "rag_2": {"island": "AI", "topic": "RAG", "text": "RAG 파이프라인에서 청킹 전략 비교하기. 문서를 나누는 방식이 검색 품질에 미치는 영향을 정리한다."},
+  "rag_3": {"island": "AI", "topic": "RAG", "text": "하이브리드 검색으로 RAG 정확도 높이기. 키워드 검색과 벡터 검색을 결합하는 방법을 다룬다."},
+  "rag_4": {"island": "AI", "topic": "RAG", "text": "RAG 평가 지표 정리. 검색 정확도와 생성 품질을 각각 어떻게 측정하는지 설명한다."},
+  "rag_5": {"island": "AI", "topic": "RAG", "text": "RAG 시스템의 재순위화(Reranking) 기법. 1차 검색 결과를 재정렬해 답변 품질을 높이는 방법을 다룬다."},
+
+  "llm_1": {"island": "AI", "topic": "LLM", "text": "GPT-5 주요 변경점 정리. 이전 모델 대비 추론 능력과 컨텍스트 길이가 크게 개선됐다."},
+  "llm_2": {"island": "AI", "topic": "LLM", "text": "LLM Agent 설계 패턴 정리. 도구 호출과 계획 수립을 반복하는 에이전트 루프 구조를 다룬다."},
+  "llm_3": {"island": "AI", "topic": "LLM", "text": "효과적인 Prompt Engineering 기법. Few-shot 예시와 역할 지정을 통해 응답 품질을 높이는 방법을 정리한다."},
+  "llm_4": {"island": "AI", "topic": "LLM", "text": "LLM Fine-tuning과 Prompt Engineering 비교. 언제 파인튜닝이 필요하고 언제 프롬프트만으로 충분한지 정리한다."},
+  "llm_5": {"island": "AI", "topic": "LLM", "text": "LLM 컨텍스트 윈도우 관리 전략. 긴 대화나 문서를 다룰 때 토큰 예산을 어떻게 배분하는지 다룬다."},
+
+  "football_1": {"island": "Sports", "topic": "Football", "text": "손흥민, 프리미어리그 이번 시즌 첫 골 기록. 토트넘 홈경기에서 후반 추가시간에 결승골을 터뜨렸다."},
+  "football_2": {"island": "Sports", "topic": "Football", "text": "프리미어리그 이번 주 경기 결과 총정리. 상위권 팀들의 순위 경쟁이 치열해지고 있다."},
+  "football_3": {"island": "Sports", "topic": "Football", "text": "토트넘, 원정경기에서 역전승 거두다. 후반전 두 골을 몰아치며 승점 3점을 챙겼다."},
+  "football_4": {"island": "Sports", "topic": "Football", "text": "현대 축구의 빌드업 전술 분석. 골키퍼부터 시작되는 점유율 축구의 흐름을 정리한다."},
+  "football_5": {"island": "Sports", "topic": "Football", "text": "챔피언스리그 조편성 발표. 각 조의 강팀 배치와 다크호스를 전망한다."},
+
+  "baseball_1": {"island": "Sports", "topic": "Baseball", "text": "오늘의 야구 하이라이트 모음. 각 경기의 결정적인 장면들을 짧게 정리했다."},
+  "baseball_2": {"island": "Sports", "topic": "Baseball", "text": "프로야구 순위 경쟁 치열. 상위 5개 팀의 승차가 2게임 이내로 좁혀졌다."},
+  "baseball_3": {"island": "Sports", "topic": "Baseball", "text": "이번 시즌 홈런왕 경쟁 중간 점검. 상위 타자들의 홈런 페이스를 비교한다."},
+  "baseball_4": {"island": "Sports", "topic": "Baseball", "text": "선발 로테이션 부상 변수 정리. 주요 팀들의 투수진 공백을 어떻게 메우는지 살펴본다."},
+  "baseball_5": {"island": "Sports", "topic": "Baseball", "text": "포스트시즌 진출 매직넘버 계산. 남은 경기 수와 승차를 기준으로 진출 가능성을 분석한다."}
+}

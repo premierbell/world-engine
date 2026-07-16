@@ -1,0 +1,24 @@
+{
+  "spring_boot_jpa": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Boot에서 JPA 엔티티 매핑하는 방법. 기본적인 연관관계 매핑 전략과 자주 발생하는 실수를 정리한다."},
+  "spring_boot_perf": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Boot JPA 성능 튜닝 체크리스트. N+1 문제, 불필요한 트랜잭션, 캐시 미적용 등 실무에서 자주 만나는 성능 이슈를 점검한다."},
+  "jpa_lazy_loading": {"island": "Backend", "topic": "Spring/JPA", "text": "JPA Lazy Loading과 프록시 이해하기. 지연 로딩이 실제로 어떻게 동작하는지, 프록시 객체의 한계는 무엇인지 살펴본다."},
+  "redis_cache": {"island": "Backend", "topic": "Redis", "text": "Redis를 활용한 캐시 전략 정리. Cache Aside 패턴과 TTL 설정으로 DB 부하를 줄이는 기본기를 다룬다."},
+  "kafka_consumer": {"island": "Backend", "topic": "Kafka", "text": "Kafka Consumer Group 동작 원리. 파티션 리밸런싱과 오프셋 커밋 방식을 예제와 함께 설명한다."},
+  "mysql_index": {"island": "Backend", "topic": "MySQL", "text": "MySQL 인덱스 설계와 카디널리티. 복합 인덱스를 설계할 때 카디널리티가 성능에 미치는 영향을 분석한다."},
+  "docker_compose": {"island": "Backend", "topic": "Container", "text": "Docker Compose로 로컬 개발 환경 구성하기. 여러 컨테이너를 하나의 설정 파일로 관리하는 방법을 정리한다."},
+  "kubernetes_deployment": {"island": "Backend", "topic": "Container", "text": "Kubernetes Deployment로 무중단 배포하기. 롤링 업데이트 전략과 헬스체크 설정으로 배포 시 다운타임을 없애는 방법을 다룬다."},
+
+  "son_goal": {"island": "Sports", "topic": "Football", "text": "손흥민, 프리미어리그 이번 시즌 첫 골 기록. 토트넘 홈경기에서 후반 추가시간에 결승골을 터뜨렸다."},
+  "premier_league": {"island": "Sports", "topic": "Football", "text": "프리미어리그 이번 주 경기 결과 총정리. 상위권 팀들의 순위 경쟁이 치열해지고 있다."},
+  "tottenham_result": {"island": "Sports", "topic": "Football", "text": "토트넘, 원정경기에서 역전승 거두다. 후반전 두 골을 몰아치며 승점 3점을 챙겼다."},
+  "football_tactics": {"island": "Sports", "topic": "Football", "text": "현대 축구의 빌드업 전술 분석. 골키퍼부터 시작되는 점유율 축구의 흐름을 정리한다."},
+  "baseball_highlight": {"island": "Sports", "topic": "Baseball", "text": "오늘의 야구 하이라이트 모음. 각 경기의 결정적인 장면들을 짧게 정리했다."},
+  "nba_playoff": {"island": "Sports", "topic": "Basketball", "text": "NBA 플레이오프 대진표 확정. 각 컨퍼런스 상위 8개 팀의 매치업이 발표됐다."},
+
+  "gpt5": {"island": "AI", "topic": "LLM", "text": "GPT-5 주요 변경점 정리. 이전 모델 대비 추론 능력과 컨텍스트 길이가 크게 개선됐다."},
+  "llm_agent": {"island": "AI", "topic": "LLM", "text": "LLM Agent 설계 패턴 정리. 도구 호출과 계획 수립을 반복하는 에이전트 루프 구조를 다룬다."},
+  "prompt_engineering": {"island": "AI", "topic": "LLM", "text": "효과적인 Prompt Engineering 기법. Few-shot 예시와 역할 지정을 통해 응답 품질을 높이는 방법을 정리한다."},
+  "rag": {"island": "AI", "topic": "RAG/VectorDB", "text": "RAG로 LLM의 환각 문제 줄이기. 검색 결과를 컨텍스트에 주입해 답변 근거를 명확히 하는 구조를 설명한다."},
+  "vector_database": {"island": "AI", "topic": "RAG/VectorDB", "text": "Vector Database 선택 가이드. 인덱싱 방식과 검색 속도를 기준으로 주요 벡터 DB를 비교한다."},
+  "mcp_protocol": {"island": "AI", "topic": "Protocol", "text": "MCP Protocol로 도구를 연결하는 방법. 모델과 외부 도구 사이의 표준 인터페이스를 어떻게 정의하는지 살펴본다."}
+}
