@@ -1,0 +1,11 @@
+openai:
+  model: text-embedding-3-small
+
+algorithm:
+  threshold: 0.80        # Nearest Neighbor 편입 기준 (ai_rules.md Rule 5)
+  ema_alpha: 0.15         # centerVector 갱신 시 최근 스크랩 반영 비율 (ai_rules.md Rule 6)
+  topic_similarity: 0.83  # 섬 내부 토픽(건물) 분리 기준 (ai_rules.md Rule 7)
+  min_topic_size: 3       # 토픽으로 분리되기 위한 최소 스크랩 수
+
+input:
+  path: ../golden_dataset/regression_cases.json

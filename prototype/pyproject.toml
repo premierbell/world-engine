@@ -1,0 +1,13 @@
+[project]
+name = "world-engine-prototype"
+version = "0.1.0"
+description = "World Engine V0 - clustering algorithm validation prototype"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.4.6",
+    "openai>=2.45.0",
+    "python-dotenv>=1.2.2",
+    "pyyaml>=6.0.3",
+    "rich>=15.0.0",
+    "scikit-learn>=1.9.0",
+]
