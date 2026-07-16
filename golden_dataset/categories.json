@@ -1,0 +1,28 @@
+{
+  "Backend": [
+    "Spring Boot JPA",
+    "Spring Boot 성능 튜닝",
+    "Redis Cache",
+    "Kafka Consumer",
+    "JPA Lazy Loading",
+    "MySQL Index",
+    "Docker Compose",
+    "Kubernetes Deployment"
+  ],
+  "Sports": [
+    "손흥민 골",
+    "프리미어리그 경기",
+    "토트넘 경기 결과",
+    "야구 하이라이트",
+    "NBA 플레이오프",
+    "축구 전술 분석"
+  ],
+  "AI": [
+    "GPT-5",
+    "LLM Agent",
+    "RAG",
+    "Vector Database",
+    "Prompt Engineering",
+    "MCP Protocol"
+  ]
+}
