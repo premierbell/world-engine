@@ -1,8 +1,10 @@
 """World Engine V0 - CLI entrypoint.
 
-Step 2-2: 문자열 입력 -> Embedding -> 차원/미리보기 출력.
-아직 Island, Threshold, Similarity, Label, Topic은 없다.
+Step 3: 여러 텍스트를 임베딩하고 쌍별 Cosine Similarity를 출력한다.
+아직 Threshold, Island, Label, Topic은 없다.
 """
+
+from itertools import combinations
 
 import yaml
 from dotenv import load_dotenv
@@ -10,6 +12,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from embedding_provider import OpenAIEmbeddingProvider
+from similarity import cosine_similarity
 
 console = Console()
 
@@ -29,15 +32,17 @@ def main() -> None:
         raise NotImplementedError(f"unsupported provider: {provider_name}")
     provider = OpenAIEmbeddingProvider(model=model)
 
-    text = "Spring Boot JPA 성능 튜닝"
-    vector = provider.embed(text)
+    texts = {
+            "A": "Spring Boot 성능 튜닝",
+            "B": "Redis 캐싱",
+            "C": "손흥민 골",
+        }
+    vectors = {key: provider.embed(text) for key, text in texts.items()}
 
-    console.print(Panel.fit("🌍 World Engine V0", border_style="cyan"))
-    console.print(f"[bold]Embedding Provider[/bold]  ✓ {provider_name}")
-    console.print(f"[bold]Model[/bold]               ✓ {model}")
-    console.print(f"[bold]Input[/bold]               {text}")
-    console.print(f"[bold]Dimension[/bold]           {len(vector)}")
-    console.print(f"[bold]Preview[/bold]              {vector[:5]}")
+    console.print(Panel.fit("🌍 World Engine V0 - Similarity", border_style="cyan"))
+    for key_a, key_b in combinations(texts, 2):
+        sim = cosine_similarity(vectors[key_a], vectors[key_b])
+        console.print(f"{texts[key_a]!r:30} vs {texts[key_b]!r:20} -> [bold]{sim:.4f}[/bold]")
 
 
 if __name__ == "__main__":
