@@ -3,10 +3,12 @@ embedding:
   model: text-embedding-3-small
 
 algorithm:
-  threshold: 0.80        # Nearest Neighbor 편입 기준 (ai_rules.md Rule 5)
+  # Baseline values from V0 validation (Experiment #6/#7, PR curve 기반) — 세상에서 가장 좋은 값이 아니라
+  # V0에서 검증한 3개 데이터셋 기준 최선의 값. 더 다양한 도메인의 regression dataset이 쌓이면 갱신될 수 있음.
+  island_threshold: 0.24  # Island 편입 기준 (ai_rules.md Rule 5)
+  topic_threshold: 0.42   # 섬 내부 토픽(건물) 분리 기준 (ai_rules.md Rule 7)
   ema_alpha: 0.15         # centerVector 갱신 시 최근 스크랩 반영 비율 (ai_rules.md Rule 6)
-  topic_similarity: 0.83  # 섬 내부 토픽(건물) 분리 기준 (ai_rules.md Rule 7)
   min_topic_size: 3       # 토픽으로 분리되기 위한 최소 스크랩 수
 
 input:
-  path: ../golden_dataset/regression_cases.json
+  path: ../golden_dataset/threshold/summary/dataset.json
