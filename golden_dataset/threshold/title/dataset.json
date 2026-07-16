@@ -1,0 +1,24 @@
+{
+  "spring_boot_jpa": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Boot에서 JPA 엔티티 매핑하는 방법"},
+  "spring_boot_perf": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Boot JPA 성능 튜닝 체크리스트"},
+  "jpa_lazy_loading": {"island": "Backend", "topic": "Spring/JPA", "text": "JPA Lazy Loading과 프록시 이해하기"},
+  "redis_cache": {"island": "Backend", "topic": "Redis", "text": "Redis를 활용한 캐시 전략 정리"},
+  "kafka_consumer": {"island": "Backend", "topic": "Kafka", "text": "Kafka Consumer Group 동작 원리"},
+  "mysql_index": {"island": "Backend", "topic": "MySQL", "text": "MySQL 인덱스 설계와 카디널리티"},
+  "docker_compose": {"island": "Backend", "topic": "Container", "text": "Docker Compose로 로컬 개발 환경 구성하기"},
+  "kubernetes_deployment": {"island": "Backend", "topic": "Container", "text": "Kubernetes Deployment로 무중단 배포하기"},
+
+  "son_goal": {"island": "Sports", "topic": "Football", "text": "손흥민, 프리미어리그 이번 시즌 첫 골 기록"},
+  "premier_league": {"island": "Sports", "topic": "Football", "text": "프리미어리그 이번 주 경기 결과 총정리"},
+  "tottenham_result": {"island": "Sports", "topic": "Football", "text": "토트넘, 원정경기에서 역전승 거두다"},
+  "football_tactics": {"island": "Sports", "topic": "Football", "text": "현대 축구의 빌드업 전술 분석"},
+  "baseball_highlight": {"island": "Sports", "topic": "Baseball", "text": "오늘의 야구 하이라이트 모음"},
+  "nba_playoff": {"island": "Sports", "topic": "Basketball", "text": "NBA 플레이오프 대진표 확정"},
+
+  "gpt5": {"island": "AI", "topic": "LLM", "text": "GPT-5 주요 변경점 정리"},
+  "llm_agent": {"island": "AI", "topic": "LLM", "text": "LLM Agent 설계 패턴 정리"},
+  "prompt_engineering": {"island": "AI", "topic": "LLM", "text": "효과적인 Prompt Engineering 기법"},
+  "rag": {"island": "AI", "topic": "RAG/VectorDB", "text": "RAG로 LLM의 환각 문제 줄이기"},
+  "vector_database": {"island": "AI", "topic": "RAG/VectorDB", "text": "Vector Database 선택 가이드"},
+  "mcp_protocol": {"island": "AI", "topic": "Protocol", "text": "MCP Protocol로 도구를 연결하는 방법"}
+}

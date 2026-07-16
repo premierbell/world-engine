@@ -1,0 +1,24 @@
+{
+  "spring_boot_jpa": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Boot JPA"},
+  "spring_boot_perf": {"island": "Backend", "topic": "Spring/JPA", "text": "Spring Boot 성능 튜닝"},
+  "jpa_lazy_loading": {"island": "Backend", "topic": "Spring/JPA", "text": "JPA Lazy Loading"},
+  "redis_cache": {"island": "Backend", "topic": "Redis", "text": "Redis Cache"},
+  "kafka_consumer": {"island": "Backend", "topic": "Kafka", "text": "Kafka Consumer"},
+  "mysql_index": {"island": "Backend", "topic": "MySQL", "text": "MySQL Index"},
+  "docker_compose": {"island": "Backend", "topic": "Container", "text": "Docker Compose"},
+  "kubernetes_deployment": {"island": "Backend", "topic": "Container", "text": "Kubernetes Deployment"},
+
+  "son_goal": {"island": "Sports", "topic": "Football", "text": "손흥민 골"},
+  "premier_league": {"island": "Sports", "topic": "Football", "text": "프리미어리그 경기"},
+  "tottenham_result": {"island": "Sports", "topic": "Football", "text": "토트넘 경기 결과"},
+  "football_tactics": {"island": "Sports", "topic": "Football", "text": "축구 전술 분석"},
+  "baseball_highlight": {"island": "Sports", "topic": "Baseball", "text": "야구 하이라이트"},
+  "nba_playoff": {"island": "Sports", "topic": "Basketball", "text": "NBA 플레이오프"},
+
+  "gpt5": {"island": "AI", "topic": "LLM", "text": "GPT-5"},
+  "llm_agent": {"island": "AI", "topic": "LLM", "text": "LLM Agent"},
+  "prompt_engineering": {"island": "AI", "topic": "LLM", "text": "Prompt Engineering"},
+  "rag": {"island": "AI", "topic": "RAG/VectorDB", "text": "RAG"},
+  "vector_database": {"island": "AI", "topic": "RAG/VectorDB", "text": "Vector Database"},
+  "mcp_protocol": {"island": "AI", "topic": "Protocol", "text": "MCP Protocol"}
+}
