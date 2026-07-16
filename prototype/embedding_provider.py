@@ -6,6 +6,8 @@ Nearest Neighbor / Threshold / Growth 같은 판단은 절대 여기 들어오�
 
 from abc import ABC, abstractmethod
 
+from openai import OpenAI
+
 
 class EmbeddingProvider(ABC):
     @abstractmethod
@@ -17,5 +19,8 @@ class EmbeddingProvider(ABC):
 class OpenAIEmbeddingProvider(EmbeddingProvider):
     def __init__(self, model: str):
         self.model = model
-        # TODO(Step 2): OpenAI 클라이언트 연결 및 embed() 구현
-        raise NotImplementedError
+        self.client = OpenAI()
+
+    def embed(self, text: str) -> list[float]:
+        response = self.client.embeddings.create(model=self.model, input=text)
+        return response.data[0].embedding
