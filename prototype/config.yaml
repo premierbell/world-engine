@@ -1,4 +1,5 @@
-openai:
+embedding:
+  provider: openai        # EmbeddingProvider 구현체 선택 (openai | sentence-transformers)
   model: text-embedding-3-small
 
 algorithm:
