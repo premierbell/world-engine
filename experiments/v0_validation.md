@@ -572,3 +572,38 @@ V0 전체를 관통하는 원칙으로 명문화한다: **World Engine은 사람
 - 같은 결과가 반복되지만 원인이 설명되지 않을 때(재현 가능한 probe로도 원인을 못 찾음) → Watch Metric으로 보류, synthetic 데이터만으로 제품에 반영하지 않음.
 
 이 기준 자체가 V0의 실험들(Threshold 튜닝 → EMA Drift → Greedy 한계 → Offline 검증 → Semantic Boundary Ambiguity → Register/Rank/Rating 가설 반증)이 축적되며 자연스럽게 도출된 결과다.
+
+## Experiment #20: Virtual User Growth Simulation (Longitudinal)
+날짜: 2026-07-18
+
+### Hypothesis
+지금까지의 모든 golden dataset은 "정적 스냅샷"이었다 — 미리 정해둔 항목을 한 번에(또는 순서만 바꿔서) 넣고 결과를 봤다. 실제 사용자는 시간에 걸쳐 관심사를 점진적으로 쌓는다. Product Decision #002가 예측한 "Programming Mega Island"가 한 명의 사용자가 자연스럽게 성장하는 과정에서도 나타나는지, 아니면 Online-only Greedy의 순서 의존성(Finding #001)이 장기 성장에서 다른 문제(같은 관심사의 분열)로 나타나는지 확인한다.
+
+### Data
+Virtual User "backend_developer"(`experiments/virtual_users/backend_developer.json`, 71개) — 3년차 백엔드 개발자가 Spring/JPA로 시작해 Redis/Kafka/Docker를 거쳐 AWS/Kubernetes/MCP/RAG/LLM까지 관심사를 넓혀가는 30일 궤적(Day 1: 5개, Day 7: 누적 25개, Day 30: 누적 71개, 9개 실제 주제). Day 순서대로 순수 Online Greedy(`assign_scrap`, Hybrid Architecture의 Night Batch는 아직 미구현)로 처리하며 각 체크포인트에서 Island 구성과 AI 생성 Label을 스냅샷(`simulate_growth.py`).
+
+### Result
+| Day | Island 수 | 비고 |
+|---|---|---|
+| 1 | 1 | Spring/JPA만, 정상 |
+| 7 | 2 | Redis/Kafka/Docker가 두 Island에 중복 등장 시작 |
+| 30 | 5 | Island #0(8개 실제 주제)과 #1(7개 실제 주제)이 AWS/Docker/Kafka/Kubernetes/RAG/Redis를 동시에 포함 — 사실상 같은 성격의 섬이 둘로 갈라짐. LLM/RAG만 담긴 파편 Island도 3개 추가 발생 |
+
+Day 30 기준 총 9개의 실제 주제(Spring/JPA/Redis/Kafka/Docker/AWS/Kubernetes/MCP/RAG/LLM) 중 **8개(89%)가 2개 이상의 Island에 중복 등장**했다 — 유일하게 한 Island에만 머문 건 Spring/JPA뿐이다.
+
+### 확인된 사실 (Evidence)
+- 동일한 사용자의 자연스러운 30일 성장 시나리오에서도 같은 Topic(Redis, Kafka, Docker 등)이 여러 Island에 중복 등장했다(Day 30 기준 9개 중 8개, 89%).
+- Product Decision #002에서 기대한 "Programming Mega Island"는 Online-only Greedy에서는 형성되지 않았다 — 대신 서로 겹치는 5개의 파편 Island가 생겼다.
+- Finding #001에서 관찰했던 순서 의존성이 synthetic golden dataset뿐 아니라 시간축이 있는 Virtual User Dataset에서도 재현됐다.
+- Online-only 방식은 시간이 지날수록(Day 1→7→30) Island 수가 늘고 동일 주제가 여러 곳에 흩어지는 **분열(fragmentation)** 경향을 보였다.
+
+### 아직 가설인 부분 (Hypothesis)
+이 결과는 Hybrid Architecture(Step 5.5)에서 제안한 Night Batch가 해결 대상으로 삼는 fragmentation 패턴과 정확히 부합한다. **하지만 Night Batch를 아직 구현해서 돌려본 것은 아니므로, "Night Batch가 이 문제를 해결한다"는 결론은 내리지 않는다.** 실제 해결 여부는 Hybrid 구현 후 같은 Virtual User Dataset으로 별도 검증이 필요하다.
+
+### Insight
+이번 실험은 Finding #001(순서에 따라 Backend/AI가 갈라진다)의 단순 재현보다 더 큰 의미가 있다 — **"같은 사용자의 하나의 관심사가 시간이 지나며 여러 Island로 분열된다"**를 처음 관찰했다. 이건 순수 알고리즘 문제가 아니라 제품 관점에서 훨씬 치명적이다: 사용자가 Redis/Kafka/Docker/Kubernetes를 꾸준히 모았는데 "왜 내 백엔드 관심사가 세 군데로 찢어져 있지?"라고 느낄 수 있는 경험이 실제로 재현 가능하다는 뜻이다. 이를 **Fragmentation of User Interest**로 명명한다.
+
+### Decision
+- `experiments/virtual_users/backend_developer.json`(Virtual User Dataset 1호) + `simulate_growth.py`(Growth Simulator)를 PR로 기록한다.
+- 결론은 "Hybrid가 필요하다"가 아니라 **"Hybrid(Night Batch)가 해결하려는 문제가 실제로 존재함을 확인했다"**까지로 제한한다.
+- 다음 실험(#21, 미실행): Night Batch를 실제로 구현한 뒤 같은 Virtual User Dataset으로 재실행 — Island 수, Topic 중복률(이번 실험에서 쓴 지표를 그대로 재사용), Label 중복률 등을 Before/After로 비교해 Hybrid의 효과를 정량적으로 검증한다.
