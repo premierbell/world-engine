@@ -192,28 +192,75 @@ Cache 인프라로 자주 쓰이는 것과 일치하는 결과다. Embedding이 
 "Backend"라는 이름표보다 **기술 스택의 실제 사용 맥락**을 학습하고 있는
 것으로 보인다.
 
-### Root Cause — 재구성 (Experiment #13 이후)
+### Evidence 4 — Observation: Programming Domains Form a Large Semantic Cluster (Experiment #15)
+Evidence 1~3까지는 전부 Backend-AI 두 도메인만 봤다. 이 관찰이 두 도메인만의
+특수 현상인지 확인하려고 8개 도메인(AI/Backend/Cloud/Database/Security/Sports/
+Finance/Science, 96개, 경계 사례 15개 포함 — `golden_dataset/semantic_atlas/
+dataset.json`)으로 범위를 넓혔다. 목표는 정답을 맞히는 게 아니라 라벨 없이
+embedding이 자연스럽게 만드는 구조를 그대로 관찰하는 것이었다(HDBSCAN,
+`min_cluster_size=3, min_samples=1`, 관찰용 — F1 계산 없음).
+
+**확인된 사실 (Evidence):**
+- Programming 계열 5개 도메인(AI/Backend/Cloud/Database/Security)이 하나의
+  클러스터로 뭉쳤다 — Cloud 12/12, Security 12/12, Backend 11/12, AI 10/12,
+  Database 10/12가 같은 클러스터에 들어갔다(전체 96개 중 50개).
+- Island 단위 평균 유사도에서도 이 5개 도메인은 서로 0.26~0.30대로 고르게
+  묶이는 반면 Science(0.21~0.26)나 Sports와는 뚜렷하게 갈렸다(Backend의
+  가장 가까운 이웃은 Cloud, Database의 가장 가까운 이웃은 Backend 등).
+- 서로 다른 도메인(Science/Finance) 소속의 경계 사례 두 개 — Biology(AlphaFold/
+  유전체 ML)와 Fintech/AI Trading — 가 하나의 작은 클러스터로 묶였다. Evidence
+  3의 Redis↔RAG 패턴이 "AI가 응용된 콘텐츠는 원래 도메인과 무관하게 서로
+  가까워진다"는 형태로 도메인을 넘어 재현된 것이다.
+- Sports와 Finance 일부(Sports 6개 + Finance 5개)가 같은 클러스터에 들어갔다.
+
+**Hypothesis (원인 미확정):**
+Sports와 Finance가 같은 클러스터로 묶인 원인은 register(뉴스 기사체) /
+vocabulary overlap / embedding model bias 중 하나 또는 복합일 가능성이 있다.
+**현재 실험만으로는 원인을 특정할 수 없다** — 이 데이터셋의 Sports/Finance
+텍스트가 둘 다 "~집중", "~전망한다" 같은 뉴스 리포트 톤으로 쓰인 반면 Programming
+계열은 "~하는 방법을 정리한다" 같은 기술 블로그 톤이라는 점이 눈에 띄지만, 이건
+관찰된 상관관계이지 검증된 원인이 아니다. 이 가설을 검증하려면 같은 내용을
+서로 다른 register(뉴스/블로그/위키/요약문)로 다시 써서 클러스터가 유지되는지
+비교하는 **Experiment #16(Register Control)**이 필요하다 — 아직 실행하지 않음.
+
+문체 혼입이 반드시 "나쁜 신호"인 것도 아니다: World Engine이 실제로 다루는
+사용자 스크랩도 뉴스/블로그/공식문서/GitHub README/논문이 섞여 있으므로,
+Controlled Corpus(문체 통제)와 Natural Corpus(실제 사용 환경과 비슷한 혼합
+문체) 평가를 구분해야 한다는 인사이트로 이어진다. 자세한 내용은
+`evaluation_metrics.md`의 "Corpus Design" 절 참고.
+
+### Root Cause — 재구성 (Experiment #13, #15 이후)
 지금까지의 후보 목록(Embedding 품질 / Summary 품질 / Dataset 규모 / Domain
-정의의 모호성)을 다시 보면, Evidence 3는 4번째 후보(Domain 정의 자체의
-모호성)를 특히 강하게 지지한다. 5개의 독립적인 실험 — Experiment #2(카테고리
+정의의 모호성)을 다시 보면, Evidence 3~4는 4번째 후보(Domain 정의 자체의
+모호성)를 특히 강하게 지지한다. 6개의 독립적인 관찰 — Experiment #2(카테고리
 유사도 분포), Threshold Sweep(Experiment #8), HDBSCAN(Experiment #12),
-Pairwise Similarity와 Topic 분석(Experiment #13) — 이 전부 같은 방향을
-가리켰다는 것은 우연으로 보기 어렵다.
+Pairwise Similarity와 Topic 분석(Experiment #13), Semantic Atlas(Experiment
+#15) — 이 전부 같은 방향을 가리켰다는 것은 우연으로 보기 어렵다. 특히
+Experiment #15는 이 현상이 Backend-AI 두 도메인만의 특수 사례가 아니라
+**여러 도메인에서 반복되는 패턴**(Biology↔Fintech/AI Trading)이라는 것을
+보여줬다는 점에서 Finding #002 전체를 지지하는 강한 근거다.
 
 **단, 이걸 "golden dataset의 라벨이 틀렸다"로 결론 내리면 안 된다.** Golden
 dataset은 진실이 아니라 평가 기준(하나의 관점)이다. 대신 평가 자체를 두
 층으로 분리해야 한다 — Canonical Taxonomy(사람이 정의한 라벨, 회귀 테스트용)와
 Semantic Evaluation(embedding이 실제로 만드는 구조, 관찰용). 자세한 정의는
-`evaluation_metrics.md`의 "Evaluation Layers" 절 참고.
+`evaluation_metrics.md`의 "Evaluation Layers" 절 참고. **Sports+Finance 병합의
+원인(register vs 실제 의미)은 여전히 Hypothesis 단계이며 Experiment #16 없이는
+결론 내릴 수 없다.**
 
 ### Status
 미해결 (Open) — 하지만 질문 자체가 바뀌었다. "왜 알고리즘이 Backend/AI를
 못 가르는가"가 아니라 "**Backend와 AI를 반드시 서로 다른 Island로 봐야
-하는가**"가 남은 질문이다. Kafka/Redis/Spring/JPA/RAG/LLM/Prompt Engineering/
-Vector DB 같은 스택을 사람에게 직접 분류하게 했을 때도 의견이 갈리는지 확인하는
-**Human Labeling Study(inter-rater agreement)**를 향후 실험으로 백로그에
-남긴다 — 사람들끼리도 정답이 갈린다면 Pairwise F1 자체를 절대 지표로 쓸 수
-없다는 뜻이므로, Semantic Evaluation의 근거가 더 강해진다.
+하는가**"가 남은 질문이다. 향후 실험 백로그:
+1. **Experiment #16 (Register Control)** — 같은 내용을 뉴스/블로그/위키/요약문
+   register로 다시 써서 Sports+Finance 클러스터가 유지되는지 확인. 유지되면
+   register가 아니라 실제 의미적 근접성일 가능성이 커지고, register를 바꿨을 때
+   풀린다면 Evidence 4의 일부는 스타일 혼입 아티팩트로 재분류해야 한다.
+2. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
+   RAG/LLM/Prompt Engineering/Vector DB 같은 스택을 사람에게 직접 분류하게
+   했을 때도 의견이 갈리는지 확인. 사람들끼리도 정답이 갈린다면 Pairwise F1
+   자체를 절대 지표로 쓸 수 없다는 뜻이므로, Semantic Evaluation의 근거가 더
+   강해진다.
 
 ---
 
