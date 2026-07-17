@@ -297,25 +297,52 @@ Semantic Evaluation(embedding이 실제로 만드는 구조, 관찰용). 자세�
 - **평점/레이팅(Rating)** — Experiment #18에서 Rank의 하위 개념군(Score/
   League/Standings/Leaderboard/Top N/Rating/Ranking/Index, 각 N=5)을 같이
   비교하던 중 발견. Mean Gap +0.0768(5개 중 4개 양수)로 8개 중 가장 강한
-  신호였으나 **N=5뿐이다** — Rank가 N=1→N=20에서 겪은 것과 같은 함정에
-  빠지지 않으려면 N≈20~30으로 확장 재현해야 한다. **Status: UNVALIDATED.
-  Reason: Observed on N=5 only; requires larger corpus.** (다음 실험
-  후보 — Experiment #19, 미실행)
+  신호였으나 N=5뿐이었다. **Experiment #19에서 25가지 phrasing(N=25)으로
+  확장 재현한 결과 평균 +0.0063, 95% CI [-0.011, +0.023]로 0을 포함 —
+  재현 실패.** Rank와 정확히 같은 패턴(소규모 표본 신호가 표본을 늘리자
+  사라짐)이 두 번째로 재현됐다. **Status: Rejected(재현 실패로 증거 없음).**
 - 나머지 Rank Family(Leaderboard +0.0082/4/5, Score/Standings/League는
-  거의 0, Ranking -0.058/0/5, Index -0.068/1/5)는 Rating만큼 두드러지지
-  않아 우선순위가 낮다.
+  거의 0, Ranking -0.058/0/5, Index -0.068/1/5)는 Rating보다도 약해 시도할
+  이유가 더 줄었다.
+
+### Methodology Note — Single-Concept Probing 잠정 중단 (Experiment #19 이후)
+Rank와 Rating이 연달아 같은 방식(N 확대 시 신호 소멸)으로 재현에 실패하면서,
+**"Sports-Finance를 잇는 단일 latent concept이 하나 있을 것"이라는 실험
+모델 자체를 의심해야 하는 지점에 왔다.** OpenAI 임베딩은 1536차원이고,
+의미는 보통 특정 축 하나가 아니라 수백~수천 개 차원에 조금씩 걸쳐
+표현된다 — Sports-Finance 근접성이 "경쟁성 축 하나"가 아니라 순위·추세·
+확률·기록·성장/하락처럼 여러 미세한 요소가 합쳐진 결과라면, 단일 개념
+probe로는 애초에 유의미한 신호가 잡히지 않을 수 있다.
+
+**다음 후보 방법론(백로그, 아직 설계·실행 안 함): Lexical Ablation.**
+추상적 probe 문장을 새로 만드는 대신, 실제 Sports/Finance 문장에서 구체
+어휘를 한 단어씩 제거해가며(예: "손흥민이 득점했다" → "한 선수가 득점했다"
+→ "개체가 결과를 만들었다") 유사도가 어떻게 변하는지 관찰하는 방식. 어떤
+단어를 지웠을 때 Sports-Finance 유사도가 크게 떨어지는지를 보면 SHAP과
+비슷한 방식으로 "무엇이 근접성을 만드는가"를 데이터 기반으로 좁힐 수 있다.
+Concept Probing(Experiment #17~19)보다 정보량이 크지만, 아직 실행하지
+않았고 우선순위도 재조정 대상이다(아래 Status 참고).
+
+### Product Question (신규, 미결정) — Finding #002는 버그인가 발견인가?
+Programming 5개 도메인이 하나로 뭉치고(Experiment #15), Sports-Finance도
+반복적으로 가깝게 나오는(Experiment #2/#8/#12/#13/#15/#16) 현상을 계속
+"왜"만 파다 보면 놓치는 질문이 있다: **애초에 이걸 해결(=해소)해야 할
+결함으로 봐야 하는가, 아니면 World Engine이 원래 하려던 일 — "사람이 만든
+카테고리를 재현하는 게 아니라 사용자의 관심사가 실제로 어떻게 연결되는지
+발견하는 것" — 이 이미 작동하고 있다는 증거로 봐야 하는가?** 이 질문은
+연구(왜 붙는가)가 아니라 제품(붙는 걸 어떻게 다룰 것인가) 질문이고, 아직
+결정하지 않았다 — 다음 세션의 주제로 남긴다.
 
 ### Status
-미해결 (Open) — 질문이 두 단계로 계속 좁혀지고 있다. Backend-AI 단계에서는
-"왜 알고리즘이 못 가르는가"에서 "**Backend와 AI를 반드시 서로 다른 Island로
-봐야 하는가**"로 바뀌었고, Sports-Finance 단계에서는 Experiment #16으로
-"문체 축"이 닫히고 Experiment #17~18로 "순위(Rank)" 가설도 재현 실패로
-닫히면서, "**Rating이 재현되는가**"라는 더 구체적인 질문만 남았다. 향후
-실험 백로그:
-1. **Experiment #19 (미실행)** — Rating corpus를 N≈20~30으로 확장해
-   재현성 검증. 재현되면 Finding #002의 Evidence로 승격, 재현되지 않으면
-   Rating도 기각하고 새로운 의미 축(Rank Family 밖)을 탐색.
-2. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
+미해결 (Open) — 원인 탐색(Root Cause)과 별개로, **다음 단계를 "더 파고들기"에서
+"제품적으로 해석하기"로 전환할지 여부**가 새로운 갈림길이다. 향후 백로그
+(우선순위 미정, 순서대로 하지 않아도 됨):
+1. **Product 논의 (신규 제안, 미결정)** — 위 Product Question을 다음
+   세션에서 다룬다. Finding #002를 "고쳐야 할 문제"가 아니라 "V1 Island
+   정의/Growth Rules에 반영할 발견"으로 다룰지 결정.
+2. **Lexical Ablation (백로그, 미설계)** — Concept Probing보다 정보량이
+   큰 대안 방법론. Product 논의 이후에도 원인을 더 파고 싶다면 이 방향으로.
+3. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
    RAG/LLM/Prompt Engineering/Vector DB 같은 스택을 사람에게 직접 분류하게
    했을 때도 의견이 갈리는지 확인. 사람들끼리도 정답이 갈린다면 Pairwise F1
    자체를 절대 지표로 쓸 수 없다는 뜻이므로, Semantic Evaluation의 근거가 더

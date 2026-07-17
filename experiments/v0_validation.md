@@ -513,3 +513,30 @@ Rank 개념 20가지 phrasing + Rank Family 8개 개념 x 5개씩(총 60개, `go
 ### Decision
 - `docs/algorithm_limitations.md` Finding #002에 **"Candidate Hypotheses (Unvalidated)"** 절 신설: Rank는 Status: Rejected(재현 실패)로, Rating은 Status: UNVALIDATED(N=5, 재현 필요)로 명시. 둘 다 Evidence로는 올리지 않음.
 - 다음 실험(#19, 미실행): Rating corpus를 N≈20~30으로 확장해 재현성 검증 — 재현되면 Evidence로 승격, 재현 안 되면 Rating도 기각하고 Rank Family 밖의 새로운 의미 축을 탐색.
+
+## Experiment #19: Rating Corpus Replication
+날짜: 2026-07-17
+
+### Hypothesis
+Experiment #18에서 Rating이 N=5로 가장 강한 신호(+0.0768, 4/5 양수)를 보였다. Rank가 N=1→N=20에서 겪은 재현 실패를 반복하는지, 아니면 이번엔 실제로 재현되는지 N=25로 확인한다.
+
+### Data
+Rating 개념을 25가지 domain-neutral phrasing으로 작성(`golden_dataset/rating_replication/dataset.json`). 각 probe의 Specificity Gap을 semantic_atlas 8개 도메인 centroid 기준으로 계산하고 mean/std/95% CI 산출(`experiment_rating_replication.py`).
+
+### Result
+| Concept | N | Mean Gap | 95% CI | 판정 |
+|---|---|---|---|---|
+| Rank (Experiment #18) | 20 | -0.0076 | [-0.0360, +0.0207] | 재현 실패 |
+| Rating (Experiment #19) | 25 | +0.0063 | [-0.0105, +0.0231] | 재현 실패 |
+
+N=5의 +0.0768이 N=25에서 +0.0063으로 거의 0에 수렴했다. 양수 비율은 17/25로 절반은 넘지만, 95% CI가 0을 포함해 통계적으로 유의하지 않다.
+
+### Insight
+**Rank에 이어 Rating도 재현에 실패했다.** 두 개의 독립적인 "Rank Family" 후보가 연달아 같은 패턴(소규모 표본 신호 → 대규모 표본에서 소멸)을 보이면서, "Sports-Finance를 잇는 단일 latent concept이 존재할 것"이라는 실험 설계 자체를 의심할 시점이 됐다. OpenAI 임베딩은 1536차원이라 의미가 보통 하나의 축이 아니라 수백~수천 차원에 나뉘어 표현되므로, Sports-Finance 근접성이 여러 미세한 요소(순위/추세/확률/기록/성장·하락 등)가 합쳐진 결과라면 단일 개념 probe로는 애초에 유의미한 신호가 잡히지 않을 수 있다.
+
+이와 별개로, 지금까지의 실험(Experiment #2/#8/#12/#13/#15/#16)이 반복적으로 보여준 건 "Programming 5개 도메인이 하나로 뭉친다"와 "Sports-Finance도 반복적으로 가깝다"는 관찰 자체는 매우 견고하다는 것이다. "왜 붙는가"를 계속 파는 것과 별개로, "이 현상을 제품에서 버그로 볼지 발견으로 볼지"는 아직 논의하지 않은 질문으로 남아 있다.
+
+### Decision
+- `docs/algorithm_limitations.md` Finding #002의 Rating 항목을 **Status: Rejected**로 갱신.
+- **Concept Probing(단일 개념 probe로 원인을 찾는 방법론)을 잠정 중단**하고, 대안으로 **Lexical Ablation**(실제 문장에서 단어를 하나씩 제거하며 유사도 변화를 관찰하는 방법)을 백로그에 추가(아직 미설계).
+- **Product Question 신설**: "Finding #002는 고쳐야 할 결함인가, World Engine 철학(카테고리 재현이 아니라 관심사 연결 발견)이 실제로 작동하고 있다는 증거인가?" — 다음 세션에서 연구가 아니라 제품 관점으로 논의하기로 함. 원인 탐색(Lexical Ablation, Human Labeling Study)은 이 논의 이후에도 필요하면 이어가는 것으로 우선순위를 낮춤.
