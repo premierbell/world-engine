@@ -1,0 +1,361 @@
+{
+  "user": "backend_developer",
+  "persona": "3년차 백엔드 개발자. Spring/JPA로 시작해서 성능 이슈를 겪으며 Redis/Kafka/Docker로, 이후 인프라(AWS/Kubernetes)와 AI 툴링(MCP/RAG/LLM)까지 관심이 넓어지는 30일간의 스크랩 궤적.",
+  "scraps": [
+    {
+      "day": 1,
+      "topic": "Spring/JPA",
+      "text": "Spring Boot 프로젝트 처음 시작하기. build.gradle 설정부터 기본 컨트롤러 작성까지 첫걸음을 정리한다."
+    },
+    {
+      "day": 1,
+      "topic": "Spring/JPA",
+      "text": "JPA 엔티티 매핑 기초. @Entity와 @Id 애노테이션으로 테이블과 클래스를 연결하는 방법을 익힌다."
+    },
+    {
+      "day": 1,
+      "topic": "Spring/JPA",
+      "text": "Spring Boot에서 REST API 만들기. @RestController와 @GetMapping으로 첫 API 엔드포인트를 구현한다."
+    },
+    {
+      "day": 1,
+      "topic": "Spring/JPA",
+      "text": "application.yml 설정 파일 이해하기. 프로파일별로 설정을 분리하는 기본 구조를 정리한다."
+    },
+    {
+      "day": 1,
+      "topic": "Spring/JPA",
+      "text": "Spring Data JPA Repository 인터페이스 사용법. 기본 CRUD 메서드가 자동으로 생기는 원리를 익힌다."
+    },
+    {
+      "day": 7,
+      "topic": "Spring/JPA",
+      "text": "JPA N+1 문제 처음 마주치기. 연관관계를 조회할 때 쿼리가 왜 여러 번 나가는지 원인을 파악한다."
+    },
+    {
+      "day": 7,
+      "topic": "Spring/JPA",
+      "text": "Spring Boot 트랜잭션 어노테이션 사용법. @Transactional이 실제로 언제 롤백을 트리거하는지 정리한다."
+    },
+    {
+      "day": 7,
+      "topic": "Spring/JPA",
+      "text": "Spring Security 기초 설정하기. 기본 로그인 폼 대신 커스텀 인증을 붙이는 첫 시도를 기록한다."
+    },
+    {
+      "day": 7,
+      "topic": "Redis",
+      "text": "Redis를 처음 캐시로 도입한 이유. DB 조회가 느려지는 구간을 Redis로 얼마나 줄일 수 있는지 확인한다."
+    },
+    {
+      "day": 7,
+      "topic": "Redis",
+      "text": "Redis 자료구조 기본 정리. String, List, Set, Hash를 언제 써야 하는지 비교한다."
+    },
+    {
+      "day": 7,
+      "topic": "Redis",
+      "text": "Spring Boot에 Redis 캐시 연동하기. @Cacheable 애노테이션 하나로 캐싱을 적용하는 방법을 정리한다."
+    },
+    {
+      "day": 7,
+      "topic": "Redis",
+      "text": "Redis TTL 설정하는 이유. 캐시가 무한정 쌓이지 않도록 만료 시간을 정하는 기준을 익힌다."
+    },
+    {
+      "day": 7,
+      "topic": "Redis",
+      "text": "Redis와 로컬 캐시(Caffeine)의 차이. 분산 환경에서 왜 Redis가 필요한지 이해한다."
+    },
+    {
+      "day": 7,
+      "topic": "Redis",
+      "text": "Redis Sentinel로 장애 대응하기. 마스터가 죽었을 때 자동으로 페일오버되는 구조를 처음 살펴본다."
+    },
+    {
+      "day": 7,
+      "topic": "Kafka",
+      "text": "Kafka를 처음 접하고 든 생각. 메시지 큐와 뭐가 다른지부터 개념을 정리한다."
+    },
+    {
+      "day": 7,
+      "topic": "Kafka",
+      "text": "Kafka Producer/Consumer 기본 구조. 토픽에 메시지를 보내고 받는 최소 예제를 실행해본다."
+    },
+    {
+      "day": 7,
+      "topic": "Kafka",
+      "text": "Kafka 파티션 개념 이해하기. 왜 파티션 수가 처리량과 연결되는지 처음 감을 잡는다."
+    },
+    {
+      "day": 7,
+      "topic": "Kafka",
+      "text": "Kafka Consumer Group 동작 원리. 여러 컨슈머가 어떻게 메시지를 나눠 받는지 정리한다."
+    },
+    {
+      "day": 7,
+      "topic": "Kafka",
+      "text": "Spring Boot에 Kafka 연동하기. KafkaTemplate으로 메시지를 발행하는 첫 코드를 작성한다."
+    },
+    {
+      "day": 7,
+      "topic": "Kafka",
+      "text": "Kafka vs RabbitMQ 비교해보기. 이벤트 스트리밍과 메시지 큐의 용도 차이를 정리한다."
+    },
+    {
+      "day": 7,
+      "topic": "Docker",
+      "text": "Docker 처음 설치하고 컨테이너 띄워보기. 이미지와 컨테이너의 차이부터 익힌다."
+    },
+    {
+      "day": 7,
+      "topic": "Docker",
+      "text": "Spring Boot 애플리케이션 Dockerize하기. Dockerfile 작성하고 이미지 빌드하는 첫 시도를 기록한다."
+    },
+    {
+      "day": 7,
+      "topic": "Docker",
+      "text": "Docker Compose로 개발 환경 구성하기. DB와 앱 컨테이너를 한 번에 띄우는 방법을 정리한다."
+    },
+    {
+      "day": 7,
+      "topic": "Docker",
+      "text": "Docker 볼륨 개념 이해하기. 컨테이너가 재시작돼도 데이터가 유지되는 원리를 익힌다."
+    },
+    {
+      "day": 7,
+      "topic": "Docker",
+      "text": "Docker 네트워크 기초. 컨테이너끼리 서로 통신하는 방식을 처음 살펴본다."
+    },
+    {
+      "day": 30,
+      "topic": "Spring/JPA",
+      "text": "Spring Boot Actuator로 헬스체크 엔드포인트 노출하기. 운영 환경에서 서버 상태를 모니터링하는 첫걸음을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "Redis",
+      "text": "Redis Pub/Sub으로 실시간 알림 구현하기. 채널 구독 방식으로 서버 간 메시지를 전달하는 방법을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "Kafka",
+      "text": "Kafka Exactly-Once 시맨틱 이해하기. 트랜잭션 프로듀서로 중복 처리를 막는 방법을 살펴본다."
+    },
+    {
+      "day": 30,
+      "topic": "Docker",
+      "text": "멀티 스테이지 Docker 빌드로 이미지 크기 줄이기. 빌드용 이미지와 실행용 이미지를 분리하는 방법을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "Docker",
+      "text": "Docker 이미지 레이어 캐싱 최적화하기. Dockerfile 명령어 순서가 빌드 속도에 미치는 영향을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "AWS",
+      "text": "AWS EC2 인스턴스 처음 띄워보기. 인스턴스 타입 고르는 기준과 보안 그룹 설정을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "AWS",
+      "text": "AWS RDS로 관리형 DB 운영하기. 직접 DB 서버를 관리하지 않아도 되는 이유를 체감한다."
+    },
+    {
+      "day": 30,
+      "topic": "AWS",
+      "text": "AWS S3 버킷 활용하기. 정적 파일 저장과 백업 용도로 S3를 처음 써본다."
+    },
+    {
+      "day": 30,
+      "topic": "AWS",
+      "text": "AWS IAM 권한 관리 기초. 최소 권한 원칙으로 역할을 나누는 방법을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "AWS",
+      "text": "AWS Lambda로 서버리스 함수 배포하기. 서버를 직접 관리하지 않는 배포 방식을 처음 시도한다."
+    },
+    {
+      "day": 30,
+      "topic": "AWS",
+      "text": "AWS CloudWatch로 로그와 지표 모니터링하기. 운영 중 이상 징후를 알림으로 받는 구조를 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "AWS",
+      "text": "AWS VPC 네트워크 구성 기초. 퍼블릭/프라이빗 서브넷을 나누는 이유를 익힌다."
+    },
+    {
+      "day": 30,
+      "topic": "Kubernetes",
+      "text": "Kubernetes를 처음 접하고 Docker Compose와 뭐가 다른지 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "Kubernetes",
+      "text": "Kubernetes Pod와 Deployment 개념 이해하기. 컨테이너를 직접 관리하지 않아도 되는 이유를 익힌다."
+    },
+    {
+      "day": 30,
+      "topic": "Kubernetes",
+      "text": "Kubernetes Service로 내부 통신 노출하기. ClusterIP와 LoadBalancer 타입의 차이를 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "Kubernetes",
+      "text": "Kubernetes로 오토스케일링 설정해보기. HPA가 트래픽에 따라 Pod 수를 조절하는 원리를 살펴본다."
+    },
+    {
+      "day": 30,
+      "topic": "Kubernetes",
+      "text": "Kubernetes ConfigMap과 Secret 활용하기. 설정값과 민감 정보를 코드에서 분리하는 방법을 익힌다."
+    },
+    {
+      "day": 30,
+      "topic": "Kubernetes",
+      "text": "Helm으로 Kubernetes 배포 관리하기. 매니페스트를 반복 작성하지 않는 템플릿화 방법을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "MCP",
+      "text": "MCP(Model Context Protocol)를 처음 접하고 든 생각. 백엔드 API를 LLM 도구로 쓸 수 있다는 개념이 흥미로웠다."
+    },
+    {
+      "day": 30,
+      "topic": "MCP",
+      "text": "사내 REST API를 MCP 서버로 감싸보기. 기존 엔드포인트를 에이전트가 직접 호출하게 만드는 첫 시도를 기록한다."
+    },
+    {
+      "day": 30,
+      "topic": "MCP",
+      "text": "MCP 서버와 클라이언트 구조 이해하기. 어떤 부분이 표준화되어 있는지 살펴본다."
+    },
+    {
+      "day": 30,
+      "topic": "MCP",
+      "text": "MCP로 DB 조회 도구 노출하기. 에이전트가 자연어로 데이터를 조회하게 만드는 실험을 해본다."
+    },
+    {
+      "day": 30,
+      "topic": "MCP",
+      "text": "MCP 권한 관리 고민하기. 에이전트가 너무 많은 걸 할 수 있게 되는 걸 어떻게 막을지 생각해본다."
+    },
+    {
+      "day": 30,
+      "topic": "MCP",
+      "text": "기존 백엔드 개발자 입장에서 MCP를 어떻게 도입할지 정리한다. API 설계 원칙이 그대로 적용되는 부분과 새로 고민할 부분을 나눈다."
+    },
+    {
+      "day": 30,
+      "topic": "MCP",
+      "text": "MCP 서버 로컬에서 테스트하기. Claude 같은 클라이언트와 연결해 실제 동작을 확인한다."
+    },
+    {
+      "day": 30,
+      "topic": "MCP",
+      "text": "MCP와 기존 API Gateway의 역할 차이를 정리한다. 인증/인가를 어느 계층에서 처리할지 고민한다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "RAG가 뭔지 처음 정리해본다. LLM이 모르는 최신 정보를 검색으로 보완하는 구조라는 걸 이해한다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "RAG 파이프라인 최소 구성 만들어보기. 문서를 쪼개고 임베딩해서 검색하는 첫 예제를 실행한다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "벡터 데이터베이스가 왜 필요한지 이해하기. 일반 DB로는 유사도 검색이 왜 어려운지 살펴본다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "문서 청킹 전략 비교해보기. 문단 단위와 고정 길이 단위로 나눴을 때 검색 품질 차이를 관찰한다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "RAG에 Redis를 벡터 저장소로 써보기. 이미 익숙한 Redis로 벡터 검색까지 처리할 수 있다는 걸 알게 된다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "하이브리드 검색(키워드+벡터) 구현해보기. 벡터 검색만으로는 놓치는 케이스를 키워드 검색이 보완하는 걸 확인한다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "RAG 답변에 출처 표시하기. 검색된 문서 근거를 답변에 같이 보여주는 방법을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "RAG 평가 방법 고민하기. 검색이 잘 됐는지, 생성이 잘 됐는지 나눠서 측정하는 기준을 세운다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "사내 문서로 RAG 챗봇 만들어보기. 백엔드 개발자 입장에서 API 서버에 RAG 파이프라인을 붙이는 구조를 설계한다."
+    },
+    {
+      "day": 30,
+      "topic": "RAG",
+      "text": "RAG 재순위화(Reranking) 적용해보기. 1차 검색 결과를 다시 정렬해 답변 품질을 높이는 방법을 시도한다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "LLM API를 처음 백엔드 코드에 붙여보기. OpenAI API 호출을 기존 REST API 안에 통합하는 구조를 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "LLM 응답 스트리밍 처리하기. 토큰 단위로 오는 응답을 프론트엔드까지 안정적으로 전달하는 방법을 익힌다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "Prompt Engineering 기초 익히기. 역할 지정과 출력 형식 강제가 응답 품질에 미치는 영향을 실험한다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "LLM 호출 비용 관리하기. 토큰 사용량을 로깅하고 예산을 넘지 않게 제한하는 구조를 설계한다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "LLM 응답을 구조화된 JSON으로 받기. 함수 호출(Function Calling)로 파싱 실패를 줄이는 방법을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "LLM API 요청 재시도와 타임아웃 처리하기. 기존 백엔드 안정성 패턴을 LLM 호출에도 그대로 적용해본다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "여러 LLM 제공자를 추상화하기. 모델을 바꿔도 코드가 크게 안 바뀌게 인터페이스를 설계한다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "LLM 응답 캐싱 전략 고민하기. 같은 질문이 반복될 때 다시 호출하지 않도록 캐시를 두는 방법을 정리한다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "백엔드 개발자로서 LLM Agent 개념 이해하기. 도구 호출을 반복하며 작업을 완수하는 루프 구조를 처음 살펴본다."
+    },
+    {
+      "day": 30,
+      "topic": "LLM",
+      "text": "LLM 애플리케이션의 레이트 리밋 설계하기. 사용자별 호출 한도를 API Gateway 레벨에서 관리하는 방법을 정리한다."
+    }
+  ]
+}
