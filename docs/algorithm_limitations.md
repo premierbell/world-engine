@@ -3,7 +3,7 @@
 이 문서는 V0에서 발견한, 알고리즘 자체의 구조적 한계를 기록한다. Threshold를 더
 튜닝해서 해결되는 문제가 아니라, 접근 방식 자체를 재검토해야 하는 발견들이 여기 들어간다.
 
-## Finding #001: 단일 Global Threshold + Online Greedy Nearest-Neighbor는 안정적인 Domain Partition을 보장하지 못한다
+## Finding #001: Online Incremental Clustering은 입력 순서에 따라 다른 세계를 만든다 (Order Sensitivity)
 
 ### Claim
 Island 편입 판단을 "새 스크랩 vs 가장 가까운 Island의 identity_vector, threshold
@@ -25,7 +25,8 @@ Island 편입 판단을 "새 스크랩 vs 가장 가까운 Island의 identity_ve
 
 **"언더분리(2개) → 정확히 3개 → 오버분리" 순서가 아니라, "언더분리 → 바로
 오버분리"로 건너뛴다.** 정확히 3개(Backend/AI/Sports)로 깔끔하게 갈리는 threshold가
-스윕 범위 안에 없었다.
+스윕 범위 안에 없었다. (돌이켜보면 threshold=0.24에서 항상 뭉치는 게 Backend+AI였다는
+점은 Finding #002의 첫 단서이기도 했다.)
 
 ### Evidence 2 — Order Sensitivity Test (Experiment #9)
 같은 threshold(0.24, 0.28)로 입력 순서만 5가지로 바꿔서(random seed 1~5) 실행:
@@ -84,42 +85,115 @@ F1 평균(0.595→0.647)과 최악의 경우(0.459→0.515)는 개선됐다. 하
 바꿨는데도 이 지표가 그대로였다는 것은, 문제가 "무엇과 비교하는가"가 아니라
 "언제, 어떤 순서로 결정을 내리는가"에 있다는 뜻이다.
 
-### Root Cause (Experiment #11로 일반화)
-Nearest Neighbor + Threshold는 각 스크랩이 들어올 때마다 "지금까지 만들어진
-Island들" 중 하나를 지역적(local)으로 선택하는 방식이라, 전체 구조(Global
-Structure)를 보지 못한다. 어떤 스크랩이 먼저 들어와서 어떤 Island의 identity를
-결정짓느냐에 따라 이후 흐름 전체가 달라진다. Offline Pairwise 실험(Experiment
-#6/#7)은 이런 순서 의존성이 아예 없는 문제였기 때문에, 그 결과를 Online
-알고리즘에 그대로 적용할 수 없었다.
+### Evidence 5 — Offline HDBSCAN과의 비교 (Experiment #12)
+Evidence 4(Topic-First)까지도 여전히 Greedy 계열(Online, Nearest-Neighbor
+기반) 안에서의 변형이었다. 이번엔 아예 다른 계열 — 전체 데이터를 한 번에 보고
+결정하는 offline 밀도 기반 클러스터링(HDBSCAN) — 을 같은 데이터셋, 같은 32가지
+순서로 돌려 Greedy와 비교했다. `min_cluster_size`/`min_samples`를 함께
+스윕해서(단일 파라미터만 올리면 밀도 조건도 같이 빡빡해져 전부 noise가 되는
+현상을 확인 후 두 파라미터를 분리) baseline(`min_cluster_size=5,
+min_samples=1`)을 찾았다.
 
-Experiment #11 이전까지 이 Root Cause는 "이 Greedy 구현의 결함"이라는 가설
-수준이었다. Evidence 4는 판단 기준을 Island 단위에서 Topic 단위로 완전히
-바꿔도 variance가 그대로라는 것을 보였으므로, 이제는 더 강하게 주장할 수 있다:
+| Algorithm | F1 mean | F1 std (order sensitivity) | Islands (mode/range) | Avg runtime |
+|---|---|---|---|---|
+| Greedy (assign_scrap) | 0.595 | 0.0840 | 3 (14/32) / 2-5 | 20.65ms |
+| HDBSCAN (mcs=5, ms=1) | 0.721 | **0.0000** | 3 (32/32) / 3-3 | 4.60ms |
 
-**순서 의존성은 특정 구현의 버그가 아니라, "데이터를 하나씩 받아 그때그때
-지역적으로 결정하는" Online Incremental Clustering이라는 접근 방식 자체의
-성질일 가능성이 높다.** Threshold를 바꾸거나(Evidence 1) 비교 대상을
-바꾸는(Evidence 4) 정도로는 해결되지 않고, "언제 결정을 내리는가"(스크랩이
-들어올 때마다 즉시 vs 일정 주기로 전체를 다시 봄) 자체를 바꿔야 할 가능성이
-크다.
+32가지 순서 전부에서 HDBSCAN은 정확히 동일한 3개 Island, 동일한 F1(0.721)을
+냈다 — **표준편차가 정확히 0.0000.** Island 판단을 Online에서 Offline으로
+바꾸자 순서 의존성이 완전히 사라졌다.
+
+### Root Cause — 확정 (Experiment #12로 검증)
+Evidence 4까지는 "Online Incremental Clustering이라는 접근 방식 자체의
+성질일 가능성이 높다"는 추정이었다. Evidence 5는 이를 직접 검증한다: 같은
+embedding, 같은 데이터셋에서 접근 방식만 Online → Offline으로 바꿨더니
+variance가 정확히 0으로 떨어졌다. **순서 의존성의 원인은 Greedy 구현도,
+비교 기준(Island vs Topic)도 아니라, "데이터를 하나씩 받아 그때그때
+지역적으로 결정하는" Online Incremental Clustering이라는 접근 방식 자체였다는
+것이 확정됐다.**
 
 ### Implication
-Threshold를 더 촘촘히 찾거나(Evidence 1) Greedy의 비교 기준을 바꾸는
-것(Evidence 4)은 이 시점부터 의미가 크게 줄어든다. 지금까지는 온라인
-알고리즘 하나만 있어서 비교 대상이 없었으므로, 다음 실험은 **같은
-데이터셋·같은 embedding에 offline 밀도 기반 클러스터링(HDBSCAN 등,
-Experiment #12)을 돌려 Greedy와 나란히 비교하는 것**이다 — F1, order
-sensitivity(변경 시 std가 0이 될 것으로 예상), Island 개수, 실행 시간을 같은
-표로 비교한다. 후보는 여전히 4가지이지만, 이제는 추측이 아니라 실험 결과로
-고른다:
-1. 지금 방식 유지 + 한계를 문서화하고 감내
-2. 일정 주기(예: 스크랩 N개)마다 전체 재클러스터링
-3. 밀도 기반(HDBSCAN 등) offline 클러스터링으로 전환 — **다음 실험(#12) 대상**
-4. Online은 "생성"만 담당하고, 별도 배치(Batch) Job이 주기적으로 Merge/Split을
-   수행 ("낮에는 빠른 결정, 밤에는 세계 정리") — HDBSCAN도 한계가 있다면 남는
-   유일한 후보
+Order Sensitivity는 offline 접근(전체 재클러스터링 또는 이를 포함하는
+hybrid)으로 완전히 해결 가능하다는 근거가 확보됐다. 후보 A(지금 방식 유지)는
+폐기한다 — variance가 존재한다는 것 자체가 `principles.md`의 "세계는
+안정적이어야 한다" 원칙과 직접 충돌하기 때문이다. 남은 결정은 후보
+C(offline로 완전 전환)와 D(Online 생성 + 주기적 offline 배치로 정리) 중
+하나이며, 이 판단에는 Island가 "언제" 움직여도 되는가(Product 관점)가 함께
+들어가야 한다 — 자세한 후보 비교는 Finding #002 이후 별도 절에서 다룬다.
 
 ### Status
-미해결 (Open). V0의 성과는 "좋은 threshold를 찾았다"가 아니라 "이 접근 방식의
-한계를 실험으로 증명했다"는 것이며, Experiment #11은 그 한계가 특정 구현이
-아니라 접근 방식 자체에 있다는 것까지 증명했다.
+**해결 (Resolved by Offline Clustering).** Order Sensitivity라는 현상 자체는
+Experiment #12로 완전히 검증됐다. 다만 Evidence 5 실행 중 발견한 별도 문제
+(HDBSCAN도 Backend와 AI를 분리하지 못함)는 이 Finding과 원인이 다르므로
+Finding #002로 분리했다.
+
+---
+
+## Finding #002: Backend와 AI 도메인이 어떤 알고리즘으로도 분리되지 않는다 (Domain Separation)
+
+### Claim
+Backend와 AI 스크랩은 Greedy, Topic-First, HDBSCAN 세 가지 서로 다른 계열의
+알고리즘 전부에서 하나의 Island로 뭉쳤다. 순서 의존성(Finding #001)과는 독립된
+문제로, 원인이 알고리즘이 아니라 **embedding 공간에서 두 도메인이 애초에
+충분히 분리되어 있지 않을 가능성**을 가리킨다.
+
+### Evidence 1 — Category 유사도 분포 (Experiment #2, Step 3)
+Backend 8개/Sports 6개/AI 6개, 190쌍 비교에서 카테고리 내부 평균이 카테고리
+간보다 높긴 했지만, **Backend 내부 유사도 범위(0.10~0.60)가 카테고리 간 평균과
+겹칠 만큼 넓었다.** 당시엔 이걸 "Backend가 이미 여러 하위 Topic(Spring/Redis/
+Kafka)으로 나뉘어 있다"는 뜻으로 해석하고 넘어갔다 — Topic Threshold를
+분리하는 것으로 대응(`growth_rules.md` Topic Discovery Rule).
+
+### Evidence 2 — 알고리즘 3종 전부에서 반복된 병합 (Experiment #8, #12)
+| Algorithm | Backend/AI 관계 | 재현성 |
+|---|---|---|
+| Greedy (island_threshold=0.24, Experiment #8) | 뭉침 | 매번은 아니지만 최저 threshold에서 항상 뭉침 |
+| Topic-First (Experiment #11) | 뭉침 경향 강화(언더분리 편향) | 32번 중 다수 |
+| HDBSCAN (mcs=5, ms=1, Experiment #12) | **완전히 뭉침** (Backend 15 + AI 9 = 1개 cluster, Sports 10만 분리, AI 1개는 noise) | **32/32, 100%** |
+
+세 알고리즘의 판단 방식(threshold 비교 / topic 우선 병합 / 밀도 기반)이
+서로 완전히 다른데도 똑같은 두 도메인이 계속 뭉친다는 것은, 문제가 판단
+로직이 아니라 **입력(embedding, 데이터셋)** 쪽에 있다는 강한 신호다.
+
+### Root Cause (미확인 — 후보만 존재)
+Order Sensitivity와 달리 아직 원인을 좁히지 못했다. 후보:
+1. Embedding 품질 — `text-embedding-3-small`이 이 두 도메인의 의미 차이를
+   충분히 반영하지 못할 가능성
+2. Summary 품질 — Product Decision #001(Summary를 기본 입력으로 사용)의
+   summary 생성 프롬프트/방식이 두 도메인을 흐리게 만들 가능성
+3. Golden Dataset 규모 — Backend/AI 각각 5~10개뿐이라 통계적으로 판단하기엔
+   너무 작을 가능성
+4. Domain 정의 자체의 모호성 — "LLM을 이용한 백엔드 개발" 같은 경계 사례가
+   애초에 사람이 봐도 Backend인지 AI인지 애매할 가능성 (`golden_dataset` 백로그에
+   이미 있던 우려와 연결)
+
+### Status
+미해결 (Open). Finding #001과 달리 알고리즘을 바꿔서 해결되는 문제가 아니라는
+것까지는 확인됐다. 다음 조사는 알고리즘이 아니라 데이터 쪽 — golden dataset의
+Backend/AI 샘플을 사람이 직접 다시 읽고 "정말 서로 다른 도메인인가"부터
+재검토하는 것에서 시작해야 한다.
+
+---
+
+## 후보 비교: Order Sensitivity를 해결할 아키텍처는 C인가 D인가
+
+Finding #001이 Resolved로 바뀌면서, 남은 선택은 다음 두 후보로 좁혀졌다:
+- **C. Offline 전환**: Island 배치를 전부 offline 클러스터링(HDBSCAN 등)으로
+  대체
+- **D. Hybrid (Online 생성 + Night Batch)**: 스크랩 저장 시 즉시 Island가
+  성장하는 Online 경험은 유지하고, 별도 주기적 배치가 Island를 정리
+  (merge/split)
+
+C는 철학적으로 걸리는 지점이 있다: `vision.md`의 "사용자는 씨앗만 심는다 →
+AI는 의미를 이해한다 → 알고리즘은 세계를 성장시킨다"라는 흐름과
+`principles.md`의 "세계는 안정적이어야 한다"를 같이 놓고 보면, 스크랩을
+저장할 때마다(또는 일정 주기로) **전체를 다시 계산해서 기존 섬 위치가
+바뀔 수 있는 구조**는 그 자체로 새로운 종류의 불안정성이다 — Order
+Sensitivity는 없앴지만 "재계산 시점마다 세계가 달라질 수 있다"는 문제로
+바뀔 뿐일 수 있다.
+
+D는 "낮에는 실시간 성장(Online), 밤에는 세계 정리(Batch)"로 두 요구를
+분리한다 — 사용자가 스크랩을 저장하는 순간의 즉각적 피드백(Online)은
+유지하면서, 잘못 배치된 섬을 정리하는 책임은 사용자가 보지 않는 시점(배치)에
+분리해서 진다. 현재는 **D 쪽으로 무게가 기울어 있으나, 아직 D를 실제로
+프로토타이핑해서 검증한 실험은 없다** — 다음 실험 후보로 남겨둔다.
