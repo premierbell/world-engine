@@ -1,0 +1,242 @@
+{
+  "rank_01": {
+    "concept": "Rank",
+    "text": "정기적으로 갱신되는 순위표에서 상위권과 하위권의 격차를 확인한다."
+  },
+  "rank_02": {
+    "concept": "Rank",
+    "text": "전체 참가자를 기준에 따라 한 줄로 세워 순서를 매긴다."
+  },
+  "rank_03": {
+    "concept": "Rank",
+    "text": "상위 몇 개 항목만 따로 추려 순서대로 나열한다."
+  },
+  "rank_04": {
+    "concept": "Rank",
+    "text": "지난주와 이번 주의 순위 변동을 비교한다."
+  },
+  "rank_05": {
+    "concept": "Rank",
+    "text": "순위가 오른 항목과 내린 항목을 구분해 정리한다."
+  },
+  "rank_06": {
+    "concept": "Rank",
+    "text": "동점자가 나왔을 때 순위를 어떻게 매길지 규칙을 정한다."
+  },
+  "rank_07": {
+    "concept": "Rank",
+    "text": "전체 항목 중 상위 10%에 드는 것들만 골라낸다."
+  },
+  "rank_08": {
+    "concept": "Rank",
+    "text": "순위표 맨 위와 맨 아래의 격차가 얼마나 벌어졌는지 살펴본다."
+  },
+  "rank_09": {
+    "concept": "Rank",
+    "text": "매 시즌 순위표가 새로 작성되고 이전 기록은 참고용으로 남는다."
+  },
+  "rank_10": {
+    "concept": "Rank",
+    "text": "특정 기준으로 정렬했을 때 몇 번째에 위치하는지 확인한다."
+  },
+  "rank_11": {
+    "concept": "Rank",
+    "text": "상위권으로 도약한 항목과 하위권으로 떨어진 항목을 함께 짚어본다."
+  },
+  "rank_12": {
+    "concept": "Rank",
+    "text": "순위 산정에는 여러 지표가 가중치를 두고 반영된다."
+  },
+  "rank_13": {
+    "concept": "Rank",
+    "text": "전체 목록을 내림차순으로 정렬해 순위를 부여한다."
+  },
+  "rank_14": {
+    "concept": "Rank",
+    "text": "이번 기간 동안 순위 변동이 유독 컸던 항목들을 살펴본다."
+  },
+  "rank_15": {
+    "concept": "Rank",
+    "text": "순위표 중위권에 몰려 있는 항목들의 격차가 근소하다."
+  },
+  "rank_16": {
+    "concept": "Rank",
+    "text": "최상위권 자리를 두고 여러 항목이 치열하게 경쟁한다."
+  },
+  "rank_17": {
+    "concept": "Rank",
+    "text": "순위가 공개되자마자 각 항목의 반응이 엇갈렸다."
+  },
+  "rank_18": {
+    "concept": "Rank",
+    "text": "특정 기준을 바꾸면 순위표 전체가 요동칠 수 있다."
+  },
+  "rank_19": {
+    "concept": "Rank",
+    "text": "순위표는 매번 같은 기준으로 산정되어야 신뢰할 수 있다."
+  },
+  "rank_20": {
+    "concept": "Rank",
+    "text": "하위권에서 벗어나기 위한 각 항목의 노력이 이어지고 있다."
+  },
+  "score_01": {
+    "concept": "Score",
+    "text": "여러 항목의 점수를 매겨 서로 비교한다."
+  },
+  "score_02": {
+    "concept": "Score",
+    "text": "점수가 높을수록 상위에 위치하게 된다."
+  },
+  "score_03": {
+    "concept": "Score",
+    "text": "각 항목에 부여된 점수를 합산해 총점을 계산한다."
+  },
+  "score_04": {
+    "concept": "Score",
+    "text": "점수 차이가 근소한 항목들이 치열하게 맞붙는다."
+  },
+  "score_05": {
+    "concept": "Score",
+    "text": "최근 들어 평균 점수가 꾸준히 상승하는 추세다."
+  },
+  "league_01": {
+    "concept": "League",
+    "text": "여러 참가자가 정해진 기간 동안 반복적으로 맞붙는 구조를 리그라고 부른다."
+  },
+  "league_02": {
+    "concept": "League",
+    "text": "리그 내 참가자들은 일정한 규칙에 따라 서로 경쟁한다."
+  },
+  "league_03": {
+    "concept": "League",
+    "text": "리그가 끝나면 최종 성적에 따라 순서가 정해진다."
+  },
+  "league_04": {
+    "concept": "League",
+    "text": "상위 리그와 하위 리그 사이에는 승격과 강등 제도가 있다."
+  },
+  "league_05": {
+    "concept": "League",
+    "text": "리그 일정이 진행될수록 상위권과 하위권의 격차가 뚜렷해진다."
+  },
+  "standings_01": {
+    "concept": "Standings",
+    "text": "최신 성적표를 확인하면 각 참가자의 현재 위치를 알 수 있다."
+  },
+  "standings_02": {
+    "concept": "Standings",
+    "text": "성적표 상단에는 최근 성과가 좋은 항목들이 자리한다."
+  },
+  "standings_03": {
+    "concept": "Standings",
+    "text": "매 기간이 끝날 때마다 성적표가 갱신된다."
+  },
+  "standings_04": {
+    "concept": "Standings",
+    "text": "성적표만 봐도 누가 앞서 있고 누가 뒤처져 있는지 한눈에 보인다."
+  },
+  "standings_05": {
+    "concept": "Standings",
+    "text": "시즌 초반과 후반의 성적표를 비교하면 흐름을 알 수 있다."
+  },
+  "leaderboard_01": {
+    "concept": "Leaderboard",
+    "text": "리더보드 맨 위에 이름을 올리기 위해 다들 최선을 다한다."
+  },
+  "leaderboard_02": {
+    "concept": "Leaderboard",
+    "text": "리더보드는 실시간으로 갱신되어 현재 선두를 보여준다."
+  },
+  "leaderboard_03": {
+    "concept": "Leaderboard",
+    "text": "리더보드에 오른 상위 항목들의 기록을 비교해본다."
+  },
+  "leaderboard_04": {
+    "concept": "Leaderboard",
+    "text": "리더보드 순위가 바뀔 때마다 참가자들의 긴장감이 높아진다."
+  },
+  "leaderboard_05": {
+    "concept": "Leaderboard",
+    "text": "리더보드 하위권에 머물러 있는 항목들도 꾸준히 기록을 갱신한다."
+  },
+  "topn_01": {
+    "concept": "TopN",
+    "text": "전체 중에서 상위 5개 항목만 따로 뽑아 발표한다."
+  },
+  "topn_02": {
+    "concept": "TopN",
+    "text": "상위 10위 안에 드는 항목들의 공통점을 분석한다."
+  },
+  "topn_03": {
+    "concept": "TopN",
+    "text": "매달 상위권 항목이 조금씩 바뀌는 것을 확인할 수 있다."
+  },
+  "topn_04": {
+    "concept": "TopN",
+    "text": "상위 3위 안의 격차가 유독 작다는 게 눈에 띈다."
+  },
+  "topn_05": {
+    "concept": "TopN",
+    "text": "하위권에서 상위권으로 진입한 항목이 눈길을 끈다."
+  },
+  "rating_01": {
+    "concept": "Rating",
+    "text": "각 항목에 부여된 레이팅을 기준으로 우열을 가린다."
+  },
+  "rating_02": {
+    "concept": "Rating",
+    "text": "레이팅이 높은 항목일수록 더 신뢰할 만하다고 평가된다."
+  },
+  "rating_03": {
+    "concept": "Rating",
+    "text": "최근 성과를 반영해 레이팅이 주기적으로 조정된다."
+  },
+  "rating_04": {
+    "concept": "Rating",
+    "text": "레이팅 차이가 크지 않은 항목끼리는 실력이 비슷하다고 본다."
+  },
+  "rating_05": {
+    "concept": "Rating",
+    "text": "레이팅 시스템은 상대방의 수준까지 고려해 점수를 매긴다."
+  },
+  "ranking_01": {
+    "concept": "Ranking",
+    "text": "랭킹을 매기는 기준은 시기에 따라 조금씩 달라질 수 있다."
+  },
+  "ranking_02": {
+    "concept": "Ranking",
+    "text": "새로운 데이터가 들어올 때마다 랭킹이 다시 산정된다."
+  },
+  "ranking_03": {
+    "concept": "Ranking",
+    "text": "랭킹 상위권에 오르기까지 오랜 시간이 걸리는 경우가 많다."
+  },
+  "ranking_04": {
+    "concept": "Ranking",
+    "text": "랭킹이 급격히 오르내리는 항목은 눈에 띄기 마련이다."
+  },
+  "ranking_05": {
+    "concept": "Ranking",
+    "text": "랭킹 산정 방식이 바뀌면 기존 순서도 크게 흔들린다."
+  },
+  "index_01": {
+    "concept": "Index",
+    "text": "여러 항목의 변화를 하나의 지수로 요약해서 보여준다."
+  },
+  "index_02": {
+    "concept": "Index",
+    "text": "지수가 오르면 전체적인 흐름이 좋아지고 있다는 뜻이다."
+  },
+  "index_03": {
+    "concept": "Index",
+    "text": "지수를 구성하는 항목의 비중에 따라 결과가 달라진다."
+  },
+  "index_04": {
+    "concept": "Index",
+    "text": "지수는 개별 항목보다 전체 흐름을 파악하는 데 유용하다."
+  },
+  "index_05": {
+    "concept": "Index",
+    "text": "지수 변동 폭이 커질수록 시장(혹은 상황)의 불확실성도 커진다."
+  }
+}

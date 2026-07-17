@@ -279,25 +279,47 @@ Semantic Evaluation(embedding이 실제로 만드는 구조, 관찰용). 자세�
 
 **Sports-Finance가 왜 붙는지는 여전히 열린 연구 질문이다.** Register가
 아니라는 것만 확인됐을 뿐, 원인이 실제 의미적 근접성이라고 단정할 근거는
-아직 없다. 후보로는 경쟁(competition), 순위(rank), 예측(prediction),
-통계(statistics), 시장 분석(market analysis), 시즌성(time-series) 같은
-"무언가를 수치로 추적하고 서로 경쟁시키는 콘텐츠 구조"가 거론되지만,
-전부 검증되지 않은 Hypothesis다.
+아직 없다.
+
+### Candidate Hypotheses (Unvalidated) — Sports-Finance 근접성의 원인 탐색
+이 목록에 있는 항목은 **Finding #002의 Evidence가 아니다.** Evidence로
+승격되려면 충분한 표본(N≈20~30)에서 재현되어야 한다 — 아래 항목들은 그
+기준을 아직 통과하지 못했거나 검증 중이다.
+
+- **경쟁/예측/통계/시장분석/시즌성** — Experiment #17(Semantic Factor
+  Probe, 6개 후보 중 5개)에서 Sports+Finance보다 다른 도메인(주로 Database,
+  Science)에 더 가깝게 나와 기각.
+- **순위(Rank)** — Experiment #17에서 probe 1개(N=1)로 Specificity Gap
+  +0.031을 보여 유력 후보였으나, **Experiment #18에서 같은 개념을 20가지
+  phrasing(N=20)으로 재현 시도한 결과 평균 -0.0076, 95% CI [-0.036,
+  +0.021]로 0을 포함 — 재현 실패.** N=1에서의 신호는 노이즈였을 가능성이
+  높다. **Status: Rejected(재현 실패로 증거 없음).**
+- **평점/레이팅(Rating)** — Experiment #18에서 Rank의 하위 개념군(Score/
+  League/Standings/Leaderboard/Top N/Rating/Ranking/Index, 각 N=5)을 같이
+  비교하던 중 발견. Mean Gap +0.0768(5개 중 4개 양수)로 8개 중 가장 강한
+  신호였으나 **N=5뿐이다** — Rank가 N=1→N=20에서 겪은 것과 같은 함정에
+  빠지지 않으려면 N≈20~30으로 확장 재현해야 한다. **Status: UNVALIDATED.
+  Reason: Observed on N=5 only; requires larger corpus.** (다음 실험
+  후보 — Experiment #19, 미실행)
+- 나머지 Rank Family(Leaderboard +0.0082/4/5, Score/Standings/League는
+  거의 0, Ranking -0.058/0/5, Index -0.068/1/5)는 Rating만큼 두드러지지
+  않아 우선순위가 낮다.
 
 ### Status
 미해결 (Open) — 질문이 두 단계로 계속 좁혀지고 있다. Backend-AI 단계에서는
 "왜 알고리즘이 못 가르는가"에서 "**Backend와 AI를 반드시 서로 다른 Island로
 봐야 하는가**"로 바뀌었고, Sports-Finance 단계에서는 Experiment #16으로
-"문체 축"이 닫히면서 "**왜 의미적으로 가까운가**"라는 더 구체적인 질문만
-남았다. 향후 실험 백로그:
-1. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
+"문체 축"이 닫히고 Experiment #17~18로 "순위(Rank)" 가설도 재현 실패로
+닫히면서, "**Rating이 재현되는가**"라는 더 구체적인 질문만 남았다. 향후
+실험 백로그:
+1. **Experiment #19 (미실행)** — Rating corpus를 N≈20~30으로 확장해
+   재현성 검증. 재현되면 Finding #002의 Evidence로 승격, 재현되지 않으면
+   Rating도 기각하고 새로운 의미 축(Rank Family 밖)을 탐색.
+2. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
    RAG/LLM/Prompt Engineering/Vector DB 같은 스택을 사람에게 직접 분류하게
    했을 때도 의견이 갈리는지 확인. 사람들끼리도 정답이 갈린다면 Pairwise F1
    자체를 절대 지표로 쓸 수 없다는 뜻이므로, Semantic Evaluation의 근거가 더
    강해진다.
-2. **(신규, 미설계) Semantic Factor 분석** — Sports-Finance가 공유하는 게
-   정확히 무엇인지(경쟁/순위/예측/통계/시장분석/시즌성 중 어느 것인지, 혹은
-   전부인지) 파고드는 후속 실험. 아직 구체적인 설계는 없음.
 
 ---
 

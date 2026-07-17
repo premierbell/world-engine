@@ -447,3 +447,69 @@ Sports 12개 + Finance 12개, 총 24개 "사실(fact)"을 뉴스 기사체/블�
 - `docs/algorithm_limitations.md` Finding #002에 **Evidence 5**(Register-independent Sports-Finance Clustering)와 **Rejected Hypothesis #1**(Register Contamination, Status: Rejected) 섹션 추가. Root Cause/Status를 "문체 축은 닫혔고, 왜 의미적으로 가까운지가 남은 질문"으로 갱신.
 - `docs/evaluation_metrics.md`의 Experiment #16 백로그 항목을 완료로 갱신.
 - 후속 질문("Sports-Finance가 정확히 무엇을 공유하는가")은 아직 구체적인 실험으로 설계하지 않음 — 백로그에 미설계 상태로 남김.
+
+## Experiment #17: Semantic Factor Probe
+날짜: 2026-07-17
+
+### Hypothesis
+Experiment #16으로 "문체 축"은 닫혔지만 "왜 Sports-Finance가 의미적으로 가까운가"는 여전히 미검증이다. 경쟁/순위/예측/통계/시장분석/시즌성 6개 후보를 도메인 중립적인 문장(probe)으로 표현해서, `golden_dataset/semantic_atlas/dataset.json`의 8개 도메인 centroid와 비교하면 어느 후보가 Sports+Finance에 특이적으로 가까운지 확인할 수 있다.
+
+### Data
+6개 후보 각각을 스포츠/금융 어휘 없이 순수한 구조로 서술한 probe 문장 1개씩(N=1). 8개 도메인 centroid(semantic_atlas 96개에서 island별 평균 벡터)와 cosine similarity 비교, Specificity Gap = min(Sports,Finance 유사도) - max(다른 6개 도메인 유사도)로 계산(`experiment_semantic_factor_probe.py`).
+
+### Result
+| Probe | Specificity Gap |
+|---|---|
+| 순위(Rank) | +0.031 |
+| 경쟁(Competition) | -0.006 |
+| 통계(Statistics) | -0.020 |
+| 예측(Prediction) | -0.034 |
+| 시장분석(Market Analysis) | -0.097 |
+| 시즌성(Time-series) | -0.125 |
+
+6개 중 "순위(Rank)"만 양수 Gap을 보였다. 나머지는 오히려 다른 도메인(주로 Database, Science)에 더 가까웠다 — 예: "시장분석" probe는 Science(0.486)·AI(0.461)에 더 가까움.
+
+### Insight
+"순위(Rank)"가 유일하게 Sports+Finance 특이적인 신호를 보였지만 Gap이 +0.031로 크지 않고, probe가 단 하나(N=1)라 재현성이 없다.
+
+### Decision
+Finding #002 Evidence로 승격하지 않는다 — Candidate Hypothesis(Needs Replication)로만 표시. 다음 실험(#18)에서 Rank corpus를 N=20으로 확장해 재현성을 검증하기로 함.
+
+## Experiment #18: Rank Corpus Replication + Rank Family Comparison
+날짜: 2026-07-17
+
+### Hypothesis
+Experiment #17의 "Rank" 신호(N=1, +0.031)가 우연이 아니라면, 같은 개념을 여러 phrasing(N=20)으로 반복해도 평균 Gap이 유의하게 양수로 유지될 것이다. 추가로 Rank와 연관된 하위 개념군(Score/League/Standings/Leaderboard/Top N/Rating/Ranking/Index)도 같이 비교하면 "Rank" 자체보다 더 강한 개념이 있는지 탐색할 수 있다.
+
+### Data
+Rank 개념 20가지 phrasing + Rank Family 8개 개념 x 5개씩(총 60개, `golden_dataset/rank_family/dataset.json`). 각 probe의 Specificity Gap을 계산하고 Rank corpus는 평균/표준편차/95% CI, Rank Family는 개념별 평균 Gap으로 비교(`experiment_rank_family.py`).
+
+### Result
+**Rank Corpus 재현성 (N=20):**
+- Mean Specificity Gap: -0.0076
+- 95% CI: [-0.0360, +0.0207] — **0을 포함**
+- 양수 비율: 11/20
+
+**Rank Family 비교 (Mean Gap 순):**
+| Concept | N | Mean Gap | 양수 비율 |
+|---|---|---|---|
+| Rating | 5 | +0.0768 | 4/5 |
+| Leaderboard | 5 | +0.0082 | 4/5 |
+| Score | 5 | -0.0006 | 3/5 |
+| Standings | 5 | -0.0054 | 2/5 |
+| League | 5 | -0.0076 | 2/5 |
+| Rank | 20 | -0.0076 | 11/20 |
+| TopN | 5 | -0.0180 | 2/5 |
+| Ranking | 5 | -0.0580 | 0/5 |
+| Index | 5 | -0.0681 | 1/5 |
+
+### Insight
+**"Rank" 가설은 재현에 실패했다.** N=1의 +0.031은 N=20에서 평균 -0.0076, 95% CI가 0을 포함하는 수준으로 사라졌다 — Threshold sweep 범위가 좁아서 최적점을 놓쳤던 Experiment #6→#7의 교훈과 같은 패턴(단일/소규모 관측을 과신하지 않기)이 재확인됐다.
+
+반면 Rank Family를 넓게 비교하던 중 **"Rating"(평점/레이팅)이 8개 중 가장 강한 신호(+0.0768, 4/5 양수)**로 나타났다. "Rank"(정적 순위표)와 "Ranking"(순위를 매기는 행위, -0.058/0/5)이 반대 방향으로 갈린 것도 흥미롭다 — 같은 어원의 개념이라도 명사형/동사형에 따라 embedding이 다르게 반응할 수 있다는 뜻이다.
+
+**단, Rating도 N=5뿐이다.** Rank가 방금 겪은 함정(N=1→N=20 재현 실패)을 그대로 반복할 위험이 있으므로, Rating을 Evidence로 승격하기 전에 반드시 더 큰 표본(N≈20~30)으로 재현성을 확인해야 한다.
+
+### Decision
+- `docs/algorithm_limitations.md` Finding #002에 **"Candidate Hypotheses (Unvalidated)"** 절 신설: Rank는 Status: Rejected(재현 실패)로, Rating은 Status: UNVALIDATED(N=5, 재현 필요)로 명시. 둘 다 Evidence로는 올리지 않음.
+- 다음 실험(#19, 미실행): Rating corpus를 N≈20~30으로 확장해 재현성 검증 — 재현되면 Evidence로 승격, 재현 안 되면 Rating도 기각하고 Rank Family 밖의 새로운 의미 축을 탐색.
