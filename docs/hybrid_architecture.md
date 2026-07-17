@@ -128,3 +128,11 @@ merge/split과 충돌할 수 있는 지점이다.
 4. offline 클러스터링이 완전히 다른 전역 구조를 제안하는 경우의 실제
    처리 — 좌표 불변 원칙과의 관계에서 언급한 "진짜 위험한 경우"를 V1 이전에
    프로토타입으로 검증해야 한다.
+
+**참고**: `experiments/v0_validation.md` Experiment #20(Virtual User Growth
+Simulation)에서 Night Batch가 아직 없는 Online-only 상태로는 한 사용자의
+자연스러운 30일 성장 과정에서도 같은 실제 주제(Redis/Kafka/Docker 등)가
+여러 Island에 중복되는 **Fragmentation of User Interest** 현상이 나타나는
+것을 확인했다. 이건 Night Batch가 다루려는 문제가 실제로 존재한다는
+근거이지, Night Batch가 이 문제를 해결한다는 증거는 아니다 — Night Batch
+구현 후 같은 데이터셋으로 재검증이 필요하다(Experiment #21, 미실행).
