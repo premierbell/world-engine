@@ -40,6 +40,24 @@ Island 편입 판단을 "새 스크랩 vs 가장 가까운 Island의 identity_ve
 달라진다.** threshold 문제가 아니라 그리디(Greedy) 온라인 할당 자체의 순서
 의존성 때문이다.
 
+### Evidence 3 — Order Sensitivity v2, Pairwise F1 (Experiment #10)
+island_threshold=0.24(baseline) 고정, 4가지 순서(그룹 순서 Backend→AI→Sports /
+Sports→Backend→AI, 랜덤 셔플 seed=42 / seed=777)로 실제 정답 라벨 대비 Pairwise
+F1을 계산:
+
+| Order | Islands | F1 |
+|---|---|---|
+| Backend→AI→Sports | 4 | 0.610 |
+| Sports→Backend→AI | 4 | 0.660 |
+| Shuffle(seed=42) | 3 | 0.517 |
+| Shuffle(seed=777) | 3 | 0.691 |
+
+F1이 **0.517~0.691**로 17%p 가까이 흔들린다. **가장 유리한 조건(도메인별로 묶어서
+순서대로 넣기)으로도 정확히 3개로 갈리지 않았다** — 그룹 순서 두 경우 모두 4개
+Island가 나왔고 AI가 매번 여러 Island에 걸쳐 흩어졌다. 문제가 "입력 순서가
+나빠서"가 아니라, 그리디 알고리즘이 가장 이상적인 조건에서도 3-도메인 구조를
+복원하지 못한다는 더 강한 증거다.
+
 ### Root Cause (가설)
 Nearest Neighbor + Threshold는 각 스크랩이 들어올 때마다 "지금까지 만들어진
 Island들" 중 하나를 지역적(local)으로 선택하는 방식이라, 전체 구조(Global

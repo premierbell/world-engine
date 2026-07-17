@@ -276,3 +276,32 @@ Experiment #8의 결과는 threshold 문제가 아니라 Greedy Online Assignmen
 
 ### Decision
 알고리즘 구조 자체(단일 Global Threshold + Greedy Online Nearest-Neighbor)의 한계를 `docs/algorithm_limitations.md` Finding #001로 문서화. 후속 방향(주기적 재클러스터링 / 밀도 기반 offline / Online 생성 + 배치 Merge·Split)은 아직 미결정 — 다음 세션에서 논의.
+
+## Experiment #10: Order Sensitivity v2 (Pairwise F1 정량화)
+날짜: 2026-07-16
+
+### Hypothesis
+Experiment #9는 Island 개수/구성만 봤다. 실제 정답 라벨 대비 Pairwise F1을 계산하면 순서 의존성의 크기를 정량적으로 보여줄 수 있고, "가장 유리한 순서(도메인별로 묶어서 넣기)"로도 안정적인 3분할이 안 되는지 확인할 수 있다.
+
+### Data
+동일 데이터셋(35개), island_threshold=0.24(baseline) 고정. 4가지 순서 비교:
+- Backend→AI→Sports (그룹 순서)
+- Sports→Backend→AI (그룹 순서, 반대)
+- Shuffle(seed=42)
+- Shuffle(seed=777)
+
+Pairwise F1: 모든 쌍(595쌍)에 대해 "예측이 같은 Island인가"와 "실제로 같은 도메인인가"를 비교한 Precision/Recall/F1.
+
+### Result
+| Order | Islands | Precision | Recall | F1 |
+|---|---|---|---|---|
+| Backend→AI→Sports | 4 | 0.632 | 0.590 | 0.610 |
+| Sports→Backend→AI | 4 | 0.685 | 0.636 | 0.660 |
+| Shuffle(seed=42) | 3 | 0.489 | 0.549 | 0.517 |
+| Shuffle(seed=777) | 3 | 0.653 | 0.733 | **0.691** |
+
+### Insight
+F1이 **0.517~0.691**로, 순서만 바꿔도 17%p 가까이 흔들린다. 더 중요한 발견: **가장 유리한 조건(도메인별로 묶어서 순서대로 넣기)으로도 정확히 3개로 안 갈렸다** — Backend→AI→Sports, Sports→Backend→AI 둘 다 4개 Island가 나왔고, AI가 매번 여러 Island에 걸쳐 흩어졌다. 이는 문제가 "입력 순서가 나빠서"가 아니라, 그리디 Nearest-Neighbor 알고리즘이 가장 이상적인 조건에서도 3-도메인 구조를 복원하지 못한다는 더 강한 증거다.
+
+### Decision
+`docs/algorithm_limitations.md` Finding #001에 이 정량적 근거(F1 스프레드, 그룹 순서로도 실패)를 추가한다.
