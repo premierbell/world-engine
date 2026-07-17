@@ -1,0 +1,497 @@
+{
+  "spring_1": {
+    "island": "Backend",
+    "topic": "Spring/JPA",
+    "text": "Spring Boot Actuator로 애플리케이션 헬스체크 구성하기. 커스텀 헬스 인디케이터를 등록해 DB나 외부 API 상태까지 함께 점검하는 방법을 정리한다."
+  },
+  "spring_2": {
+    "island": "Backend",
+    "topic": "Spring/JPA",
+    "text": "Spring Security 커스텀 필터 체인 구성하기. JWT 인증을 위해 기존 필터 체인에 커스텀 필터를 끼워 넣는 순서와 주의점을 설명한다."
+  },
+  "spring_3": {
+    "island": "Backend",
+    "topic": "Spring/JPA",
+    "text": "Spring Boot 트랜잭션 전파 옵션 정리. REQUIRES_NEW와 NESTED의 차이, 트랜잭션 롤백이 실제로 언제 일어나는지 예제로 살펴본다."
+  },
+  "kafka_1": {
+    "island": "Backend",
+    "topic": "Kafka",
+    "text": "Kafka 토픽 리텐션 정책 설정 가이드. 로그 세그먼트 크기와 보관 기간을 조정해 디스크 사용량을 관리하는 방법을 다룬다."
+  },
+  "kafka_2": {
+    "island": "Backend",
+    "topic": "Kafka",
+    "text": "Kafka Connect로 데이터 파이프라인 구축하기. Source/Sink 커넥터를 활용해 외부 시스템과 데이터를 동기화하는 구조를 설명한다."
+  },
+  "kafka_3": {
+    "island": "Backend",
+    "topic": "Kafka",
+    "text": "Kafka 모니터링 지표 정리. Consumer Lag과 파티션 처리량을 Prometheus로 수집하는 방법을 소개한다."
+  },
+  "redis_1": {
+    "island": "Backend",
+    "topic": "Redis",
+    "text": "Redis Cluster 샤딩 구조 이해하기. 해시 슬롯 분배 방식과 노드 장애 시 리샤딩이 어떻게 일어나는지 정리한다."
+  },
+  "redis_2": {
+    "island": "Backend",
+    "topic": "Redis",
+    "text": "Redis를 활용한 분산 락 구현하기. Redlock 알고리즘의 동작 원리와 실무에서 흔히 겪는 함정을 다룬다."
+  },
+  "redis_3": {
+    "island": "Backend",
+    "topic": "Redis",
+    "text": "Redis를 벡터 검색 엔진으로 활용하기. RediSearch 모듈로 임베딩 벡터를 저장하고 유사도 검색을 수행하는 구조를 정리한다.",
+    "boundary": true
+  },
+  "api_1": {
+    "island": "Backend",
+    "topic": "API Design",
+    "text": "REST API 버저닝 전략 비교. URL 경로, 헤더, 쿼리 파라미터 방식의 장단점을 실무 관점에서 정리한다."
+  },
+  "api_2": {
+    "island": "Backend",
+    "topic": "API Design",
+    "text": "API Rate Limiting 구현 방법 정리. Token Bucket과 Sliding Window 알고리즘을 비교하고 언제 어떤 걸 쓸지 설명한다."
+  },
+  "api_3": {
+    "island": "Backend",
+    "topic": "API Design",
+    "text": "OpenAPI 스펙으로 API 문서 자동화하기. 코드에서 스펙을 생성하고 클라이언트 SDK까지 뽑아내는 파이프라인을 다룬다."
+  },
+  "llm_1": {
+    "island": "AI",
+    "topic": "LLM",
+    "text": "LLM 양자화 기법 비교. GPTQ와 AWQ 방식이 추론 속도와 메모리 사용량에 미치는 영향을 정리한다."
+  },
+  "llm_2": {
+    "island": "AI",
+    "topic": "LLM",
+    "text": "긴 문맥을 다루는 LLM 아키텍처 정리. Sliding Window Attention과 위치 인코딩 확장 기법을 비교한다."
+  },
+  "llm_3": {
+    "island": "AI",
+    "topic": "LLM",
+    "text": "LLM 응답 스트리밍 처리하기. 토큰 단위 스트리밍을 프론트엔드까지 안정적으로 전달하는 구조를 설명한다."
+  },
+  "rag_1": {
+    "island": "AI",
+    "topic": "RAG",
+    "text": "RAG 시스템의 청크 크기 최적화. 문서를 나누는 단위가 검색 정확도와 응답 품질에 미치는 영향을 실험으로 비교한다."
+  },
+  "rag_2": {
+    "island": "AI",
+    "topic": "RAG",
+    "text": "Multi-hop RAG 설계하기. 하나의 질문에 여러 번 검색이 필요한 경우 검색-생성을 반복하는 구조를 정리한다."
+  },
+  "rag_3": {
+    "island": "AI",
+    "topic": "RAG",
+    "text": "Redis를 백엔드로 하는 RAG 파이프라인 구축기. 벡터 저장소부터 캐싱까지 Redis 하나로 RAG 인프라를 구성한 경험을 공유한다.",
+    "boundary": true
+  },
+  "prompt_1": {
+    "island": "AI",
+    "topic": "Prompt Engineering",
+    "text": "Chain-of-Thought 프롬프팅 효과 검증. 단계별 추론을 유도하는 프롬프트가 복잡한 문제에서 정답률을 얼마나 높이는지 실험한다."
+  },
+  "prompt_2": {
+    "island": "AI",
+    "topic": "Prompt Engineering",
+    "text": "Few-shot 예시 선택 전략 비교. 무작위 선택과 유사도 기반 선택이 응답 품질에 미치는 차이를 정리한다."
+  },
+  "prompt_3": {
+    "island": "AI",
+    "topic": "Prompt Engineering",
+    "text": "System Prompt 설계 체크리스트. 역할 지정, 출력 형식 강제, 금지 사항 명시를 효과적으로 조합하는 방법을 다룬다."
+  },
+  "agent_1": {
+    "island": "AI",
+    "topic": "Agent/MCP",
+    "text": "LLM Agent의 도구 호출 루프 설계. 계획-실행-관찰을 반복하는 ReAct 패턴의 실제 구현 방식을 정리한다."
+  },
+  "agent_2": {
+    "island": "AI",
+    "topic": "Agent/MCP",
+    "text": "Multi-Agent 협업 구조 비교. 감독자-작업자 패턴과 동료 에이전트 패턴의 장단점을 실무 사례로 설명한다."
+  },
+  "agent_3": {
+    "island": "AI",
+    "topic": "Agent/MCP",
+    "text": "MCP로 백엔드 API를 LLM 도구로 노출하기. 사내 REST API를 Model Context Protocol 서버로 감싸서 에이전트가 직접 호출하게 만든 구조를 정리한다.",
+    "boundary": true
+  },
+  "sql_1": {
+    "island": "Database",
+    "topic": "SQL Tuning",
+    "text": "실행 계획으로 느린 쿼리 진단하기. EXPLAIN ANALYZE 결과를 읽고 인덱스 미스를 찾아내는 방법을 정리한다."
+  },
+  "sql_2": {
+    "island": "Database",
+    "topic": "SQL Tuning",
+    "text": "복합 인덱스 컬럼 순서 정하기. 카디널리티와 쿼리 패턴을 기준으로 순서를 정하는 원칙을 설명한다."
+  },
+  "sql_3": {
+    "island": "Database",
+    "topic": "SQL Tuning",
+    "text": "대용량 테이블 파티셔닝 전략. 범위 파티션과 해시 파티션을 언제 선택해야 하는지 비교한다."
+  },
+  "nosql_1": {
+    "island": "Database",
+    "topic": "NoSQL",
+    "text": "MongoDB 도큐먼트 스키마 설계 원칙. 임베딩과 참조 중 언제 무엇을 선택해야 하는지 사례로 설명한다."
+  },
+  "nosql_2": {
+    "island": "Database",
+    "topic": "NoSQL",
+    "text": "Cassandra 데이터 모델링 기초. 쿼리 패턴부터 시작해서 테이블을 설계하는 접근법을 정리한다."
+  },
+  "nosql_3": {
+    "island": "Database",
+    "topic": "NoSQL",
+    "text": "DynamoDB 파티션 키 설계 가이드. 핫 파티션을 피하기 위한 키 분산 전략을 다룬다."
+  },
+  "vectordb_1": {
+    "island": "Database",
+    "topic": "VectorDB",
+    "text": "pgvector로 PostgreSQL에 벡터 검색 추가하기. 기존 관계형 DB에 임베딩 컬럼을 추가해 하이브리드 검색을 구현하는 방법을 정리한다.",
+    "boundary": true
+  },
+  "vectordb_2": {
+    "island": "Database",
+    "topic": "VectorDB",
+    "text": "Qdrant와 Milvus 성능 비교. 대규모 임베딩 데이터셋에서 검색 지연시간과 정확도를 벤치마크한다.",
+    "boundary": true
+  },
+  "vectordb_3": {
+    "island": "Database",
+    "topic": "VectorDB",
+    "text": "벡터 인덱스 알고리즘 비교. HNSW와 IVF의 트레이드오프를 검색 속도와 메모리 사용량 관점에서 정리한다.",
+    "boundary": true
+  },
+  "schema_1": {
+    "island": "Database",
+    "topic": "Schema Design",
+    "text": "정규화와 반정규화 사이의 균형. 읽기 성능을 위해 의도적으로 중복을 허용하는 기준을 정리한다."
+  },
+  "schema_2": {
+    "island": "Database",
+    "topic": "Schema Design",
+    "text": "다형성 연관관계를 DB로 표현하는 방법. Single Table Inheritance와 Class Table Inheritance를 비교한다."
+  },
+  "schema_3": {
+    "island": "Database",
+    "topic": "Schema Design",
+    "text": "이벤트 소싱을 위한 스키마 설계. 상태가 아니라 이벤트를 저장하는 구조의 장단점을 실무 관점에서 다룬다."
+  },
+  "k8s_1": {
+    "island": "Cloud",
+    "topic": "Kubernetes",
+    "text": "Kubernetes HPA로 오토스케일링 구성하기. CPU/메모리 지표뿐 아니라 커스텀 메트릭 기반 스케일링까지 설정하는 방법을 정리한다."
+  },
+  "k8s_2": {
+    "island": "Cloud",
+    "topic": "Kubernetes",
+    "text": "Pod 스케줄링 제어하기. Node Affinity와 Taint/Toleration을 조합해 워크로드를 원하는 노드에 배치하는 방법을 설명한다."
+  },
+  "k8s_3": {
+    "island": "Cloud",
+    "topic": "Kubernetes",
+    "text": "Kubernetes 네트워크 정책 설계. 네임스페이스 간 트래픽을 제한하는 NetworkPolicy 작성법을 다룬다."
+  },
+  "serverless_1": {
+    "island": "Cloud",
+    "topic": "Serverless",
+    "text": "AWS Lambda 콜드 스타트 줄이기. 프로비저닝된 동시성과 런타임 최적화로 지연시간을 줄이는 방법을 정리한다."
+  },
+  "serverless_2": {
+    "island": "Cloud",
+    "topic": "Serverless",
+    "text": "서버리스 아키텍처의 비용 계산하기. 요청량 기준으로 Lambda와 컨테이너 방식의 비용을 비교한다."
+  },
+  "serverless_3": {
+    "island": "Cloud",
+    "topic": "Serverless",
+    "text": "Step Functions로 서버리스 워크플로 구성하기. 여러 Lambda 함수를 오케스트레이션하는 상태 머신 설계를 다룬다."
+  },
+  "cost_1": {
+    "island": "Cloud",
+    "topic": "Cost Optimization",
+    "text": "클라우드 비용 절감을 위한 Reserved Instance 전략. 사용 패턴을 분석해 온디맨드와 예약 인스턴스 비율을 정하는 방법을 정리한다."
+  },
+  "cost_2": {
+    "island": "Cloud",
+    "topic": "Cost Optimization",
+    "text": "미사용 리소스 자동 탐지하기. 태그 기반으로 유휴 EBS 볼륨과 미연결 IP를 찾아내는 파이프라인을 구성한다."
+  },
+  "cost_3": {
+    "island": "Cloud",
+    "topic": "Cost Optimization",
+    "text": "멀티 클라우드 비용 비교 대시보드 만들기. AWS/GCP/Azure 비용 데이터를 통합해서 시각화하는 구조를 정리한다."
+  },
+  "cicd_1": {
+    "island": "Cloud",
+    "topic": "CI/CD",
+    "text": "GitHub Actions로 배포 파이프라인 자동화하기. 브랜치별로 다른 배포 전략을 트리거하는 워크플로 설계를 다룬다."
+  },
+  "cicd_2": {
+    "island": "Cloud",
+    "topic": "CI/CD",
+    "text": "Blue-Green 배포와 Canary 배포 비교. 무중단 배포 전략별 장단점과 롤백 속도를 정리한다."
+  },
+  "cicd_3": {
+    "island": "Cloud",
+    "topic": "CI/CD",
+    "text": "IaC로 인프라 버전 관리하기. Terraform 모듈을 재사용 가능하게 구성하는 패턴을 설명한다."
+  },
+  "auth_1": {
+    "island": "Security",
+    "topic": "Auth/OAuth",
+    "text": "OAuth 2.0 Authorization Code Flow 정리. PKCE를 추가해 모바일 앱에서도 안전하게 인증하는 방법을 다룬다."
+  },
+  "auth_2": {
+    "island": "Security",
+    "topic": "Auth/OAuth",
+    "text": "JWT Refresh Token 회전 전략. 탈취된 토큰을 무효화하기 위한 Rotation과 Reuse Detection을 정리한다."
+  },
+  "auth_3": {
+    "island": "Security",
+    "topic": "Auth/OAuth",
+    "text": "SSO 구축 시 고려사항. SAML과 OIDC 중 어떤 걸 선택할지 조직 규모에 따라 비교한다."
+  },
+  "encrypt_1": {
+    "island": "Security",
+    "topic": "Encryption",
+    "text": "AES-GCM으로 데이터 암호화하기. 대칭키 암호화에서 인증 태그가 무결성을 보장하는 원리를 정리한다."
+  },
+  "encrypt_2": {
+    "island": "Security",
+    "topic": "Encryption",
+    "text": "TLS 핸드셰이크 과정 이해하기. 인증서 검증부터 세션 키 교환까지의 흐름을 단계별로 설명한다."
+  },
+  "encrypt_3": {
+    "island": "Security",
+    "topic": "Encryption",
+    "text": "필드 레벨 암호화 설계하기. DB 전체 암호화 대신 민감 컬럼만 선택적으로 암호화하는 전략을 다룬다."
+  },
+  "websec_1": {
+    "island": "Security",
+    "topic": "Web Security",
+    "text": "OWASP Top 10 중 SQL Injection 방어하기. Prepared Statement와 ORM 사용이 실제로 얼마나 방어력을 갖는지 정리한다."
+  },
+  "websec_2": {
+    "island": "Security",
+    "topic": "Web Security",
+    "text": "CSRF 토큰 검증 구현하기. SameSite 쿠키만으로 충분한지, 별도 토큰이 왜 필요한지 설명한다."
+  },
+  "websec_3": {
+    "island": "Security",
+    "topic": "Web Security",
+    "text": "XSS 방어를 위한 Content Security Policy 설정. 인라인 스크립트를 차단하면서도 필요한 리소스는 허용하는 CSP 작성법을 다룬다."
+  },
+  "aisec_1": {
+    "island": "Security",
+    "topic": "AI Security",
+    "text": "Prompt Injection 공격 방어하기. 사용자 입력에 숨겨진 지시문이 시스템 프롬프트를 무력화시키는 사례와 방어 패턴을 정리한다.",
+    "boundary": true
+  },
+  "aisec_2": {
+    "island": "Security",
+    "topic": "AI Security",
+    "text": "LLM 애플리케이션의 민감정보 유출 방지. 응답에 학습 데이터나 시스템 프롬프트가 노출되지 않도록 필터링하는 방법을 다룬다.",
+    "boundary": true
+  },
+  "aisec_3": {
+    "island": "Security",
+    "topic": "AI Security",
+    "text": "AI 모델 API 키 관리 전략. LLM 호출 권한을 세분화하고 비용 폭주를 막는 레이트 리밋 설계를 정리한다.",
+    "boundary": true
+  },
+  "baseball_1": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "text": "이번 시즌 신인왕 후보 정리. 타격과 투구 지표를 기준으로 유력 후보 세 명을 비교한다."
+  },
+  "baseball_2": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "text": "불펜 운용 전략 변화. 필승조 고정 대신 상황별 매치업을 활용하는 최근 트렌드를 살펴본다."
+  },
+  "baseball_3": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "text": "타자의 스윙 스피드 측정 기술 도입. 트래킹 데이터로 타격 폼을 분석하는 구단들이 늘고 있다."
+  },
+  "baseball_4": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "text": "포스트시즌 진출 매직넘버 계산법. 남은 경기 수와 승차를 기준으로 진출 가능성을 정리한다."
+  },
+  "football_1": {
+    "island": "Sports",
+    "topic": "Football",
+    "text": "이번 시즌 리그 우승 경쟁 구도. 상위권 세 팀의 최근 경기력과 남은 일정을 비교한다."
+  },
+  "football_2": {
+    "island": "Sports",
+    "topic": "Football",
+    "text": "현대 축구의 하이 프레스 전술 분석. 상대 빌드업을 조기에 차단하는 압박 구조를 설명한다."
+  },
+  "football_3": {
+    "island": "Sports",
+    "topic": "Football",
+    "text": "이적 시장 마감 임박, 주요 이적 루머 정리. 빅클럽들의 영입 협상 현황을 살펴본다."
+  },
+  "football_4": {
+    "island": "Sports",
+    "topic": "Football",
+    "text": "세트피스 전술 트렌드 변화. 코너킥 상황에서 존 디펜스와 맨마킹을 혼용하는 팀이 늘고 있다."
+  },
+  "basketball_1": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "text": "이번 시즌 MVP 후보 스탯 비교. 득점, 어시스트, 효율성 지표를 기준으로 상위 후보들을 정리한다."
+  },
+  "basketball_2": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "text": "3점 슛 시도 증가 트렌드 분석. 페이스 앤 스페이스 전술이 리그 전체 득점 패턴을 바꾸고 있다."
+  },
+  "basketball_3": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "text": "플레이오프 매치업 예상. 정규시즌 상대 전적을 바탕으로 유력한 대진을 전망한다."
+  },
+  "basketball_4": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "text": "신인 드래프트 유망주 스카우팅 리포트. 대학 리그 성적과 신체 조건을 기준으로 상위 순위를 예측한다."
+  },
+  "stock_1": {
+    "island": "Finance",
+    "topic": "Stock",
+    "text": "실적 발표 시즌 주가 변동성 분석. 어닝 서프라이즈가 다음 거래일 주가에 미치는 영향을 정리한다."
+  },
+  "stock_2": {
+    "island": "Finance",
+    "topic": "Stock",
+    "text": "배당 성장주 스크리닝 전략. 배당 성장률과 재무 건전성을 기준으로 종목을 걸러내는 방법을 다룬다."
+  },
+  "stock_3": {
+    "island": "Finance",
+    "topic": "Stock",
+    "text": "지수 추종 ETF와 액티브 펀드 수익률 비교. 장기 투자 관점에서 운용 비용 차이가 만드는 결과를 살펴본다."
+  },
+  "crypto_1": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "text": "블록체인 노드 운영 인프라 구축하기. 풀노드 동기화와 서버 사양 요구사항을 정리한다.",
+    "boundary": true
+  },
+  "crypto_2": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "text": "레이어2 스케일링 솔루션 비교. 롤업 방식과 사이드체인 방식의 트레이드오프를 설명한다."
+  },
+  "crypto_3": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "text": "스테이블코인 담보 구조 정리. 법정화폐 담보형과 알고리즘형 방식의 리스크를 비교한다."
+  },
+  "economy_1": {
+    "island": "Finance",
+    "topic": "Economy",
+    "text": "기준금리 인상이 실물경제에 미치는 시차 효과. 통화정책 전달 경로를 단계별로 정리한다."
+  },
+  "economy_2": {
+    "island": "Finance",
+    "topic": "Economy",
+    "text": "인플레이션 지표 해석하기. CPI와 PCE의 차이, 근원 물가 지표를 왜 따로 보는지 설명한다."
+  },
+  "economy_3": {
+    "island": "Finance",
+    "topic": "Economy",
+    "text": "환율 변동이 수출기업 실적에 미치는 영향. 헤지 전략에 따라 노출도가 어떻게 달라지는지 정리한다."
+  },
+  "fintech_1": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "text": "LLM으로 공시 자료 요약 자동화하기. 분기 보고서에서 핵심 리스크 요인을 추출하는 파이프라인을 구축한 경험을 정리한다.",
+    "boundary": true
+  },
+  "fintech_2": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "text": "알고리즘 트레이딩에 강화학습 적용하기. 시장 상황을 상태로 정의하고 매매 정책을 학습시키는 구조를 다룬다.",
+    "boundary": true
+  },
+  "fintech_3": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "text": "신용평가 모델에 머신러닝 도입하기. 전통 신용점수 모델과 ML 기반 모델의 예측력을 비교한다.",
+    "boundary": true
+  },
+  "physics_1": {
+    "island": "Science",
+    "topic": "Physics",
+    "text": "양자 얽힘 현상 쉽게 이해하기. 벨 부등식 실험이 국소성 가정을 어떻게 반박했는지 설명한다."
+  },
+  "physics_2": {
+    "island": "Science",
+    "topic": "Physics",
+    "text": "초전도체 연구 최신 동향. 상온 초전도체 구현을 둘러싼 논쟁과 검증 방법을 정리한다."
+  },
+  "physics_3": {
+    "island": "Science",
+    "topic": "Physics",
+    "text": "중력파 관측 원리. LIGO가 시공간의 미세한 뒤틀림을 어떻게 측정하는지 설명한다."
+  },
+  "chemistry_1": {
+    "island": "Science",
+    "topic": "Chemistry",
+    "text": "촉매 반응 설계 원리. 활성화 에너지를 낮추는 촉매의 작동 방식을 사례와 함께 정리한다."
+  },
+  "chemistry_2": {
+    "island": "Science",
+    "topic": "Chemistry",
+    "text": "고분자 재활용 기술 동향. 화학적 재활용과 물리적 재활용의 차이와 한계를 비교한다."
+  },
+  "chemistry_3": {
+    "island": "Science",
+    "topic": "Chemistry",
+    "text": "전기화학 배터리 소재 연구. 리튬이온을 대체할 차세대 소재 후보들을 정리한다."
+  },
+  "biology_1": {
+    "island": "Science",
+    "topic": "Biology",
+    "text": "AlphaFold가 단백질 구조 예측을 바꾼 방식. 딥러닝 모델이 아미노산 서열만으로 3차원 구조를 예측하는 원리를 정리한다.",
+    "boundary": true
+  },
+  "biology_2": {
+    "island": "Science",
+    "topic": "Biology",
+    "text": "유전체 데이터 분석에 머신러닝 적용하기. 변이 호출과 질병 연관성 분석에 쓰이는 모델 구조를 설명한다.",
+    "boundary": true
+  },
+  "biology_3": {
+    "island": "Science",
+    "topic": "Biology",
+    "text": "CRISPR 유전자 가위 최신 연구. 표적 특이성을 높이기 위한 최근 개선 기법들을 정리한다."
+  },
+  "astronomy_1": {
+    "island": "Science",
+    "topic": "Astronomy",
+    "text": "제임스웹 우주망원경 관측 성과. 초기 우주 은하 관측으로 기존 우주 모형에 던진 질문들을 정리한다."
+  },
+  "astronomy_2": {
+    "island": "Science",
+    "topic": "Astronomy",
+    "text": "외계행성 탐지 방법 비교. 트랜짓 방법과 시선속도 방법의 원리와 한계를 설명한다."
+  },
+  "astronomy_3": {
+    "island": "Science",
+    "topic": "Astronomy",
+    "text": "블랙홀 이미지 촬영 원리. 사건의 지평선 망원경이 전 세계 전파망원경을 어떻게 연결했는지 정리한다."
+  }
+}
