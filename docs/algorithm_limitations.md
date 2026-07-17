@@ -3,6 +3,14 @@
 이 문서는 V0에서 발견한, 알고리즘 자체의 구조적 한계를 기록한다. Threshold를 더
 튜닝해서 해결되는 문제가 아니라, 접근 방식 자체를 재검토해야 하는 발견들이 여기 들어간다.
 
+> **Research Principle #001** (`experiments/v0_validation.md` 참고): World
+> Engine은 사람이 미리 정의한 카테고리를 재현하는 것이 아니라, 반복적으로
+> 관찰되는 의미 구조를 발견하고 이를 제품에 반영한다. 단, "반복 관찰"만으로
+> Product Decision을 내리지 않는다 — 여러 독립적인 방법론에서 같은 결과가
+> 나오고 그 원인까지 인과적으로 설명 가능할 때만 제품 결정으로 승격하고,
+> 결과는 반복되지만 원인이 설명되지 않으면 Watch Metric으로 보류한다.
+> Finding #002가 이 기준이 실제로 적용된 첫 사례다.
+
 ## Finding #001: Online Incremental Clustering은 입력 순서에 따라 다른 세계를 만든다 (Order Sensitivity)
 
 ### Claim
@@ -323,26 +331,56 @@ probe로는 애초에 유의미한 신호가 잡히지 않을 수 있다.
 Concept Probing(Experiment #17~19)보다 정보량이 크지만, 아직 실행하지
 않았고 우선순위도 재조정 대상이다(아래 Status 참고).
 
-### Product Question (신규, 미결정) — Finding #002는 버그인가 발견인가?
+### Product Decision #002 — Finding #002는 버그가 아니라 발견이다 (Programming 한정)
 Programming 5개 도메인이 하나로 뭉치고(Experiment #15), Sports-Finance도
-반복적으로 가깝게 나오는(Experiment #2/#8/#12/#13/#15/#16) 현상을 계속
-"왜"만 파다 보면 놓치는 질문이 있다: **애초에 이걸 해결(=해소)해야 할
-결함으로 봐야 하는가, 아니면 World Engine이 원래 하려던 일 — "사람이 만든
-카테고리를 재현하는 게 아니라 사용자의 관심사가 실제로 어떻게 연결되는지
-발견하는 것" — 이 이미 작동하고 있다는 증거로 봐야 하는가?** 이 질문은
-연구(왜 붙는가)가 아니라 제품(붙는 걸 어떻게 다룰 것인가) 질문이고, 아직
-결정하지 않았다 — 다음 세션의 주제로 남긴다.
+반복적으로 가깝게 나오는(Experiment #2/#8/#12/#13/#15/#16) 현상을 놓고
+"애초에 해결해야 할 결함인가, World Engine 철학이 실제로 작동한다는
+증거인가"를 결정했다. **결론은 둘로 나뉜다 — Programming과 Sports-Finance는
+증거의 "종류"가 다르기 때문이다.**
+
+**Programming(AI/Backend/Cloud/Database/Security): 발견으로 채택.**
+World Engine은 이 5개 도메인을 하나의 상위 의미 공간으로 취급하는 것을
+허용한다. 정확히는 "AI와 Backend는 하나다"가 아니라 **"AI와 Backend를
+억지로 분리하려 하지 않는다"**는 뜻이다. 근거:
+- 서로 다른 6가지 방법론(카테고리 유사도-Experiment #2, Threshold
+  Sweep-#8, Greedy/HDBSCAN-#12, Topic 분석-#13, 8도메인 Atlas-#15)이 전부
+  같은 방향을 가리켰고, 인과적으로도 설명된다(Redis→RAG 벡터 검색,
+  MCP→백엔드 API 노출 등).
+- 이걸 억지로 갈라놓으려면 사람이 만든 규칙(온톨로지, 수동 override)이
+  필요한데, 이는 "AI는 이해, 알고리즘은 결정" 원칙과 충돌한다. 오히려 이
+  결과는 **"정확히 N개 도메인으로 갈려야 한다"는 canonical taxonomy
+  전제 자체가 V1 설계에서는 틀렸을 수 있다**는 뜻이다.
+- **Growth Rule과의 연결**: `growth_rules.md`의 City 형성 트리거("크기가
+  아니라 밀도 — 다양성×연결성")가 Programming Island 내부에서 실제로
+  관찰되는 Topic 다양성(Spring/Redis/Kafka/RAG/LLM/MCP…)과 정확히
+  일치한다. Finding #002는 이 Growth Rule을 실험적으로 뒷받침하는 첫
+  사례다 — Island가 하나로 뭉치더라도 내부 Topic이 뚜렷하게 남아있어야
+  "성장이 체감 가능하다"(Product Principle)는 원칙을 지킬 수 있다.
+- **한계 (반드시 같이 기록)**: 이 결정은 절대 진리가 아니라 현재 실험
+  범위(8개 도메인)에서 반복 관찰된 현상이다. 나중에 Design/DevOps/Math/
+  GameDev/Embedded/CAD/Robotics 같은 도메인이 추가되면 Programming
+  Island가 다시 둘 이상으로 갈라질 수 있다 — 그건 실패가 아니라 World
+  Engine이 "정해진 섬을 유지하는 시스템"이 아니라 "데이터가 보여주는
+  섬을 발견하는 시스템"이라는 증거다.
+
+**Sports-Finance: Watch Metric #001로 보류, 제품 설계에 반영하지 않음.**
+Programming과 달리 결과는 반복되지만(Experiment #2/#8/#12/#13/#15/#16)
+원인은 설명되지 않는다(Experiment #17~19, Concept Probing 2회 실패,
+95% CI가 매번 0을 포함). "결과 반복 + 설명 가능"과 "결과 반복 + 설명
+불가"는 제품이 신뢰할 근거로 다르게 취급해야 한다 — V1 출시 후 실제
+사용자 데이터에서도 동일 패턴이 반복되는지 지속 관찰하고, synthetic
+golden dataset의 결과만으로 제품 동작을 결정하지 않는다.
+
+자세한 기록은 `experiments/v0_validation.md`의 "Product Decision #002",
+"Watch Metric #001", "Research Principle #001" 참고.
 
 ### Status
-미해결 (Open) — 원인 탐색(Root Cause)과 별개로, **다음 단계를 "더 파고들기"에서
-"제품적으로 해석하기"로 전환할지 여부**가 새로운 갈림길이다. 향후 백로그
-(우선순위 미정, 순서대로 하지 않아도 됨):
-1. **Product 논의 (신규 제안, 미결정)** — 위 Product Question을 다음
-   세션에서 다룬다. Finding #002를 "고쳐야 할 문제"가 아니라 "V1 Island
-   정의/Growth Rules에 반영할 발견"으로 다룰지 결정.
-2. **Lexical Ablation (백로그, 미설계)** — Concept Probing보다 정보량이
-   큰 대안 방법론. Product 논의 이후에도 원인을 더 파고 싶다면 이 방향으로.
-3. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
+Programming 부분은 **Resolved(Product Decision #002로 승격)**. Sports-Finance
+원인은 여전히 미해결(Open)이지만 우선순위가 낮아졌다 — Watch Metric으로
+보류됐으므로 당장 더 팔 필요는 없다. 향후 백로그(우선순위 미정):
+1. **Lexical Ablation (백로그, 미설계)** — Concept Probing보다 정보량이
+   큰 대안 방법론. Sports-Finance 원인을 더 파고 싶어지면 이 방향으로.
+2. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
    RAG/LLM/Prompt Engineering/Vector DB 같은 스택을 사람에게 직접 분류하게
    했을 때도 의견이 갈리는지 확인. 사람들끼리도 정답이 갈린다면 Pairwise F1
    자체를 절대 지표로 쓸 수 없다는 뜻이므로, Semantic Evaluation의 근거가 더
