@@ -2,6 +2,10 @@ embedding:
   provider: openai        # EmbeddingProvider 구현체 선택 (openai | sentence-transformers)
   model: text-embedding-3-small
 
+label:
+  provider: openai        # LabelGenerator 구현체 선택
+  model: gpt-4o-mini      # 짧은 이름표 생성이라 가벼운 모델로 충분 (Step 6A, Topic Label 전용)
+
 algorithm:
   # Baseline values from V0 validation (Experiment #6/#7, PR curve 기반) — 세상에서 가장 좋은 값이 아니라
   # V0에서 검증한 3개 데이터셋 기준 최선의 값. 더 다양한 도메인의 regression dataset이 쌓이면 갱신될 수 있음.
