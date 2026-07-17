@@ -229,38 +229,75 @@ Controlled Corpus(문체 통제)와 Natural Corpus(실제 사용 환경과 비�
 문체) 평가를 구분해야 한다는 인사이트로 이어진다. 자세한 내용은
 `evaluation_metrics.md`의 "Corpus Design" 절 참고.
 
-### Root Cause — 재구성 (Experiment #13, #15 이후)
+### Evidence 5 — Register-independent Sports-Finance Clustering (Experiment #16)
+Evidence 4의 Hypothesis(register 때문일 수 있다)를 직접 검증했다. 같은 24개
+사실(Sports 12, Finance 12)을 뉴스 기사체/블로그체/위키 서술체/요약문체 4가지
+register로 각각 다시 써서 동일 코퍼스를 4벌 만들고(`golden_dataset/
+register_control/dataset.json`, 96개), register별로 Sports 내부/Finance
+내부/Sports↔Finance 교차 유사도와 HDBSCAN 결과를 비교했다(`experiment_register_
+control.py`).
+
+| Register | Sports 내부 | Finance 내부 | Sports↔Finance | Gap | HDBSCAN |
+|---|---|---|---|---|---|
+| news | 0.299 | 0.270 | 0.242 | 0.028 | 병합됨 |
+| blog | 0.325 | 0.317 | 0.257 | 0.061 | 병합됨 |
+| wiki | 0.260 | 0.244 | 0.212 | 0.032 | 병합됨 |
+| summary | 0.352 | 0.316 | 0.296 | 0.020 | 병합됨 |
+
+**4개 register 전부에서 Sports와 Finance가 병합됐다.** Gap이 가장 작은(가장
+잘 붙는) register는 news(0.028)가 아니라 오히려 가장 건조한 문체인
+summary(0.020)였고, 감정·시제가 없는 wiki(정의체)에서도 여전히 병합됐다.
+Gap 편차도 register 전체에서 0.020~0.061로 크지 않다.
+
+### Rejected Hypothesis #1 — Register Contamination
+**Claim**: Sports-Finance clustering is primarily caused by writing style
+(register) — 즉 둘 다 뉴스 리포트 톤으로 쓰였기 때문에 가까워 보인다.
+**Status: Rejected by Experiment #16.** Register를 뉴스→블로그→위키→요약문으로
+완전히 바꿔도 결과가 변하지 않았다(4/4 병합). 이건 register가 원인이 아니라는
+것을 보여주는 실험이지, "그래서 의미적으로 가깝다"를 증명하는 실험은 아니다 —
+**실험이 증명한 범위는 "register만으로는 설명되지 않는다"까지다.** 왜 붙는지
+(경쟁/순위/예측/통계/시장분석/시즌성 같은 공유 구조 때문인지)는 여전히
+검증되지 않은 질문으로 남는다(아래 Root Cause 참고).
+
+### Root Cause — 재구성 (Experiment #13, #15, #16 이후)
 지금까지의 후보 목록(Embedding 품질 / Summary 품질 / Dataset 규모 / Domain
-정의의 모호성)을 다시 보면, Evidence 3~4는 4번째 후보(Domain 정의 자체의
-모호성)를 특히 강하게 지지한다. 6개의 독립적인 관찰 — Experiment #2(카테고리
+정의의 모호성)을 다시 보면, Evidence 3~5는 4번째 후보(Domain 정의 자체의
+모호성)를 특히 강하게 지지한다. 7개의 독립적인 관찰 — Experiment #2(카테고리
 유사도 분포), Threshold Sweep(Experiment #8), HDBSCAN(Experiment #12),
 Pairwise Similarity와 Topic 분석(Experiment #13), Semantic Atlas(Experiment
-#15) — 이 전부 같은 방향을 가리켰다는 것은 우연으로 보기 어렵다. 특히
-Experiment #15는 이 현상이 Backend-AI 두 도메인만의 특수 사례가 아니라
-**여러 도메인에서 반복되는 패턴**(Biology↔Fintech/AI Trading)이라는 것을
-보여줬다는 점에서 Finding #002 전체를 지지하는 강한 근거다.
+#15), Register Control(Experiment #16) — 이 전부 같은 방향을 가리켰다는 것은
+우연으로 보기 어렵다. 특히 Experiment #15는 이 현상이 Backend-AI 두 도메인만의
+특수 사례가 아니라 **여러 도메인에서 반복되는 패턴**(Biology↔Fintech/AI
+Trading)이라는 것을 보여줬고, Experiment #16은 그중 하나(Sports-Finance)가
+적어도 register 때문은 아니라는 것까지 좁혔다.
 
 **단, 이걸 "golden dataset의 라벨이 틀렸다"로 결론 내리면 안 된다.** Golden
 dataset은 진실이 아니라 평가 기준(하나의 관점)이다. 대신 평가 자체를 두
 층으로 분리해야 한다 — Canonical Taxonomy(사람이 정의한 라벨, 회귀 테스트용)와
 Semantic Evaluation(embedding이 실제로 만드는 구조, 관찰용). 자세한 정의는
-`evaluation_metrics.md`의 "Evaluation Layers" 절 참고. **Sports+Finance 병합의
-원인(register vs 실제 의미)은 여전히 Hypothesis 단계이며 Experiment #16 없이는
-결론 내릴 수 없다.**
+`evaluation_metrics.md`의 "Evaluation Layers" 절 참고.
+
+**Sports-Finance가 왜 붙는지는 여전히 열린 연구 질문이다.** Register가
+아니라는 것만 확인됐을 뿐, 원인이 실제 의미적 근접성이라고 단정할 근거는
+아직 없다. 후보로는 경쟁(competition), 순위(rank), 예측(prediction),
+통계(statistics), 시장 분석(market analysis), 시즌성(time-series) 같은
+"무언가를 수치로 추적하고 서로 경쟁시키는 콘텐츠 구조"가 거론되지만,
+전부 검증되지 않은 Hypothesis다.
 
 ### Status
-미해결 (Open) — 하지만 질문 자체가 바뀌었다. "왜 알고리즘이 Backend/AI를
-못 가르는가"가 아니라 "**Backend와 AI를 반드시 서로 다른 Island로 봐야
-하는가**"가 남은 질문이다. 향후 실험 백로그:
-1. **Experiment #16 (Register Control)** — 같은 내용을 뉴스/블로그/위키/요약문
-   register로 다시 써서 Sports+Finance 클러스터가 유지되는지 확인. 유지되면
-   register가 아니라 실제 의미적 근접성일 가능성이 커지고, register를 바꿨을 때
-   풀린다면 Evidence 4의 일부는 스타일 혼입 아티팩트로 재분류해야 한다.
-2. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
+미해결 (Open) — 질문이 두 단계로 계속 좁혀지고 있다. Backend-AI 단계에서는
+"왜 알고리즘이 못 가르는가"에서 "**Backend와 AI를 반드시 서로 다른 Island로
+봐야 하는가**"로 바뀌었고, Sports-Finance 단계에서는 Experiment #16으로
+"문체 축"이 닫히면서 "**왜 의미적으로 가까운가**"라는 더 구체적인 질문만
+남았다. 향후 실험 백로그:
+1. **Human Labeling Study(inter-rater agreement)** — Kafka/Redis/Spring/JPA/
    RAG/LLM/Prompt Engineering/Vector DB 같은 스택을 사람에게 직접 분류하게
    했을 때도 의견이 갈리는지 확인. 사람들끼리도 정답이 갈린다면 Pairwise F1
    자체를 절대 지표로 쓸 수 없다는 뜻이므로, Semantic Evaluation의 근거가 더
    강해진다.
+2. **(신규, 미설계) Semantic Factor 분석** — Sports-Finance가 공유하는 게
+   정확히 무엇인지(경쟁/순위/예측/통계/시장분석/시즌성 중 어느 것인지, 혹은
+   전부인지) 파고드는 후속 실험. 아직 구체적인 설계는 없음.
 
 ---
 

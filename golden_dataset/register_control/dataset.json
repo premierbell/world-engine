@@ -1,0 +1,674 @@
+{
+  "b1_news": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b1",
+    "register": "news",
+    "text": "이번 시즌 신인왕 후보 세 명이 좁혀졌다. 구단 관계자들은 타격과 투구 지표를 종합했을 때 우열을 가리기 어렵다고 전했다."
+  },
+  "b1_blog": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b1",
+    "register": "blog",
+    "text": "요즘 신인왕 누가 될지 궁금해서 스탯을 좀 찾아봤다. 타격이랑 투구 지표 놓고 보니까 딱 세 명으로 좁혀지는 느낌이더라."
+  },
+  "b1_wiki": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b1",
+    "register": "wiki",
+    "text": "신인왕 후보는 일반적으로 타격 지표와 투구 지표를 종합해 선정되며, 시즌 중반 이후 상위 후보군이 형성되는 경향이 있다."
+  },
+  "b1_summary": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b1",
+    "register": "summary",
+    "text": "신인왕 후보 비교. 타격과 투구 지표를 기준으로 유력 후보 세 명을 정리한다."
+  },
+  "b2_news": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b2",
+    "register": "news",
+    "text": "필승조를 고정하지 않고 상황별 매치업을 활용하는 구단이 늘고 있다고 야구 전문가들이 분석했다."
+  },
+  "b2_blog": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b2",
+    "register": "blog",
+    "text": "요즘 불펜 운영 보면 예전처럼 필승조 딱 정해놓는 게 아니라 상대 타순 보고 그때그때 바꾸는 팀이 많아진 것 같다."
+  },
+  "b2_wiki": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b2",
+    "register": "wiki",
+    "text": "불펜 운용 전략은 전통적으로 필승조를 고정하는 방식과 상황별 매치업을 활용하는 방식으로 나뉜다."
+  },
+  "b2_summary": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b2",
+    "register": "summary",
+    "text": "불펜 운용 전략 변화. 필승조 고정 대신 상황별 매치업을 활용하는 최근 트렌드를 정리한다."
+  },
+  "b3_news": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b3",
+    "register": "news",
+    "text": "트래킹 데이터로 타격 폼을 분석하는 구단이 늘고 있다고 스포츠 과학팀이 밝혔다."
+  },
+  "b3_blog": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b3",
+    "register": "blog",
+    "text": "타자 스윙 스피드 측정하는 기술 도입한 구단들 얘기 듣고 관련 자료 찾아봤는데 생각보다 정교하더라."
+  },
+  "b3_wiki": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b3",
+    "register": "wiki",
+    "text": "스윙 스피드 트래킹은 센서 기반 장비로 타격 폼과 배트 속도를 측정하는 기술이다."
+  },
+  "b3_summary": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b3",
+    "register": "summary",
+    "text": "타자의 스윙 스피드 측정 기술 도입. 트래킹 데이터로 타격 폼을 분석하는 방식을 정리한다."
+  },
+  "b4_news": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b4",
+    "register": "news",
+    "text": "남은 경기 수와 승차를 기준으로 포스트시즌 진출 매직넘버가 속속 공개됐다."
+  },
+  "b4_blog": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b4",
+    "register": "blog",
+    "text": "포스트시즌 매직넘버 계산법이 헷갈려서 한번 정리해봤다. 남은 경기랑 승차만 알면 금방 나온다."
+  },
+  "b4_wiki": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b4",
+    "register": "wiki",
+    "text": "매직넘버는 남은 경기 수와 승차를 기준으로 포스트시즌 진출을 확정 짓는 데 필요한 최소 승수를 의미한다."
+  },
+  "b4_summary": {
+    "island": "Sports",
+    "topic": "Baseball",
+    "fact_id": "b4",
+    "register": "summary",
+    "text": "포스트시즌 진출 매직넘버 계산법. 남은 경기 수와 승차를 기준으로 진출 가능성을 정리한다."
+  },
+  "f1_news": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f1",
+    "register": "news",
+    "text": "상위권 세 팀이 남은 일정과 경기력을 두고 치열한 우승 경쟁을 벌이고 있다고 전해졌다."
+  },
+  "f1_blog": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f1",
+    "register": "blog",
+    "text": "이번 시즌 우승 경쟁 진짜 볼만한 것 같다. 상위 세 팀 최근 경기력 비교해봤는데 우열을 가리기 힘들다."
+  },
+  "f1_wiki": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f1",
+    "register": "wiki",
+    "text": "리그 우승 경쟁 구도는 시즌 막바지 상위권 팀들의 승점과 남은 일정에 따라 결정된다."
+  },
+  "f1_summary": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f1",
+    "register": "summary",
+    "text": "이번 시즌 리그 우승 경쟁 구도. 상위권 세 팀의 최근 경기력과 남은 일정을 비교한다."
+  },
+  "f2_news": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f2",
+    "register": "news",
+    "text": "상대 빌드업을 조기에 차단하는 하이 프레스 전술이 다시 주목받고 있다고 전문가들이 분석했다."
+  },
+  "f2_blog": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f2",
+    "register": "blog",
+    "text": "요즘 축구 보면 하이 프레스 전술 쓰는 팀 많아진 것 같아서 압박 구조를 좀 파봤다."
+  },
+  "f2_wiki": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f2",
+    "register": "wiki",
+    "text": "하이 프레스는 상대 진영 깊숙한 곳에서부터 압박을 가해 빌드업을 조기에 차단하는 전술이다."
+  },
+  "f2_summary": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f2",
+    "register": "summary",
+    "text": "현대 축구의 하이 프레스 전술 분석. 상대 빌드업을 조기에 차단하는 압박 구조를 정리한다."
+  },
+  "f3_news": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f3",
+    "register": "news",
+    "text": "이적 시장 마감이 임박한 가운데 빅클럽들의 영입 협상 소식이 잇따르고 있다."
+  },
+  "f3_blog": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f3",
+    "register": "blog",
+    "text": "이적 시장 마감 다가오니까 루머가 쏟아지네. 빅클럽들 영입설 정리해봤다."
+  },
+  "f3_wiki": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f3",
+    "register": "wiki",
+    "text": "이적 시장은 구단이 선수를 영입하거나 방출할 수 있는 공식 기간을 의미하며, 마감 직전 협상이 집중되는 경향이 있다."
+  },
+  "f3_summary": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f3",
+    "register": "summary",
+    "text": "이적 시장 마감 임박, 주요 이적 루머 정리. 빅클럽들의 영입 협상 현황을 정리한다."
+  },
+  "f4_news": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f4",
+    "register": "news",
+    "text": "코너킥 상황에서 존 디펜스와 맨마킹을 혼용하는 팀이 늘고 있다고 전술 분석가들이 밝혔다."
+  },
+  "f4_blog": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f4",
+    "register": "blog",
+    "text": "요즘 세트피스 수비 트렌드가 좀 바뀐 것 같아서 코너킥 장면들 찾아봤다. 존이랑 맨마킹 섞어 쓰는 팀이 많더라."
+  },
+  "f4_wiki": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f4",
+    "register": "wiki",
+    "text": "세트피스 수비 전술은 크게 존 디펜스와 맨마킹으로 구분되며, 최근에는 두 방식을 혼용하는 하이브리드 방식이 늘고 있다."
+  },
+  "f4_summary": {
+    "island": "Sports",
+    "topic": "Football",
+    "fact_id": "f4",
+    "register": "summary",
+    "text": "세트피스 전술 트렌드 변화. 코너킥 상황에서 존 디펜스와 맨마킹을 혼용하는 최근 흐름을 정리한다."
+  },
+  "k1_news": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k1",
+    "register": "news",
+    "text": "득점, 어시스트, 효율성 지표를 종합했을 때 MVP 후보가 상위 세 명으로 압축됐다고 전해졌다."
+  },
+  "k1_blog": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k1",
+    "register": "blog",
+    "text": "MVP 누가 될지 스탯 좀 비교해봤다. 득점이랑 어시스트, 효율성 다 놓고 보니 세 명이 눈에 띈다."
+  },
+  "k1_wiki": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k1",
+    "register": "wiki",
+    "text": "MVP는 일반적으로 득점, 어시스트, 효율성 지표를 종합해 선정되는 정규시즌 최우수 선수상이다."
+  },
+  "k1_summary": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k1",
+    "register": "summary",
+    "text": "이번 시즌 MVP 후보 스탯 비교. 득점, 어시스트, 효율성 지표를 기준으로 상위 후보들을 정리한다."
+  },
+  "k2_news": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k2",
+    "register": "news",
+    "text": "페이스 앤 스페이스 전술이 리그 전체 득점 패턴을 바꾸고 있다고 분석가들이 진단했다."
+  },
+  "k2_blog": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k2",
+    "register": "blog",
+    "text": "요즘 경기 보면 3점 슛 시도가 확 늘었다는 느낌이라 데이터 찾아봤는데 진짜였다."
+  },
+  "k2_wiki": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k2",
+    "register": "wiki",
+    "text": "페이스 앤 스페이스는 코트를 넓게 활용하며 빠른 템포로 3점 슛 시도를 늘리는 현대 농구 전술이다."
+  },
+  "k2_summary": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k2",
+    "register": "summary",
+    "text": "3점 슛 시도 증가 트렌드 분석. 페이스 앤 스페이스 전술이 득점 패턴을 바꾸는 흐름을 정리한다."
+  },
+  "k3_news": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k3",
+    "register": "news",
+    "text": "정규시즌 상대 전적을 바탕으로 유력한 플레이오프 대진이 전망됐다."
+  },
+  "k3_blog": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k3",
+    "register": "blog",
+    "text": "플레이오프 매치업 미리 예상해봤다. 정규시즌 전적 보니까 대충 그림이 나온다."
+  },
+  "k3_wiki": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k3",
+    "register": "wiki",
+    "text": "플레이오프 매치업은 정규시즌 순위를 기준으로 대진표가 결정되는 토너먼트 방식이다."
+  },
+  "k3_summary": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k3",
+    "register": "summary",
+    "text": "플레이오프 매치업 예상. 정규시즌 상대 전적을 바탕으로 유력한 대진을 정리한다."
+  },
+  "k4_news": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k4",
+    "register": "news",
+    "text": "대학 리그 성적과 신체 조건을 기준으로 신인 드래프트 상위 순위가 예측됐다."
+  },
+  "k4_blog": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k4",
+    "register": "blog",
+    "text": "드래프트 유망주들 스카우팅 리포트 찾아봤다. 대학 리그 성적이랑 피지컬 보면 대충 순위가 그려진다."
+  },
+  "k4_wiki": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k4",
+    "register": "wiki",
+    "text": "드래프트 스카우팅 리포트는 대학 리그 성적과 신체 조건을 종합해 유망주의 순위를 평가하는 문서다."
+  },
+  "k4_summary": {
+    "island": "Sports",
+    "topic": "Basketball",
+    "fact_id": "k4",
+    "register": "summary",
+    "text": "신인 드래프트 유망주 스카우팅 리포트. 대학 리그 성적과 신체 조건을 기준으로 상위 순위를 정리한다."
+  },
+  "s1_news": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s1",
+    "register": "news",
+    "text": "어닝 서프라이즈가 다음 거래일 주가에 큰 영향을 미친 것으로 나타났다."
+  },
+  "s1_blog": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s1",
+    "register": "blog",
+    "text": "실적 발표 시즌마다 주가 변동성이 얼마나 커지는지 궁금해서 데이터 좀 찾아봤다."
+  },
+  "s1_wiki": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s1",
+    "register": "wiki",
+    "text": "어닝 서프라이즈는 시장 예상치를 크게 벗어난 실적 발표를 의미하며, 발표 직후 주가 변동성을 확대시키는 경향이 있다."
+  },
+  "s1_summary": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s1",
+    "register": "summary",
+    "text": "실적 발표 시즌 주가 변동성 분석. 어닝 서프라이즈가 다음 거래일 주가에 미치는 영향을 정리한다."
+  },
+  "s2_news": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s2",
+    "register": "news",
+    "text": "배당 성장률과 재무 건전성을 기준으로 종목을 걸러내는 스크리닝 전략이 주목받고 있다."
+  },
+  "s2_blog": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s2",
+    "register": "blog",
+    "text": "배당 성장주 스크리닝 기준 좀 정리해봤다. 배당 성장률이랑 재무 건전성 위주로 본다."
+  },
+  "s2_wiki": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s2",
+    "register": "wiki",
+    "text": "배당 성장주 스크리닝은 배당금이 꾸준히 증가하는 종목을 재무 건전성 지표와 함께 선별하는 투자 기법이다."
+  },
+  "s2_summary": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s2",
+    "register": "summary",
+    "text": "배당 성장주 스크리닝 전략. 배당 성장률과 재무 건전성을 기준으로 종목을 걸러내는 방법을 정리한다."
+  },
+  "s3_news": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s3",
+    "register": "news",
+    "text": "장기 투자 관점에서 지수 추종 ETF가 액티브 펀드보다 운용 비용 면에서 우위를 보인 것으로 조사됐다."
+  },
+  "s3_blog": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s3",
+    "register": "blog",
+    "text": "ETF랑 액티브 펀드 수익률 비교해봤는데 운용 비용 차이가 생각보다 크더라."
+  },
+  "s3_wiki": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s3",
+    "register": "wiki",
+    "text": "지수 추종 ETF는 특정 지수를 그대로 추종하는 패시브 상품이며, 액티브 펀드는 펀드매니저가 종목을 선별해 운용하는 상품이다."
+  },
+  "s3_summary": {
+    "island": "Finance",
+    "topic": "Stock",
+    "fact_id": "s3",
+    "register": "summary",
+    "text": "지수 추종 ETF와 액티브 펀드 수익률 비교. 장기 투자 관점에서 운용 비용 차이가 만드는 결과를 정리한다."
+  },
+  "c1_news": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c1",
+    "register": "news",
+    "text": "풀노드 동기화와 서버 사양 요구사항이 블록체인 인프라 운영의 핵심 변수로 꼽혔다."
+  },
+  "c1_blog": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c1",
+    "register": "blog",
+    "text": "블록체인 노드 직접 운영해보려고 인프라 요구사항 좀 정리해봤다."
+  },
+  "c1_wiki": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c1",
+    "register": "wiki",
+    "text": "블록체인 풀노드는 전체 원장을 저장하고 검증하는 노드로, 동기화에 상당한 서버 사양이 요구된다."
+  },
+  "c1_summary": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c1",
+    "register": "summary",
+    "text": "블록체인 노드 운영 인프라 구축하기. 풀노드 동기화와 서버 사양 요구사항을 정리한다."
+  },
+  "c2_news": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c2",
+    "register": "news",
+    "text": "롤업 방식과 사이드체인 방식의 트레이드오프를 두고 업계 논쟁이 이어지고 있다."
+  },
+  "c2_blog": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c2",
+    "register": "blog",
+    "text": "레이어2 스케일링 솔루션들 비교해봤다. 롤업이랑 사이드체인 방식 차이가 꽤 크다."
+  },
+  "c2_wiki": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c2",
+    "register": "wiki",
+    "text": "레이어2 스케일링은 메인체인의 부하를 줄이기 위한 확장 기술로, 롤업 방식과 사이드체인 방식이 대표적이다."
+  },
+  "c2_summary": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c2",
+    "register": "summary",
+    "text": "레이어2 스케일링 솔루션 비교. 롤업 방식과 사이드체인 방식의 트레이드오프를 정리한다."
+  },
+  "c3_news": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c3",
+    "register": "news",
+    "text": "법정화폐 담보형과 알고리즘형 스테이블코인의 리스크 구조가 다시 도마 위에 올랐다."
+  },
+  "c3_blog": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c3",
+    "register": "blog",
+    "text": "스테이블코인 담보 구조 궁금해서 찾아봤다. 법정화폐 담보형이랑 알고리즘형이랑 리스크가 꽤 다르더라."
+  },
+  "c3_wiki": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c3",
+    "register": "wiki",
+    "text": "스테이블코인은 가치 안정을 목표로 하는 암호화폐로, 담보 방식에 따라 법정화폐 담보형과 알고리즘형으로 구분된다."
+  },
+  "c3_summary": {
+    "island": "Finance",
+    "topic": "Crypto",
+    "fact_id": "c3",
+    "register": "summary",
+    "text": "스테이블코인 담보 구조 정리. 법정화폐 담보형과 알고리즘형 방식의 리스크를 비교한다."
+  },
+  "e1_news": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e1",
+    "register": "news",
+    "text": "기준금리 인상이 실물경제에 미치는 효과는 상당한 시차를 두고 나타나는 것으로 분석됐다."
+  },
+  "e1_blog": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e1",
+    "register": "blog",
+    "text": "금리 인상하면 경제에 바로 영향 갈 줄 알았는데 시차가 꽤 있다는 걸 알게 돼서 정리해봤다."
+  },
+  "e1_wiki": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e1",
+    "register": "wiki",
+    "text": "통화정책 전달 경로는 기준금리 변경이 실물경제에 영향을 미치기까지 여러 단계를 거치는 과정을 의미한다."
+  },
+  "e1_summary": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e1",
+    "register": "summary",
+    "text": "기준금리 인상이 실물경제에 미치는 시차 효과. 통화정책 전달 경로를 단계별로 정리한다."
+  },
+  "e2_news": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e2",
+    "register": "news",
+    "text": "CPI와 PCE 지표의 차이를 두고 시장 참가자들의 해석이 엇갈리고 있다."
+  },
+  "e2_blog": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e2",
+    "register": "blog",
+    "text": "CPI랑 PCE 차이가 헷갈려서 좀 찾아봤다. 근원 물가 지표를 왜 따로 보는지도 알게 됐다."
+  },
+  "e2_wiki": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e2",
+    "register": "wiki",
+    "text": "CPI(소비자물가지수)와 PCE(개인소비지출)는 모두 물가 수준을 측정하는 지표이나 산출 방식과 대상 품목에 차이가 있다."
+  },
+  "e2_summary": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e2",
+    "register": "summary",
+    "text": "인플레이션 지표 해석하기. CPI와 PCE의 차이, 근원 물가 지표를 왜 따로 보는지 정리한다."
+  },
+  "e3_news": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e3",
+    "register": "news",
+    "text": "환율 변동이 수출기업 실적에 미치는 영향이 헤지 전략에 따라 크게 갈린 것으로 나타났다."
+  },
+  "e3_blog": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e3",
+    "register": "blog",
+    "text": "환율 변동이 수출기업 실적에 어떻게 영향 주는지 궁금해서 헤지 전략별로 정리해봤다."
+  },
+  "e3_wiki": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e3",
+    "register": "wiki",
+    "text": "환율 변동은 수출기업의 매출과 이익에 직접적인 영향을 미치며, 기업의 헤지 전략에 따라 노출도가 달라진다."
+  },
+  "e3_summary": {
+    "island": "Finance",
+    "topic": "Economy",
+    "fact_id": "e3",
+    "register": "summary",
+    "text": "환율 변동이 수출기업 실적에 미치는 영향. 헤지 전략에 따라 노출도가 어떻게 달라지는지 정리한다."
+  },
+  "ft1_news": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft1",
+    "register": "news",
+    "text": "LLM으로 분기 보고서의 핵심 리스크 요인을 추출하는 파이프라인이 금융권에서 확산되고 있다."
+  },
+  "ft1_blog": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft1",
+    "register": "blog",
+    "text": "LLM으로 공시 자료 요약 자동화해본 경험을 정리해봤다. 핵심 리스크 요인 뽑아내는 게 생각보다 잘 됐다."
+  },
+  "ft1_wiki": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft1",
+    "register": "wiki",
+    "text": "공시 자료 요약 자동화는 LLM을 활용해 분기 보고서 등에서 핵심 리스크 요인을 추출하는 기술이다."
+  },
+  "ft1_summary": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft1",
+    "register": "summary",
+    "text": "LLM으로 공시 자료 요약 자동화하기. 분기 보고서에서 핵심 리스크 요인을 추출하는 파이프라인을 정리한다."
+  },
+  "ft2_news": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft2",
+    "register": "news",
+    "text": "시장 상황을 상태로 정의하고 매매 정책을 학습시키는 강화학습 기반 트레이딩이 주목받고 있다."
+  },
+  "ft2_blog": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft2",
+    "register": "blog",
+    "text": "알고리즘 트레이딩에 강화학습 적용해본 경험 정리. 매매 정책 학습시키는 구조가 흥미로웠다."
+  },
+  "ft2_wiki": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft2",
+    "register": "wiki",
+    "text": "강화학습 기반 알고리즘 트레이딩은 시장 상황을 상태로 정의하고 보상을 통해 매매 정책을 학습시키는 접근법이다."
+  },
+  "ft2_summary": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft2",
+    "register": "summary",
+    "text": "알고리즘 트레이딩에 강화학습 적용하기. 시장 상황을 상태로 정의하고 매매 정책을 학습시키는 구조를 정리한다."
+  },
+  "ft3_news": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft3",
+    "register": "news",
+    "text": "전통 신용점수 모델과 머신러닝 기반 모델의 예측력 차이가 새롭게 조명되고 있다."
+  },
+  "ft3_blog": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft3",
+    "register": "blog",
+    "text": "신용평가 모델에 머신러닝 적용한 사례들 비교해봤다. 전통 모델이랑 예측력 차이가 꽤 나더라."
+  },
+  "ft3_wiki": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft3",
+    "register": "wiki",
+    "text": "머신러닝 기반 신용평가 모델은 전통적인 신용점수 모델과 달리 비선형 관계를 학습해 예측력을 높이는 방식이다."
+  },
+  "ft3_summary": {
+    "island": "Finance",
+    "topic": "Fintech/AI Trading",
+    "fact_id": "ft3",
+    "register": "summary",
+    "text": "신용평가 모델에 머신러닝 도입하기. 전통 신용점수 모델과 ML 기반 모델의 예측력을 비교한다."
+  }
+}

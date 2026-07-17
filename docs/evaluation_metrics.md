@@ -82,16 +82,17 @@ vs 기술 블로그체) 혼입이었다 — 아직 검증되지 않은 Hypothesi
 
 두 코퍼스에서 같은 실험을 반복했을 때 결과가 다르다면, 그 차이가 바로
 register가 클러스터링에 미치는 영향의 크기다 — Experiment #16(Register
-Control, 아래 백로그)이 이 방법론을 실제로 적용하는 첫 실험이다.
+Control)이 이 방법론을 실제로 적용한 첫 실험이었다.
 
-### 향후 계획 (백로그) — Experiment #16: Register Control
-Experiment #15의 Sports+Finance 병합 원인이 register 때문인지 검증한다. 같은
-내용을 뉴스 기사체 / 기술 블로그체 / 위키 서술체 / 요약문체 네 가지 register로
-각각 다시 써서 동일한 코퍼스를 4벌 만들고, 각 버전에서 Sports-Finance 클러스터가
-유지되는지 비교한다. 뉴스 기사체에서만 붙고 다른 register에서는 떨어진다면
-"register가 영향을 준다"고 말할 수 있고, 모든 register에서 계속 붙는다면
-실제 의미적 근접성(예: 둘 다 "수치와 순위/전망을 다루는 콘텐츠"라는 공통
-구조)일 가능성이 커진다. 아직 실행하지 않음.
+### Experiment #16: Register Control (완료, 2026-07-17)
+Experiment #15의 Sports+Finance 병합 원인이 register 때문인지 검증했다. 같은
+24개 사실을 뉴스 기사체 / 블로그체 / 위키 서술체 / 요약문체 네 가지 register로
+각각 다시 써서 동일한 코퍼스를 4벌 만들고(`golden_dataset/register_control/
+dataset.json`), 각 버전에서 Sports-Finance 클러스터가 유지되는지 비교했다.
+**결과: 4개 register 전부에서 병합됨** — register가 원인이라는 가설은
+기각(Rejected)됐다. 자세한 내용은 `docs/algorithm_limitations.md` Finding
+#002 Evidence 5 / Rejected Hypothesis #1 참고. 이 결과로 "문체 축"은 닫혔고,
+남은 질문은 "그럼 왜 의미적으로 가까운가"로 좁혀졌다 — 아직 미설계.
 
 ### 향후 계획 (백로그) — Experiment #14: Human Semantic Clustering Study
 개발자 여러 명에게 Spring/Redis/RAG/Kafka/LangGraph/MCP/OpenAI API/Qdrant 같은
