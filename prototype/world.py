@@ -123,3 +123,81 @@ def assign_scrap(islands: list[Island], vector: list[float], text: str, config: 
         island_decision="CREATE_ISLAND",
         identity_stability=1.0,
     )
+
+
+def assign_scrap_topic_first(islands: list[Island], vector: list[float], text: str, config: dict) -> AssignmentTrace:
+    """Topic-First 변형: Island identity_vector 대신, 세상에 존재하는 모든 Topic과
+    먼저 비교한다. Topic이 Island보다 세밀하므로, 이 편입 판단이 더 global structure를
+    반영할 것이라는 가설(Experiment #11)을 검증하기 위한 변형이다.
+    """
+    alpha = config["ema_alpha"]
+    island_threshold = config["island_threshold"]
+    topic_threshold = config["topic_threshold"]
+
+    if not islands:
+        islands.append(Island(0, vector, text))
+        return AssignmentTrace(
+            text=text,
+            island_similarities=[],
+            chosen_island_id=0,
+            chosen_similarity=None,
+            island_threshold=island_threshold,
+            island_decision="CREATE_ISLAND",
+            identity_stability=1.0,
+        )
+
+    # 1. 모든 Island의 모든 Topic과 비교 (Island 단위가 아니라 Topic 단위)
+    topic_candidates = [
+        (isl, topic, cosine_similarity(vector, topic.center_vector))
+        for isl in islands
+        for topic in isl.topics
+    ]
+    best_island, best_topic, best_topic_sim = max(topic_candidates, key=lambda c: c[2])
+
+    if best_topic_sim >= topic_threshold:
+        best_island.growth_vector = ema_update(best_island.growth_vector, vector, alpha)
+        best_topic.add(vector, text, alpha)
+        return AssignmentTrace(
+            text=text,
+            island_similarities=[(isl.id, cosine_similarity(vector, isl.identity_vector)) for isl in islands],
+            chosen_island_id=best_island.id,
+            chosen_similarity=cosine_similarity(vector, best_island.identity_vector),
+            island_threshold=island_threshold,
+            island_decision="MERGE_VIA_TOPIC",
+            identity_stability=best_island.identity_stability,
+            topic_id=best_topic.id,
+            topic_similarity=best_topic_sim,
+            topic_decision="MERGE",
+        )
+
+    # 2. 어떤 Topic도 못 넘으면 기존처럼 Island identity_vector로 폴백
+    island_similarities = [(isl.id, cosine_similarity(vector, isl.identity_vector)) for isl in islands]
+    best_id, best_sim = max(island_similarities, key=lambda pair: pair[1])
+
+    if best_sim >= island_threshold:
+        best_island = next(isl for isl in islands if isl.id == best_id)
+        topic_id, topic_sim, topic_decision = best_island.add(vector, text, alpha, topic_threshold)
+        return AssignmentTrace(
+            text=text,
+            island_similarities=island_similarities,
+            chosen_island_id=best_id,
+            chosen_similarity=best_sim,
+            island_threshold=island_threshold,
+            island_decision="MERGE",
+            identity_stability=best_island.identity_stability,
+            topic_id=topic_id,
+            topic_similarity=topic_sim,
+            topic_decision=topic_decision,
+        )
+
+    new_island_id = len(islands)
+    islands.append(Island(new_island_id, vector, text))
+    return AssignmentTrace(
+        text=text,
+        island_similarities=island_similarities,
+        chosen_island_id=new_island_id,
+        chosen_similarity=best_sim,
+        island_threshold=island_threshold,
+        island_decision="CREATE_ISLAND",
+        identity_stability=1.0,
+    )
