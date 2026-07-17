@@ -129,13 +129,21 @@ Finding #002로 분리했다.
 
 ---
 
-## Finding #002: Backend와 AI 도메인이 어떤 알고리즘으로도 분리되지 않는다 (Domain Separation)
+## Finding #002: Backend와 AI 사이의 경계가 원래 애매하다 (Semantic Boundary Ambiguity)
+
+> 처음엔 "Domain Separation Failure"(알고리즘이 분리를 못 한다)로 이름 붙였다.
+> Experiment #13 이후 이름을 바꿨다 — 문제는 알고리즘이 분리를 못 하는 게
+> 아니라, **분리해야 한다는 전제 자체가 의심스럽다**는 쪽으로 무게가
+> 옮겨갔기 때문이다. "Failure"는 정답이 있다는 걸 전제하지만, 지금 증거는
+> 정답 자체(Backend와 AI가 별개의 Island여야 한다)를 의심하게 만든다.
 
 ### Claim
 Backend와 AI 스크랩은 Greedy, Topic-First, HDBSCAN 세 가지 서로 다른 계열의
 알고리즘 전부에서 하나의 Island로 뭉쳤다. 순서 의존성(Finding #001)과는 독립된
-문제로, 원인이 알고리즘이 아니라 **embedding 공간에서 두 도메인이 애초에
-충분히 분리되어 있지 않을 가능성**을 가리킨다.
+문제다. Experiment #13에서 golden dataset에 경계 사례(Vector DB, Spring AI 같은
+콘텐츠)가 하나도 없는데도 순수 Backend/AI 콘텐츠끼리 이미 가깝다는 게 확인되면서,
+원인이 알고리즘이 아니라 **두 도메인이 embedding 공간에서 애초에 하나의
+연속체(continuum)에 가깝게 표현되어 있을 가능성**으로 좁혀졌다.
 
 ### Evidence 1 — Category 유사도 분포 (Experiment #2, Step 3)
 Backend 8개/Sports 6개/AI 6개, 190쌍 비교에서 카테고리 내부 평균이 카테고리
@@ -155,23 +163,57 @@ Kafka)으로 나뉘어 있다"는 뜻으로 해석하고 넘어갔다 — Topic 
 서로 완전히 다른데도 똑같은 두 도메인이 계속 뭉친다는 것은, 문제가 판단
 로직이 아니라 **입력(embedding, 데이터셋)** 쪽에 있다는 강한 신호다.
 
-### Root Cause (미확인 — 후보만 존재)
-Order Sensitivity와 달리 아직 원인을 좁히지 못했다. 후보:
-1. Embedding 품질 — `text-embedding-3-small`이 이 두 도메인의 의미 차이를
-   충분히 반영하지 못할 가능성
-2. Summary 품질 — Product Decision #001(Summary를 기본 입력으로 사용)의
-   summary 생성 프롬프트/방식이 두 도메인을 흐리게 만들 가능성
-3. Golden Dataset 규모 — Backend/AI 각각 5~10개뿐이라 통계적으로 판단하기엔
-   너무 작을 가능성
-4. Domain 정의 자체의 모호성 — "LLM을 이용한 백엔드 개발" 같은 경계 사례가
-   애초에 사람이 봐도 Backend인지 AI인지 애매할 가능성 (`golden_dataset` 백로그에
-   이미 있던 우려와 연결)
+### Evidence 3 — Topic-level Continuum 분석 (Experiment #13)
+golden dataset을 다시 확인해보니 Backend 토픽은 Spring/JPA·Redis·Kafka,
+AI 토픽은 LLM·RAG뿐이었다 — "Vector DB", "Spring AI" 같은 경계 사례가 하나도
+없다. 즉 지금까지의 병합은 애매한 콘텐츠 때문이 아니라 **순수 Backend
+콘텐츠와 순수 AI 콘텐츠끼리도 이미 가깝다**는 뜻이다. Experiment #2와 같은
+방법론(내부/교차 평균 Cosine Similarity)을 이번엔 7개 Topic 단위로 재실행:
+
+| Pair | 평균 유사도 |
+|---|---|
+| AI 내부 | 0.3829 |
+| Backend 내부 | 0.3559 |
+| Sports 내부 | 0.3246 |
+| **AI ↔ Backend** | **0.2779** |
+| AI ↔ Sports | 0.2057 |
+| Backend ↔ Sports | 0.1911 |
+
+AI↔Backend 교차 유사도(0.2779)는 AI↔Sports(0.2057)·Backend↔Sports(0.1911)보다
+뚜렷하게 높다. "내부 유사도 − 교차 유사도" 간격도 Backend-AI 쌍에서만 유독
+좁다(AI: 0.105, Backend: 0.078) — Sports와 비교할 때(AI: 0.177, Backend: 0.165)의
+절반 수준이다.
+
+Topic 단위로 더 들어가면 더 뚜렷하다: **Redis는 같은 Backend인 Spring/JPA보다
+AI 토픽인 RAG에 더 가깝다** (Redis-Spring 0.286 < Redis-RAG 0.290). 경계
+사례를 넣지 않았는데도, 순수 Redis 캐싱/Pub-Sub 콘텐츠만으로 이미 RAG 쪽과의
+거리가 같은 Backend보다 가깝게 나왔다 — 실제로 Redis가 Vector Search/Semantic
+Cache 인프라로 자주 쓰이는 것과 일치하는 결과다. Embedding이 우리가 붙인
+"Backend"라는 이름표보다 **기술 스택의 실제 사용 맥락**을 학습하고 있는
+것으로 보인다.
+
+### Root Cause — 재구성 (Experiment #13 이후)
+지금까지의 후보 목록(Embedding 품질 / Summary 품질 / Dataset 규모 / Domain
+정의의 모호성)을 다시 보면, Evidence 3는 4번째 후보(Domain 정의 자체의
+모호성)를 특히 강하게 지지한다. 5개의 독립적인 실험 — Experiment #2(카테고리
+유사도 분포), Threshold Sweep(Experiment #8), HDBSCAN(Experiment #12),
+Pairwise Similarity와 Topic 분석(Experiment #13) — 이 전부 같은 방향을
+가리켰다는 것은 우연으로 보기 어렵다.
+
+**단, 이걸 "golden dataset의 라벨이 틀렸다"로 결론 내리면 안 된다.** Golden
+dataset은 진실이 아니라 평가 기준(하나의 관점)이다. 대신 평가 자체를 두
+층으로 분리해야 한다 — Canonical Taxonomy(사람이 정의한 라벨, 회귀 테스트용)와
+Semantic Evaluation(embedding이 실제로 만드는 구조, 관찰용). 자세한 정의는
+`evaluation_metrics.md`의 "Evaluation Layers" 절 참고.
 
 ### Status
-미해결 (Open). Finding #001과 달리 알고리즘을 바꿔서 해결되는 문제가 아니라는
-것까지는 확인됐다. 다음 조사는 알고리즘이 아니라 데이터 쪽 — golden dataset의
-Backend/AI 샘플을 사람이 직접 다시 읽고 "정말 서로 다른 도메인인가"부터
-재검토하는 것에서 시작해야 한다.
+미해결 (Open) — 하지만 질문 자체가 바뀌었다. "왜 알고리즘이 Backend/AI를
+못 가르는가"가 아니라 "**Backend와 AI를 반드시 서로 다른 Island로 봐야
+하는가**"가 남은 질문이다. Kafka/Redis/Spring/JPA/RAG/LLM/Prompt Engineering/
+Vector DB 같은 스택을 사람에게 직접 분류하게 했을 때도 의견이 갈리는지 확인하는
+**Human Labeling Study(inter-rater agreement)**를 향후 실험으로 백로그에
+남긴다 — 사람들끼리도 정답이 갈린다면 Pairwise F1 자체를 절대 지표로 쓸 수
+없다는 뜻이므로, Semantic Evaluation의 근거가 더 강해진다.
 
 ---
 
