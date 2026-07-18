@@ -726,3 +726,34 @@ Night Batch v2(Topic Graph, `topic_graph_reconstruct`)를 Backend User/AI Resear
 
 ### Decision
 `docs/algorithm_limitations.md`에 **Finding #004**(Pairwise Threshold Graph exhibits chaining instability) 신설 — Evidence로 Experiment #6~7(Scrap 레벨), Experiment #23(Island 단위 Split의 local-only 한계), Experiment #24(Topic 레벨 체이닝)를 연결한다. Union-Find(단일 threshold)를 Topic-level HDBSCAN으로 교체하는 게 다음 세션의 목표(**Experiment #25**, 미실행) — Experiment #22에서 HDBSCAN이 AI Researcher의 scrap 레벨 구조를 실제로 잘 나눠줬던 방법론을 이번엔 Topic 레벨(더 적고 밀도 높은 데이터 포인트)에 그대로 적용한다.
+
+## Experiment #25: Topic-level HDBSCAN - Two Variants, Both Fall Short
+날짜: 2026-07-18
+
+### Hypothesis
+Union-Find의 체이닝 문제(Finding #004)를 Topic-level HDBSCAN(Experiment #12/#22에서 이미 검증된 밀도 기반 방법을 Topic에 적용)으로 교체하면 해결될 것이다.
+
+### Data
+두 가지 변형을 Backend User/AI Researcher에 적용:
+- **변형 A (Topic-centroid HDBSCAN)**: 각 Topic의 `center_vector`를 직접 HDBSCAN으로 클러스터링(`topic_graph_reconstruct_hdbscan`).
+- **변형 B (Scrap-informed Topic Regroup)**: scrap 레벨 HDBSCAN(이미 검증됨)의 클러스터 라벨을 참고해서, 각 Topic이 자기 스크랩들의 다수결 라벨에 따라 그룹화되도록 재구성.
+
+두 변형 모두 `min_cluster_size`/`min_samples`를 스윕.
+
+### Result
+**변형 A**: 온라인 단계에서 이미 Topic이 21~27개(71개 스크랩 대비 Topic당 평균 3개 미만)로 잘게 나뉘어 있어서, 어떤 파라미터에서도 Backend User가 12~21개로 쪼개짐(중복 5~9/9) — 원래 1개/0%였던 Merge-only보다 훨씬 나쁨.
+
+**변형 B**: 최선의 경우(mcs=4~6) AI Researcher는 5개/2/9로 개선됐지만, **Backend User는 최선이 7개/4~9(1개/0%에 못 미침)**. Scrap 레벨 HDBSCAN 자체가 Backend User를 "58+7+noise 6"으로 쪼개는데(완벽한 1개 클러스터가 아님), Island 단위로 다수결을 낼 때는 여러 Topic의 스크랩이 뭉뚱그려지며 이 노이즈가 평균화돼 purity≥0.5를 넘겼지만, Topic 단위(스크랩 2~4개)로 내리면 그 평균화 효과가 사라져 노이즈에 더 취약해진다.
+
+### Insight
+두 변형 다 실패한 이유가 다르지 않다 — **Aggregation Level(어느 단위에서 의사결정을 내리는가)의 근본적인 트레이드오프**다:
+
+| 접근 | Backend User | AI Researcher | 특징 |
+|---|---|---|---|
+| Island 단위 (v0 Merge) | 1개, 0% (매우 안정적) | 6개, 77.8% (과병합 못 고침) | 표본이 많아 노이즈 평균화 |
+| Topic 단위 (Union-Find/HDBSCAN 변형 A/B) | 7~22개, 4~9/9 (과분리) | 5~27개, 2~8/9 | 표본이 적어 노이즈 증폭 |
+
+Island 단위는 안정적이지만 해상도가 낮고(AI Researcher의 진짜 다중 구조를 못 봄), Topic 단위는 해상도는 높지만 표본 부족으로 노이즈에 취약하다 — **Stability ↔ Resolution 트레이드오프**.
+
+### Decision
+`docs/algorithm_limitations.md`에 **Finding #005**(Aggregation Level Trade-off) 신설. 오늘 시도한 4가지(Merge-only, Split, Topic Graph Union-Find, Topic HDBSCAN 변형 A/B)는 겉보기엔 다른 알고리즘이었지만 전부 "의사결정 계층을 Island/Topic 중 어디에 둘 것인가"를 바꾼 것뿐이었다는 게 이번 실험으로 명확해졌다. 다음 세션은 구현이 아니라 설계 세션으로 시작한다 — **Open Question: "Night Batch의 본질은 더 좋은 클러스터링을 찾는 것인가, 아니면 문제가 있는 Island만 최소한으로 수정하는 것인가?"** Backend User는 Online 결과가 이미 좋은데 Night Batch가 이걸 다시 건드리는 것 자체가 문제일 수 있다 — "전체 재구성"이 아니라 "의심스러운 Island만 선택적으로 재평가"하는 방향이 다음 실험 후보다(미설계).

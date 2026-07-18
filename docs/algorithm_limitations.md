@@ -561,7 +561,68 @@ Graph 실험 → 체이닝 발견 → Finding #004 → 그래서 밀도 기반�
 실패하는 걸 직접 확인한 뒤의 선택이다.
 
 ### Status
-미해결 (Open). 다음 실험(#25, 미실행): Topic-level HDBSCAN이 Backend
-User는 1개로, AI Researcher는 여러 개(Foundation Model / Application AI
-등)로 자연스럽게 갈리면서 Topic Duplication Rate가 낮게 유지되는지
-검증한다.
+**업데이트 (Experiment #25)**: Topic-level HDBSCAN을 두 가지 변형(Topic
+centroid 직접 클러스터링 / scrap 레벨 HDBSCAN 라벨로 Topic 재그룹화)으로
+시도했지만 **둘 다 Backend User마저 악화시켰다**(최선의 경우도 7개
+Island/4~9 중복 — 원래 Merge-only의 1개/0%보다 나쁨). 원인은 체이닝이
+아니라 더 근본적인 문제였다 — Finding #005 참고. Finding #004
+자체(pairwise threshold의 체이닝)는 여전히 유효한 관찰이지만, 그
+대안(Topic-level HDBSCAN)도 실패하면서 문제가 "어떤 알고리즘을 쓰는가"가
+아니라는 게 분명해졌다.
+
+---
+
+## Finding #005: Aggregation Level Trade-off — Island 단위와 Topic 단위는 반대 방향으로 실패한다
+
+### Claim
+Night Batch의 의사결정을 Island 단위로 하느냐 Topic 단위로 하느냐는 단순한
+구현 선택이 아니라 **Stability ↔ Resolution 트레이드오프**를 만든다. Island
+단위는 여러 Topic의 스크랩을 뭉뚱그려 판단하기 때문에 embedding noise가
+평균화되어 안정적이지만, 그만큼 해상도가 낮아서 진짜 여러 의미 공간이 섞인
+Island(AI Researcher의 과병합)를 못 알아본다. Topic 단위는 해상도가 높아
+이론적으로는 더 정확할 수 있지만, 단위당 표본(스크랩)이 너무 적어서
+embedding noise가 오히려 증폭된다.
+
+### Evidence — 오늘 시도한 4가지 접근의 정리
+| 접근 | 단위 | Backend User | AI Researcher |
+|---|---|---|---|
+| Merge-only (Experiment #21) | Island | 1개, 0% (안정적) | 6개, 77.8% (과병합 못 고침) |
+| Split + 재-Merge (Experiment #23) | Island | 후보 없음(정상) | 8개, 88.9%(악화) |
+| Topic Graph, Union-Find (Experiment #24) | Topic | 안정 구간 없음(체이닝) | 안정 구간 없음(체이닝) |
+| Topic HDBSCAN, 변형 A/B (Experiment #25) | Topic | 최선 7개, 4~9/9 (Merge-only보다 나쁨) | 최선 5개, 2/9 (개선됐지만 대가가 큼) |
+
+겉보기에 4가지는 서로 다른 알고리즘(Merge, Split, Union-Find Graph,
+HDBSCAN)이지만, 전부 "Island 단위냐 Topic 단위냐"라는 하나의 축 위에
+있다. Island 단위는 항상 Backend User에서 강했고 AI Researcher에서
+약했다. Topic 단위는 그 반대 방향으로 실패했다(AI Researcher는 개선
+여지가 있었지만 Backend User가 오히려 나빠짐) — 정확히 반대 방향의
+실패라는 게 이 Finding의 핵심 증거다.
+
+### Root Cause
+표본 크기 문제다. Island는 평균 10~15개 스크랩을 담고 있어 평균화 효과가
+크지만, 이 프로젝트의 온라인 단계는 Topic을 21~27개까지 잘게 만들어서
+(71개 스크랩 기준 Topic당 평균 3개 미만) Topic 단위 통계는 노이즈에
+취약하다. Scrap 레벨 HDBSCAN 자체도 Backend User를 완벽한 1개 클러스터로
+안 만든다("58+7+noise 6") — Island 단위 다수결에서는 이 노이즈가
+평균화되어 가려지지만, Topic 단위로 내리면 그대로 드러난다.
+
+### Implication
+지금까지의 질문("어떤 Merge/Split/Graph 알고리즘이 더 나은가")은 잘못된
+질문일 수 있다. 진짜 질문은 **"Night Batch가 어느 계층(Scrap/Topic/
+Island)에서 의사결정을 내려야 하는가"**다. 그리고 이 질문 뒤에는 더 근본적인
+질문이 있다:
+
+> **Open Question**: Night Batch의 본질은 "더 좋은 클러스터링을 찾는 것"인가,
+> 아니면 "문제가 있는 Island만 최소한으로 수정하는 것"인가?
+
+지금까지의 모든 Night Batch 버전(v0 Merge/Split, v1 Union-Find Topic
+Graph, v2 Topic HDBSCAN)은 암묵적으로 "세계 전체를 다시 평가한다"고
+가정했다. 하지만 Backend User는 애초에 Online 결과가 이미 좋았는데,
+Night Batch가 이걸 다시 건드리면서 오히려 나빠진 사례가 여러 번
+나왔다(변형 A/B 둘 다). **"전체 재구성"이 아니라 "의심스러운(purity가
+낮은) Island만 선택적으로 재평가"하는 방향이 다음 후보다** — 아직
+설계되지 않았다.
+
+### Status
+미해결 (Open). 다음 세션은 구현이 아니라 **설계 세션**으로 시작한다 —
+위 Open Question에 답하는 것이 Experiment #26 이전에 먼저 필요하다.
