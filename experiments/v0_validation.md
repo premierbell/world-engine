@@ -1381,3 +1381,55 @@ Research Question #4("Duplication은 어떤 신호로 근사할 수 있는가?")
 다른 종류의 신호(예: 여러 candidate가 top-k Anchor 후보를 얼마나
 공유하는지 같은 구조적 신호)를 탐색한다. Fragmentation Penalty(λ2 스윕,
 Experiment #36)는 신뢰할 만한 입력 신호가 나오기 전까지 보류한다.
+
+## Experiment #36: Structural Co-candidacy Signal - Similarity 계열 신호 탐색의 마지막 시도
+날짜: 2026-07-18
+
+### Hypothesis
+두 candidate의 직접 embedding 유사도(Experiment #35)는 "같은 실제
+주제인가"를 구분하지 못했다. 대신 구조적 신호 - 두 candidate가 어떤
+Anchor들을 후보로 바라보고 있는지(top-k overlap, 전체 Anchor에 대한
+점수 벡터 상관관계) - 가 direct similarity보다 판별력이 있는지 확인한다.
+
+### Data
+Experiment #35와 같은 배치(Day7/Day30)에서, 같은 실제 주제 쌍/다른 실제
+주제 쌍 각각에 대해 세 가지 신호를 비교: direct pairwise similarity(대조군),
+top-3 Anchor Overlap(Jaccard), score vector correlation(candidate의
+전체 Anchor 점수 벡터끼리의 cosine)(experiment_structural_signal.py).
+
+### Result
+| 신호 | Backend 차이(같은-다른) | AI Researcher 차이(같은-다른) |
+|---|---|---|
+| Direct Pairwise Similarity (대조군) | +0.026 | +0.047 |
+| Top-3 Anchor Overlap | +0.001 | -0.006 |
+| Score Vector Correlation | -0.006 | -0.001 |
+
+두 구조적 신호 모두 같은/다른 주제 쌍을 사실상 구분하지 못했다 - 이미
+약했던 Direct Similarity보다도 판별력이 없거나(거의 0) 방향이
+뒤집혔다(음수). Score Vector Correlation 자체가 절댓값으로 0.96~0.98에
+달했다 - 같은 주제든 다른 주제든 거의 모든 candidate가 서로 거의
+동일한 패턴으로 Anchor를 선호한다는 뜻이다.
+
+### Insight
+소수의 "허브" Anchor가 거의 모든 candidate의 선호 순위를 지배하고
+있어서, "같은 Anchor를 바라보는가"는 실제 주제 동일성과 거의 무관하다 -
+Experiment #32에서 확인한 Anchor 경쟁(94~96%)의 원인을 거꾸로 보여주는
+결과이기도 하다(Finding #004 허브 체이닝과 같은 계열의 현상).
+
+Margin(#29) → Representation(#30/31) → Direct Similarity(#35) → 구조적
+신호(#36)까지, cosine similarity에서 파생 가능한 신호 네 가지가 전부
+독립적으로 "같은 실제 주제인가"를 판별하는 데 실패했다. 이건 개별 신호
+설계의 문제가 아니라 **이 embedding 공간에서 cosine similarity로 유도
+가능한 어떤 신호도 Topic Identity 판별에 충분하지 않을 가능성**을
+가리킨다.
+
+### Decision
+`docs/algorithm_limitations.md`에 **Finding #008**(Embedding Similarity
+Encodes Semantic Relatedness, Not Topic Identity) 신설 - Experiment
+#29~#36을 하나의 연구 축으로 마무리한다. **Similarity-derived
+signals(Margin, Pairwise Similarity, Anchor Overlap, Score Correlation)를
+이용한 Duplication 근사는 더 이상 진행하지 않는다** - 네 가지 독립적인
+접근이 모두 "같은 Topic인지"를 안정적으로 판별하지 못했다. 이후 연구는
+similarity의 활용법이 아니라, Topic identity를 정의하는 다른 정보원이
+필요한지를 연구 대상으로 전환한다. `docs/anchor_model.md` Research
+Question #4를 Closed로 갱신하고 Research Question #5를 신설한다.
