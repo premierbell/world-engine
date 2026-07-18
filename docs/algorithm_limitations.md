@@ -362,6 +362,18 @@ World Engine은 이 5개 도메인을 하나의 상위 의미 공간으로 취�
   Island가 다시 둘 이상으로 갈라질 수 있다 — 그건 실패가 아니라 World
   Engine이 "정해진 섬을 유지하는 시스템"이 아니라 "데이터가 보여주는
   섬을 발견하는 시스템"이라는 증거다.
+- **표현 수정 (Experiment #22 이후)**: "Programming = 항상 하나의 Mega
+  Island"라고 쓰지 않는다. Backend User(Experiment #21)에서는 실제로
+  하나의 Island로 수렴했지만, AI Researcher(Experiment #22)에서는 같은
+  Programming 상위 공간 안에서도 Foundation Model(Transformer/RLHF/
+  Diffusion)과 Application AI(Agent/Prompt Engineering/Evaluation) 같은
+  여러 하위 의미 공간이 offline HDBSCAN에서 뚜렷이 분리됐다. 정확한
+  표현은: **"Programming은 하나의 상위 의미 공간이며, 실제 Island
+  구성은 사용자의 관심 밀도에 따라 하나 또는 여러 개의 하위 의미
+  공간으로 나타날 수 있다."** `growth_rules.md`의 City 개념과 연결하면
+  Programming City 안에 Backend District/Infrastructure District/
+  Foundation Model District/Agent District처럼 여러 District가 있는
+  구조에 가깝다 — 자세한 원인은 Finding #003 참고.
 
 **Sports-Finance: Watch Metric #001로 보류, 제품 설계에 반영하지 않음.**
 Programming과 달리 결과는 반복되지만(Experiment #2/#8/#12/#13/#15/#16)
@@ -408,5 +420,73 @@ Sensitivity는 없앴지만 "재계산 시점마다 세계가 달라질 수 있�
 D는 "낮에는 실시간 성장(Online), 밤에는 세계 정리(Batch)"로 두 요구를
 분리한다 — 사용자가 스크랩을 저장하는 순간의 즉각적 피드백(Online)은
 유지하면서, 잘못 배치된 섬을 정리하는 책임은 사용자가 보지 않는 시점(배치)에
-분리해서 진다. 현재는 **D 쪽으로 무게가 기울어 있으나, 아직 D를 실제로
-프로토타이핑해서 검증한 실험은 없다** — 다음 실험 후보로 남겨둔다.
+분리해서 진다. **D를 Night Batch v0(Merge-only)로 실제 프로토타이핑해서
+검증했다(Experiment #21/#22)** — Backend User에서는 fragmentation을
+완전히 해소했지만, AI Researcher에서는 Merge만으로 부족하다는 것도
+확인됐다(Finding #003). D 방향 자체는 유지하되, Merge 외에 Split이
+추가로 필요하다는 것이 다음 구현 목표다.
+
+---
+
+## Finding #003: Merge-only Hybrid는 Online 단계에서 이미 과병합된 Island를 고치지 못한다
+
+### Claim
+Night Batch v0(Merge-only)는 "여러 Island로 쪼개진(fragmented) 상태"는
+효과적으로 고치지만, "이미 하나로 지나치게 뭉친(over-merged) Island"는
+고치지 못한다. Merge는 서로 다른 Island를 합치는 연산이라, Island 하나
+내부가 이미 여러 의미 공간을 담고 있는 문제에는 애초에 적용할 수 없다 —
+이 경우엔 Split이 필요하다.
+
+### Evidence — Backend User vs AI Researcher (Experiment #21/#22)
+같은 방법론(71개 스크랩, Day 1/7/30, Online-only → Night Batch v0)을 두
+페르소나에 적용:
+
+| Persona | Online-only Island 수 | +Night Batch | Topic 중복률 (Before→After) |
+|---|---|---|---|
+| Backend User (#21) | 5 | **1** | 88.9% → **0.0%** |
+| AI Researcher (#22) | 7 | 6 | 77.8% → **77.8%(변화 없음)** |
+
+Backend User는 Merge-only만으로 완전히 해소됐지만, AI Researcher는 거의
+그대로였다. 원인을 추측 대신 직접 관찰했다(Experiment #22, 파라미터는
+건드리지 않고 구조만 관찰):
+
+- offline HDBSCAN이 AI Researcher의 71개 스크랩에서 **10개 클러스터 +
+  Noise 20개(28%)**를 만들었고, 각 클러스터가 원래 실제 Topic과 거의
+  1:1로 대응했다(`#0=Transformer`, `#1=VectorDB`, `#4=Diffusion`,
+  `#6=RLHF` 등 대부분 순수 클러스터). Backend User 때 HDBSCAN이 9개
+  Topic을 **하나의** 클러스터로 몰아준 것과 정반대다.
+- Online 단계에서 이미 9개 Topic이 전부 섞여버린 거대 Island(#0)의
+  purity가 **0.20**밖에 안 됐다 — 어떤 단일 HDBSCAN 클러스터와도 강하게
+  안 맞는다는 뜻이다. Night Batch가 이 Island를 다른 Island와 합치지
+  않은 건 버그가 아니라 **Minimum Change Principle(Invariant #5)이
+  의도대로 애매한 후보를 걸러낸 것**이다.
+
+### Root Cause
+Merge-only는 "offline 클러스터가 Online Island들의 합집합"이라고
+암묵적으로 가정한다. 하지만 Online Island가 처음부터 여러 의미 공간을
+담고 있으면(Finding #001의 과병합), offline 정제에 필요한 연산은 Merge가
+아니라 Split이다 — 서로 다른 Island를 합치는 연산으로는 하나의 Island
+내부를 쪼갤 수 없다.
+
+### Implication
+- Backend User와 AI Researcher의 차이는 데이터 품질 문제가 아니라, **두
+  페르소나의 관심사 자체가 다른 구조를 갖고 있다는 증거**다 — Backend
+  User의 9개 Topic은 실제로 하나의 조밀한 의미 공간(Programming
+  Mega Island)을 이루지만, AI Researcher의 9개 Topic은 Foundation
+  Model(Transformer/RLHF/Diffusion)과 Application AI(Agent/Prompt
+  Engineering/Evaluation) 등 여러 자연스러운 하위 공간으로 이미 갈라져
+  있다. Product Decision #002의 "Programming = 하나의 상위 의미 공간"은
+  유지하되, "항상 하나의 Island"라는 표현은 위 Product Decision #002
+  절의 "표현 수정" 항목으로 완화했다.
+- Hybrid Architecture(Step 5.5)의 다음 구현 목표는 **Split**이다 — Merge는
+  "언제 효과가 있는지(fragmentation)"와 "언제 아무것도 안 하는 게
+  맞는지(genuinely ambiguous)"를 이미 증명했으므로, 남은 공백은 "Online
+  단계에서 만들어진 과병합 Island를 어떻게 쪼갤 것인가"뿐이다.
+
+### Status
+**Resolved (Need Split).** 원인은 명확히 규명됐다 — Merge-only의 한계가
+아니라 설계된 범위(Merge)를 벗어난 문제였다는 것이 확인됐다. 다음
+실험/구현은 Split Prototype(Step 5.5 v1.1)이다: 언제 Split을 트리거할지
+(예: Island의 purity가 낮고 내부에 여러 dominant HDBSCAN 클러스터가
+공존할 때), 어떤 기준으로 나눌지(offline 클러스터 경계를 그대로 따를지,
+Topic 단위로 재배치할지)를 설계해야 한다 — 아직 미설계.

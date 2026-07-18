@@ -648,3 +648,26 @@ Night Batch 적용 후 9개 실제 주제(Spring/JPA/Redis/Kafka/Docker/AWS/Kube
 - `docs/evaluation_metrics.md`에 **Topic Duplication Rate**를 정식 지표로 추가.
 - `docs/hybrid_architecture.md`에 **Hybrid Validation Checklist** 신설 — Backend User 외 페르소나(AI Researcher, Mixed Engineering User, Sports User, Investor)와 Multi-user, Sports+Finance Boundary Case 등으로 검증 범위를 넓히는 로드맵을 백로그로 남긴다.
 - PR 결론은 "Night Batch가 Finding #001을 해결했다"가 아니라 **"Night Batch v0가 이 realistic longitudinal 시나리오에서 fragmentation을 해소했다 — 일반화는 향후 과제"**로 제한한다.
+
+## Experiment #22: Offline HDBSCAN Structure Inspection (AI Researcher)
+날짜: 2026-07-18
+
+### Hypothesis
+Hybrid Validation Checklist의 다음 항목으로 AI Researcher User(Transformer/RLHF/Diffusion/VectorDB/Fine-tuning/Evaluation/Multimodal/Agent/Prompt Engineering, 71개, Backend User와 동일한 Day 1/7/30 구조)를 Experiment #21과 같은 방식(Online-only vs Online+Night Batch)으로 먼저 돌려봤더니, Island 7→6, Topic 중복률 77.8%→77.8%(변화 없음)로 Backend User와 완전히 다른 결과가 나왔다. 원인을 추측하지 않고 직접 확인한다 — 파라미터(purity_threshold 등)는 건드리지 않고 HDBSCAN 구조와 Online Island의 purity 분포만 관찰한다.
+
+### Data
+같은 AI Researcher 데이터셋(`ai_researcher.json`, 71개)의 전체 스크랩에 night_batch()와 동일한 기본 파라미터(min_cluster_size=3, min_samples=1)로 offline HDBSCAN을 돌려 클러스터 구성을 관찰하고, Online-only로 만들어진 각 Island가 어떤 클러스터에 얼마나 순수하게(purity) 속하는지 계산(`experiment_hdbscan_inspection.py`).
+
+### Result
+- HDBSCAN 결과: **10개 클러스터 + Noise 20개(28%)**. 각 클러스터가 원래 실제 Topic과 거의 1:1로 대응(`#0=Transformer(6)`, `#1=VectorDB(3)`, `#4=Diffusion(5)`, `#6=RLHF(5)` 등 대부분 순수 클러스터) — Backend User 때 9개 Topic을 **하나의** 클러스터로 몰아준 것과 정반대.
+- Online 단계에서 9개 Topic이 전부 섞인 거대 Island(#0)의 purity는 **0.20** — 어떤 단일 HDBSCAN 클러스터와도 강하게 안 맞음.
+
+### Insight
+Night Batch가 AI Researcher에서 아무 것도 안 한 건 실패가 아니라 **Minimum Change Principle이 의도대로 애매한 후보(purity 0.20)를 걸러낸 것**이다. Backend User와 AI Researcher의 차이는 데이터 품질이 아니라 **두 페르소나의 관심사 구조 자체가 다르다는 증거**다 — Backend User의 9개 Topic은 실제로 하나의 조밀한 의미 공간을 이루지만, AI Researcher의 9개 Topic은 Foundation Model(Transformer/RLHF/Diffusion)과 Application AI(Agent/Prompt Engineering/Evaluation) 등 여러 자연스러운 하위 공간으로 이미 갈라져 있다.
+
+더 근본적으로: **Merge-only는 "offline 클러스터가 Online Island들의 합집합"이라고 암묵적으로 가정하는데, Online 단계에서 이미 여러 의미 공간이 하나의 Island로 뭉쳐버렸다면(Finding #001의 과병합) 필요한 연산은 Merge가 아니라 Split**이다. 이번 실험으로 "Night Batch가 부족한가?"라는 질문이 "Merge가 아니라 Split이 필요한 상황을 처음으로 관측했다"로 바뀌었다.
+
+### Decision
+- `docs/algorithm_limitations.md`에 **Finding #003**(Merge-only Hybrid는 Online 단계에서 이미 과병합된 Island를 고치지 못한다, Status: Resolved — Need Split) 신설.
+- Product Decision #002의 "Programming = 항상 하나의 Mega Island" 표현을 "Programming은 하나의 상위 의미 공간이며, 실제 Island 구성은 사용자의 관심 밀도에 따라 하나 또는 여러 개의 하위 의미 공간으로 나타날 수 있다"로 완화.
+- `docs/hybrid_architecture.md`의 Hybrid Validation Checklist에서 AI Researcher를 체크하고, **우선순위를 재조정** — Mixed Engineering User/Sports User/Investor/Multi-user/Sports+Finance Boundary Case보다 **Split Prototype(Step 5.5 v1.1) 설계가 먼저** 와야 한다는 결정. Split 없이는 나머지 검증도 AI Researcher와 같은 "Merge만으로 설명 안 되는 결과"에 부딪힐 가능성이 크기 때문.
