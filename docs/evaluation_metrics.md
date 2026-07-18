@@ -11,8 +11,10 @@ V0에서 알고리즘을 검증하기 위해 쓰는 지표 정의. 지표 자체
 **용도**: 입력 텍스트 길이(Title/Summary/Body)를 얼마나 늘릴지에 대한 비용 대비 효과 판단.
 **주의**: `Gap / Total Tokens`(평균 효율)는 분모가 작은 쪽이 항상 유리한 구조적 편향이 있어 사용하지 않는다 (Evaluation Metric Update #1).
 
-## Topic Purity (TODO)
-정의 미정 — 하나의 Topic(건물) 내부 스크랩들이 실제로 같은 하위 주제인지 측정할 지표. Step 5(Label Generation) 이후 정의 예정.
+## Topic Purity (Finding #006, Experiment #27에서 정의)
+**Definition**: (모든 Topic의 "다수결 실제 주제" 스크랩 수 합) / (전체 스크랩 수) — 가중평균이라 큰 Topic의 오염이 더 크게 반영된다. 1.0이면 모든 Topic이 완벽히 순수, 낮을수록 오염이 심하다.
+**용도**: 하나의 Topic(건물) 내부 스크랩들이 실제로 같은 하위 주제인지 측정. Island Order Sensitivity(Finding #001, Experiment #9/#10)와 같은 방법론을 Topic 레벨에 적용할 때(같은 데이터, 순서만 바꿔 반복 실행) 이 지표의 변동폭으로 Topic 형성의 순서 의존성을 정량화한다.
+**주의**: "실제 주제(ground truth topic)"가 있는 golden/virtual dataset에서만 계산 가능하다 — Topic Duplication Rate와 같은 제약.
 
 ## Island Stability (TODO)
 정의 미정 — 새 스크랩이 추가돼도 기존 Island 분류가 얼마나 안 흔들리는지 측정할 지표. `map_layout.md`의 "좌표는 계산 결과가 아니라 영속 상태" 원칙과 연결됨.
