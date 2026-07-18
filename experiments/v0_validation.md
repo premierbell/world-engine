@@ -1797,3 +1797,205 @@ Evidence로 추가한다(새 Finding 신설 안 함 - Finding #008의 결론을 
 신호로 쓸 것인가"로 완전히 좁혀진다 - 아직 새 질문에 정식 번호를 매기지
 않는다(다음 세션에서 구체화). `docs/anchor_model.md` Research Question
 #7을 Closed로 갱신.
+
+## Research Question #8: Can Topic Identity be recovered from pairwise semantic judgment instead of independent document features?
+날짜: 2026-07-19
+
+Similarity/Tag/Graph/반복관측까지 실패한 신호들은 전부 "문서 하나(또는
+그 문서에서 독립적으로 계산 가능한 property)"였다. 후보 셋(출처
+메타데이터, Pairwise LLM Judgment, 사용자 피드백 루프) 중 **Pairwise
+LLM Judgment**를 선택 - 문서 A/B를 동시에 보여주고 "같은 구체적 주제를
+다루는가"를 직접 점수로 받는 방식으로, 신호의 단위가 Document
+Property가 아니라 Document Relation이라는 점에서 질적으로 다르다.
+ai_rules.md Rule 1과도 충돌 안 함(AI는 관계 점수만 제공, 최종 결정은
+threshold로 알고리즘이 함).
+
+## Experiment #45: Pairwise LLM Judgment - Signal Existence Test
+날짜: 2026-07-19
+
+### Hypothesis
+"Pairwise LLM score가 Anchor Model에 넣으면 품질이 좋아지는가"는 너무
+큰 질문이다. 먼저 아주 작게: **LLM Pairwise Score가 실제로 같은 Topic과
+다른 Topic을 갈라내는가?**만 확인한다. Anchor/CREATE/ATTACH는 전혀
+안 쓴다.
+
+### Data
+AI Researcher에서 9개 Topic에 걸쳐 18개 스크랩을 층화 표집(topic당
+약 2개), 153쌍 전부에 `OpenAIPairwiseJudge`(`pairwise_judge.py`, 신설)
+로 0~1 점수를 매기고, 같은/다른 Topic 쌍으로 나눠 비교(ROC-AUC 포함,
+`experiment_pairwise_llm_judgment.py`).
+
+### Result
+같은 Topic 쌍(n=9) mean=0.289, 다른 Topic 쌍(n=144) mean=0.010 - 차이
++0.279, **ROC-AUC 0.820**. 지금까지 시도한 신호(Direct Similarity
++0.026~0.047, Freeform Tag +0.011, Tag Graph 거의 0)보다 압도적으로
+강하다.
+
+### Insight
+처음으로 뚜렷한 긍정적 신호다. 다만 표본이 극히 작다(같은 Topic 쌍
+n=9) - "LLM이 Topic Identity를 복원했다"가 아니라 "관계를 직접 물어보면
+독립 신호들보다 훨씬 많은 정보를 제공한다"까지만 증명됐다는 걸 명확히
+구분한다. Document Property 계열(Similarity/Tag/Graph)은 전부 실패했고
+Document Relation은 처음으로 성공 신호를 보였다는 게 핵심 구도다.
+
+### Decision
+표본을 늘리기 전에 **무엇 때문에 성공했는가**부터 확인한다
+(Experiment #46) - LLM이 진짜 개념을 이해해서 맞췄는지, 단순히 표면적
+단어 일치에 의존했는지 구분하지 않으면 이 신호를 신뢰할 수 없다.
+
+## Experiment #46: Pairwise LLM Judgment Error Analysis
+날짜: 2026-07-19
+
+### Hypothesis
+경계 사례(같은 Topic인데 낮은 점수 - False Negative 후보, 다른 Topic
+인데 상대적으로 높은 점수 - False Positive 후보)를 골라서 LLM에게
+점수와 함께 근거(rationale)를 받아 사람이 직접 분류한다: Type
+A(Genuine Semantic) / Type B(Lexical Shortcut) / Type C(우연/오류).
+
+### Data
+같은 Topic·낮은 점수 3건, 다른 Topic·상대적으로 높은 점수 7건을
+골라 재질의(score+reason 형식)해서 근거를 확인
+(`experiment_pairwise_error_analysis.py`).
+
+### Result
+검토한 10건 전부 **Type A**였다 - Type B/C는 하나도 없었다. 다만
+패턴이 하나 드러났다: 같은 Topic인데 낮은 점수를 받은 쌍은 전부
+"Transformer 안의 Sliding Window Attention vs Layer Normalization"처럼
+**같은 Topic 안의 서로 다른 구체적 메커니즘**이었고, 다른 Topic인데
+상대적으로 높은 점수를 받은 쌍은 대부분 "Evaluation"처럼 여러 Topic에
+걸쳐 적용되는 범주 개념이 낀 경우였다.
+
+### Insight
+이건 LLM의 오류가 아니라 **Virtual Dataset의 ground truth Topic 라벨이
+단일 해상도가 아니라는 것**을 드러낸다 - "Transformer"라는 라벨 하나가
+여러 구체적 하위 메커니즘을 뭉뚱그리고 있고, LLM은 "같은 상위 Topic"과
+"같은 구체적 메커니즘"을 정확히 구분해서 판단하고 있었다.
+
+### Decision
+Experiment #47로 이 관찰을 정량화한다 - 표본을 5배로 늘리는 동시에,
+각 pair를 Case A(같은 Topic+같은 mechanism)/B(같은 Topic+다른
+mechanism)/C(다른 Topic)로 라벨링해서 mean score를 따로 비교한다.
+
+## Experiment #47: Pairwise LLM Judgment at Scale, with Granularity Labels
+날짜: 2026-07-19
+
+### Hypothesis
+Case A/B/C 각각의 점수 분포가 계단식으로 갈린다면(A > B > C), "LLM이 판단을
+못 한다"가 아니라 "ground truth Topic 라벨 자체가 여러 해상도를 섞고
+있다"는 게 정량적으로 증명된다.
+
+### Data
+필자가 AI Researcher 71개 스크랩 전체를 읽고 mechanism sub-label을
+직접 주석(원 데이터셋 설계자가 정한 게 아님 - 이 실험만을 위한 주석,
+주관 개입 가능성 있음). Case A 쌍(같은 mechanism)이 최소 1개씩 보장되게
+36개 스크랩을 표집(topic당 최대 4개, Case A 쌍은 무조건 포함), 630쌍
+전부 채점(`experiment_pairwise_granularity.py`).
+
+### Result
+| Case | 설명 | n | mean score |
+|---|---|---|---|
+| A | 같은 Topic + 같은 mechanism | 6 | 0.483 |
+| B | 같은 Topic + 다른 mechanism | 48 | 0.135 |
+| C | 다른 Topic | 576 | 0.006 |
+
+전체 ROC-AUC(같은 Topic 여부 기준)는 0.820(n=9)에서 **0.730**(n=54)으로
+재확인됐다 - 표본이 커지며 낙관적 초기 추정이 다소 낮아졌지만 여전히
+견고한 분리력이다.
+
+### Insight
+계단식 분리(0.483 → 0.135 → 0.006)가 뚜렷하다. 이건 "Ground Truth가
+이상하다"는 부정적 결론이 아니라, **Pairwise LLM Judgment가 Topic
+label보다 세밀한 semantic unit(mechanism)을 실제로 반영하고 있다**는
+긍정적 증거다 - LLM의 semantic resolution이 Virtual Dataset의
+resolution보다 높다.
+
+### Decision
+`docs/algorithm_limitations.md`에 **Finding #012**(Pairwise LLM
+Judgment Reflects a Finer Semantic Unit Than the Topic Label) 신설.
+다음은 "좋은 신호인가"가 아니라 **"좋은 신호가 실제 시스템(Purity/
+Duplication)을 개선하는가"**를 검증한다(Experiment #48) - 지금까지의
+연구에서 처음으로 신호 품질이 아니라 시스템 품질을 검증하는 실험.
+
+## Experiment #48: LLM-Reranked Attach - Does the Signal Improve System Quality?
+날짜: 2026-07-19
+
+### Hypothesis
+LLM을 검색기가 아니라 **reranker**로만 쓴다(비용 폭발 방지 + Rule 1
+유지): 기존 cosine으로 top-3 Anchor 후보를 뽑고(Recall), 그 top-3만
+Pairwise LLM Judgment로 재점수화해서 최종 Attach 여부를 결정한다
+(Precision). Control(기존 cosine attach, Experiment #28과 동일)과
+Treatment(LLM rerank)를 같은 방법론(Day1→7→30, Topic Purity/
+Duplication Rate)으로 직접 비교한다. world.py는 안 건드림(순수 실험
+스크립트, `experiment_llm_rerank_attach.py`).
+
+### Data
+llm_threshold를 0.2/0.3/0.4로 스윕, cosine attach_threshold=0.30(기존
+baseline)은 고정.
+
+### Result
+| | Control(Cosine) | Treatment(LLM Rerank, threshold=0.3) |
+|---|---|---|
+| Backend Purity | 0.437 | **0.845** |
+| Backend Duplication | 66.7% | 66.7%(동일) |
+| Backend Island 수 | 10 | **23**(2.3배) |
+| AI Researcher Purity | 0.437 | **0.761** |
+| AI Researcher Duplication | 88.9% | 88.9%(동일) |
+| AI Researcher Island 수 | 13 | **27**(2배) |
+
+Purity는 두 페르소나 모두 극적으로 개선됐지만, Duplication은 전혀
+개선 안 되고 Island 수가 2~2.3배로 폭증했다.
+
+### Insight
+LLM Rerank가 실패한 게 아니라 **매우 잘 동작했다** - 다만 LLM이 맞게
+판단한 대상(Mechanism)과 우리가 평가하는 대상(Topic)이 다르다.
+Experiment #47의 Case A(0.483)/B(0.135) 격차 때문에, llm_threshold
+(0.2~0.4)는 Case A(같은 mechanism)는 통과시키지만 Case B(같은 Topic,
+다른 mechanism)는 대부분 통과 못 시킨다 - 그 결과 각 Island는 내부적
+으로 매우 순수해지지만(Mechanism 단위로 쪼개져서), Topic 단위 중복은
+그대로 남는다.
+
+### Decision
+threshold를 바로 조정하지 않는다 - Experiment #49로 Case B와 Case C의
+점수 분포가 실제로 겹치는지부터 확인한다(겹치면 threshold 튜닝으로는
+근본적으로 해결 안 됨).
+
+## Experiment #49: Score Distribution Overlap Analysis (Case A/B/C)
+날짜: 2026-07-19
+
+### Hypothesis
+Case B와 Case C의 점수 분포가 많이 겹친다면 threshold를 아무리
+조정해도 해결 안 되고(Signal Separability 문제), 의외로 분리돼
+있다면 threshold sweep이 의미 있다.
+
+### Data
+Experiment #47에서 이미 계산된 캐시를 재사용(새 API 호출 없음) -
+Case A/B/C 각각의 전체 점수 분포(히스토그램 수준)를 직접 확인.
+
+### Result
+Case A(n=6): [0.0, 0.2, 0.3, 0.6, 0.9, 0.9]. Case B(n=48): 0.0이 27개,
+0.2가 11개, 0.3이 7개, 0.6~0.8이 3개. Case C(n=576): 0.0이 561개,
+0.2가 13개, 0.3/0.7이 1개씩. **score=0.2 지점에서 Case B(11개)와 Case
+C(13개)의 절대 개수가 거의 같다** - Case C의 모수(576)가 워낙 커서
+비율로는 작아도(2.6%) 절대 개수로는 Case B와 맞먹는 노이즈가 된다.
+
+threshold=0.2 기준(A∪B="같은 Topic"=54쌍 vs C="다른 Topic"=576쌍)으로
+계산하면: **Recall 48%(26/54), Precision 63%(26/41)**.
+
+### Insight
+Case B와 Case C는 완전히 분리되지도, 완전히 겹치지도 않는다 -
+**부분적으로 겹친다.** 이게 Experiment #48의 결과(Recall 부족으로
+Duplication 개선 실패)를 정량적으로 설명한다 - threshold=0.2에서도
+Recall이 48%뿐이라 진짜 같은 Topic인 candidate 중 절반 이상이 여전히
+새 Anchor로 빠졌다. **threshold를 어디에 두어도 Precision↑/Recall↓
+또는 Precision↓/Recall↑로 이동할 뿐 - 이건 threshold 최적화 문제가
+아니라 Signal Separability 문제다.**
+
+### Decision
+`docs/algorithm_limitations.md`에 **Finding #013**(Semantic Resolution
+Mismatch) 신설 - threshold sweep은 하지 않는다("threshold를 더
+튜닝하면 해결된다"는 가능성을 이 정량적 근거로 닫는다). Experiment
+#45~49를 하나의 연구 축으로 마무리하고, Research Question #8에
+답한다: **부분적으로 그렇다(Mechanism 수준에서는 강한 신호, Topic
+수준 직접 대체는 안 됨).** Research Question #9 신설: "Topic이라는
+것은 애초에 pairwise semantic judgment만으로 정의될 수 있는
+대상인가?" - `docs/anchor_model.md` 갱신.
