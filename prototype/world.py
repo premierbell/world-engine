@@ -742,6 +742,78 @@ class AttachTrace:
     anchor_scraps_before: list[str] | None = None  # ATTACH일 때만: 편입 직전 Anchor 구성 스냅샷
 
 
+def _cluster_new_scraps(
+    new_scrap_texts: list[str], vectors: dict[str, list[float]], min_cluster_size: int, min_samples: int
+) -> dict[int, list[str]]:
+    matrix = normalize(np.array([vectors[text] for text in new_scrap_texts]))
+    labels = HDBSCAN(
+        min_cluster_size=min_cluster_size, min_samples=min_samples, metric="euclidean", copy=True
+    ).fit_predict(matrix)
+    clusters: dict[int, list[str]] = defaultdict(list)
+    for text, label in zip(new_scrap_texts, labels):
+        clusters[label].append(text)
+    return clusters
+
+
+def _candidates_from_clusters(clusters: dict[int, list[str]]) -> list[list[str]]:
+    """night_batch_anchor가 실제로 attach/create 판단을 내리는 단위 그대로
+    후보 목록을 만든다 - noise(label -1)는 서로 묶지 않고 스크랩 하나씩
+    독립 후보로 쪼갠다, 그 외 라벨은 클러스터 전체가 하나의 후보다."""
+    candidates: list[list[str]] = []
+    for label, texts in clusters.items():
+        if label == -1:
+            candidates.extend([text] for text in texts)
+        else:
+            candidates.append(texts)
+    return candidates
+
+
+def _anchor_score(
+    centroid: list[float], anchor: Island, vectors: dict[str, list[float]], member_topk: int | None
+) -> float:
+    if member_topk is None:
+        return cosine_similarity(centroid, anchor.identity_vector)
+    member_sims = sorted((cosine_similarity(centroid, vectors[m]) for m in anchor.topics[0].scraps), reverse=True)
+    k = min(member_topk, len(member_sims))
+    return sum(member_sims[:k]) / k
+
+
+def compute_assignment_matrix(
+    confirmed_islands: list[Island],
+    new_scrap_texts: list[str],
+    vectors: dict[str, list[float]],
+    min_cluster_size: int = 3,
+    min_samples: int = 1,
+    member_topk: int | None = None,
+) -> tuple[list[list[str]], list[Island], list[list[float]]]:
+    """night_batch_anchor와 완전히 같은 클러스터링/점수 계산을 재사용하되,
+    attach 결정은 전혀 내리지 않고 (candidate x anchor) 유사도 행렬 그대로를
+    반환한다(Experiment #32) - "Attach가 정말 전역 최적화 문제인가?"(여러
+    candidate가 같은 Anchor를 두고 경쟁하는 상황이 실제로 있는가)를 최적화
+    구현 전에 먼저 관찰하기 위한 순수 진단용 함수다. Attach/Create 어느
+    쪽으로도 side effect가 없다 - confirmed_islands도 변경하지 않는다.
+
+    반환값: (candidates, anchors, matrix) - matrix[i][j]는 candidates[i]와
+    anchors[j] 사이의 점수(anchor_score, member_topk에 따라 centroid 또는
+    top-k 멤버 평균).
+    """
+    if not new_scrap_texts:
+        return [], list(confirmed_islands), []
+
+    clusters = _cluster_new_scraps(new_scrap_texts, vectors, min_cluster_size, min_samples)
+    candidates = _candidates_from_clusters(clusters)
+    anchors = list(confirmed_islands)
+
+    matrix: list[list[float]] = []
+    for texts in candidates:
+        centroid = (
+            vectors[texts[0]] if len(texts) == 1 else np.mean([vectors[t] for t in texts], axis=0).tolist()
+        )
+        matrix.append([_anchor_score(centroid, anchor, vectors, member_topk) for anchor in anchors])
+
+    return candidates, anchors, matrix
+
+
 def night_batch_anchor(
     confirmed_islands: list[Island],
     new_scrap_texts: list[str],
@@ -791,33 +863,17 @@ def night_batch_anchor(
     if not new_scrap_texts:
         return list(confirmed_islands)
 
-    matrix = normalize(np.array([vectors[text] for text in new_scrap_texts]))
-    labels = HDBSCAN(
-        min_cluster_size=min_cluster_size, min_samples=min_samples, metric="euclidean", copy=True
-    ).fit_predict(matrix)
-
-    clusters: dict[int, list[str]] = defaultdict(list)
-    for text, label in zip(new_scrap_texts, labels):
-        clusters[label].append(text)
+    clusters = _cluster_new_scraps(new_scrap_texts, vectors, min_cluster_size, min_samples)
 
     original_anchors: list[Island] = list(confirmed_islands)  # 비교 기준 스냅샷 - 배치 중 안 자란다
     result: list[Island] = list(confirmed_islands)
     next_id = (max((isl.id for isl in confirmed_islands), default=-1)) + 1
 
-    def anchor_score(centroid: list[float], anchor: Island) -> float:
-        if member_topk is None:
-            return cosine_similarity(centroid, anchor.identity_vector)
-        member_sims = sorted(
-            (cosine_similarity(centroid, vectors[m]) for m in anchor.topics[0].scraps), reverse=True
-        )
-        k = min(member_topk, len(member_sims))
-        return sum(member_sims[:k]) / k
-
     def find_best_two_anchors(centroid: list[float]) -> tuple[Island | None, float, float | None]:
         if not original_anchors:
             return None, -1.0, None
         scored = sorted(
-            ((isl, anchor_score(centroid, isl)) for isl in original_anchors),
+            ((isl, _anchor_score(centroid, isl, vectors, member_topk)) for isl in original_anchors),
             key=lambda pair: -pair[1],
         )
         best_isl, best_sim = scored[0]
