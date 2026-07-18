@@ -836,3 +836,80 @@ Finding #006 이후 바로 구현으로 들어가지 않고 "Topic의 생애주�
 
 ### Next Step
 `docs/anchor_model.md`의 Open Questions(Attach 판단 기준/threshold, 여러 candidate가 같은 Anchor를 두고 경쟁할 때 처리, Migration Event 트리거 조건, Provisional 상태 UX 노출 여부)부터 다음 세션을 시작한다 — 아직 구현은 시작하지 않았다.
+
+## Experiment #28: Anchor Model v0 구현 - 순서 독립성은 확인, attach_threshold만으로는 품질 목표를 달성하지 못함
+날짜: 2026-07-18
+
+### Hypothesis
+Anchor Model 설계(`docs/anchor_model.md`) 이후 첫 구현인 night_batch_anchor()가
+Finding #001/#006의 순서 의존성을 실제로 없애는지, Duplication Rate/Purity
+기준으로 쓸 만한 품질을 내는지 확인한다.
+
+### Data
+구현 중 체이닝 버그를 발견하고 고쳤다 — find_best_anchor()가 배치 처리 도중
+계속 자라는 result를 비교 대상으로 삼아서, 같은 배치 안에서 방금 생긴
+Anchor에 뒤이은 클러스터가 달라붙는 구조였다(Finding #004의 허브 체이닝이
+HDBSCAN-cluster 단위에서 재현된 것). 비교 대상을 배치 시작 시점의 고정
+스냅샷(original_anchors)으로 제한해서 고쳤다.
+
+Backend User/AI Researcher(day 1=5개/7=20개/30=46개, 총 71개)에 실제 운영
+패턴(Day1→Day7→Day30, 매번 그때까지의 Confirmed Anchor 위에서 새 스크랩만
+처리)을 재현. attach_threshold를 0.15~0.40으로 스윕(experiment_anchor_model.py).
+
+### Result
+1. 순서 독립성: 각 Day 배치 내부 순서를 3가지로 바꿔도 최종 Island 수/
+   Duplication Rate 완전히 동일(Backend=10개/66.7%, AI Researcher=13개/88.9%,
+   threshold=0.30).
+2. Duplication Rate는 threshold와 무관하게 고정: 0.15~0.40 전 구간에서
+   Backend=66.7%(6/9), AI Researcher=88.9%(8/9).
+3. Topic Purity는 단조 개선: 같은 구간에서 Backend 0.380→0.648,
+   AI Researcher 0.338→0.606.
+4. Island 개수도 함께 증가: threshold=0.40에서 Backend=14개,
+   AI Researcher=20개(실제 주제 수 9개 대비 과분할).
+5. Day1 초기 Anchor 가설(Day1이 너무 작아 빈약한 Anchor를 만든다)은
+   페르소나마다 다르게 나타남: AI Researcher는 Day1+Day7 병합 시 낮은
+   threshold(0.20~0.25)에서 Duplication(88.9%→77.8%)과 Purity(0.338→0.437)
+   둘 다 개선. Backend User는 반대로 병합 시 Purity가 악화(0.380→0.282)되며
+   Duplication만 개선(66.7%→44.4%). threshold≥0.35에서는 병합 여부와 무관하게
+   두 시나리오가 거의 수렴.
+
+### Insight
+- 체이닝 버그 수정은 확인됨 — 콜드스타트(단일 배치)로 재현하면 raw HDBSCAN
+  결과(Backend={58,7}+noise6, AI Researcher=10개 클러스터+noise20)와 정확히
+  일치하는 구성이 나온다. 수정 전에는 전부 1개로 뭉쳤었다.
+- Duplication Rate는 연구용 지표로 해상도가 부족하다 — "2개 이상 Island에
+  걸치면 무조건 중복"이라는 binary라서 threshold가 만들고 있는 점진적 품질
+  개선(Purity 상승)을 완전히 놓친다. 제품 지표로는 여전히 유효하지만,
+  알고리즘 튜닝의 연구 지표로는 Purity를 같이 봐야 한다.
+- Day1 가설은 부분적으로만 지지됨 — 단일 원인(초기 배치 크기)으로 설명되지
+  않는다는 것 자체가 결과다.
+- attach_threshold 조정만으로는 "실제 주제 수만큼의 Island"라는 목표에
+  가까워지지 않았다 — Purity를 높이면 Island 수도 같이 늘어난다. 붙였을 때
+  얼마나 순수한가와 얼마나 잘게 쪼개지는가가 attach_threshold라는 단일
+  파라미터에 묶여 있는 것으로 이번 실험 범위에서는 관찰됐다.
+
+### Decision
+- docs/algorithm_limitations.md Finding #004에 Evidence 4로 이번 체이닝
+  버그(및 수정)를 연결.
+- docs/evaluation_metrics.md의 Topic Duplication Rate 항목에 "연구 지표로는
+  해상도가 부족하다" 주의사항 추가.
+- Research Insight #001 신설(아래).
+- 다음 세션은 threshold 튜닝을 이어가지 않고, "attach 메커니즘 자체를
+  바꾸려면 무엇을 판단 기준으로 써야 하는가"를 새 Research Question으로
+  시작한다(nearest-anchor 단일 비교 대신 cluster 내부 일관성, top-k 후보
+  비교 등 - 아직 가설 없음).
+
+## Research Insight #001: Parameter Tuning Cannot Resolve the Precision–Fragmentation Trade-off
+Experiment #28에서 관찰. attach_threshold를 올리면 Topic Purity는 계속
+좋아지지만 Island 개수도 함께 계속 늘어난다 — "잘못 붙는 걸 줄이는 것"과
+"충분히 크게 뭉치는 것"이 이번 구현에서는 반대 방향으로 움직이는 것으로
+보였다. Experiment #28 범위(attach_threshold 0.15~0.40, nearest-anchor 단일
+비교 방식)에서는 threshold 조정만으로 이 Trade-off를 제거하는 지점은
+관찰되지 않았다 — attach 메커니즘 자체(nearest-anchor 단일 비교가 아닌
+다른 판단 기준)를 바꿔야 하는지가 다음 Research Question이다.
+
+### Next Step
+`docs/anchor_model.md`의 Open Questions는 여전히 유효하지만, 그보다 먼저
+"attach 메커니즘을 바꾸려면 무엇을 판단 기준으로 써야 하는가"(nearest-anchor
+단일 비교 대신 cluster 내부 일관성, top-k 후보 비교, density 기반 판단 등)를
+다음 세션의 Research Question으로 시작한다 — 아직 가설 없음.

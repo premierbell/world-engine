@@ -27,6 +27,7 @@ V0에서 알고리즘을 검증하기 위해 쓰는 지표 정의. 지표 자체
 **용도**: Fragmentation of User Interest(Experiment #20)를 정량화하는 지표. Island 개수나 Pairwise F1은 알고리즘 설정에 따라 값이 크게 흔들리지만, 이 지표는 "같은 관심사가 여러 섬에 흩어져 있다"는 사용자가 직접 체감하는 UX 문제를 그대로 측정한다.
 **우선순위**: Hybrid Architecture(Night Batch)를 평가할 때는 Island Count/F1보다 이 지표를 우선한다 — Experiment #21에서 Online-only 88.9% → Online+Night Batch 0.0%로 개선된 것을 핵심 결과로 기록.
 **주의**: "실제 주제(ground truth topic)"가 있는 golden/virtual dataset에서만 계산 가능하다. 실사용자 데이터에는 ground truth가 없으므로 대체 측정 방법(예: 사용자 설문, Label 유사도 클러스터링)이 V1에서 별도로 필요하다.
+**주의 2 (Experiment #28)**: "2개 이상 Island에 걸치면 무조건 중복"인 binary 지표라서, 알고리즘 파라미터(예: attach_threshold)가 만들고 있는 점진적인 품질 개선(오염 정도가 줄어드는 것)을 놓칠 수 있다. Topic Purity가 단조 개선되는데도 이 지표는 그대로였던 사례가 있었다. 따라서 알고리즘 연구에서는 Topic Purity를 1차 분석 지표, Topic Duplication Rate를 제품 품질 확인 지표로 함께 사용한다.
 
 ## Evaluation Layers: Canonical Taxonomy vs Semantic Evaluation (Experiment #13 이후)
 
