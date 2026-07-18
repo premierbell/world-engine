@@ -671,3 +671,58 @@ Night Batch가 AI Researcher에서 아무 것도 안 한 건 실패가 아니라
 - `docs/algorithm_limitations.md`에 **Finding #003**(Merge-only Hybrid는 Online 단계에서 이미 과병합된 Island를 고치지 못한다, Status: Resolved — Need Split) 신설.
 - Product Decision #002의 "Programming = 항상 하나의 Mega Island" 표현을 "Programming은 하나의 상위 의미 공간이며, 실제 Island 구성은 사용자의 관심 밀도에 따라 하나 또는 여러 개의 하위 의미 공간으로 나타날 수 있다"로 완화.
 - `docs/hybrid_architecture.md`의 Hybrid Validation Checklist에서 AI Researcher를 체크하고, **우선순위를 재조정** — Mixed Engineering User/Sports User/Investor/Multi-user/Sports+Finance Boundary Case보다 **Split Prototype(Step 5.5 v1.1) 설계가 먼저** 와야 한다는 결정. Split 없이는 나머지 검증도 AI Researcher와 같은 "Merge만으로 설명 안 되는 결과"에 부딪힐 가능성이 크기 때문.
+
+## Experiment #23: Split Prototype - Merge + Split Full Cycle
+날짜: 2026-07-18
+
+### Hypothesis
+Finding #003(Merge-only는 Online 단계에서 과병합된 Island를 고치지 못한다)에 대한 대응으로 `find_split_candidates`/`apply_split`(Split Trigger + Split Plan, Minimum Change Principle 적용)을 구현했다. AI Researcher에 Merge 이후 Split을 추가로 적용하면 Topic Duplication Rate가 더 내려갈 것으로 예상했다.
+
+### Data
+AI Researcher/Backend User 데이터셋에 Online-only → Night Batch(Merge) → Split(`experiment_split.py`)를 순서대로 적용하고 각 단계의 Island 수/Topic 중복률을 비교.
+
+### Result
+초기 구현에서 **버그 발견**: Split 적용 후 스크랩 총량이 71개→67개로 4개가 사라짐. 원인은 `find_split_candidates`가 스크랩이 전부 HDBSCAN Noise이거나 그룹 크기가 min_group_size 미만인 Topic을 그냥 버리고 있었기 때문 — 확신 없는 Topic은 survivor 그룹에 합쳐서 반환하도록 수정해 해결(71→71→71로 유실 없음 확인).
+
+버그 수정 후 재실행 결과:
+| Stage | Island 수 | Topic 중복률 |
+|---|---|---|
+| Online-only | 7 | 77.8% |
+| + Night Batch (Merge) | 6 | 77.8% |
+| + Split | 8 | **88.9%(악화)** |
+
+Split이 Island #0에서 Multimodal+Transformer(#6), Diffusion+Multimodal(#7)을 떼어냈는데, 이 조각들이 **이미 존재하던 다른 Island(#1, #3)와 겹치는 실제 주제를 다시 만들어냈다** — Multimodal이 #0/#1/#3/#6/#7 다섯 곳에 흩어짐.
+
+Split 직후 같은 Island 집합에 `night_batch`(Merge)를 한 번 더 돌려서(`run_night_batch`) 방금 떨어진 조각을 기존 Island와 다시 합치려 시도했지만 **효과 없음**(여전히 8개, 8/9 중복) — 기존의 작은 Island들(#1/#2/#3) 자체가 이미 여러 실제 주제가 섞인 애매한 다수결 라벨을 갖고 있어서, Island 단위 비교로는 새로 떨어진 조각과 서로를 못 찾는다.
+
+### Insight
+Split은 분리 대상 Island 하나만 보고 판단해서, 그 조각이 세계에 이미 존재하는 다른 Island와 겹치는지는 확인하지 않는다 — **local 최적화가 global 중복을 늘렸다.** Island 단위 재-Merge로 이를 고치려는 시도도 실패했는데, Island 자체가 이미 여러 실제 주제의 혼합체라서 Island 단위 "다수결 라벨" 비교가 너무 뭉툭하기 때문이다. 이는 Merge/Split을 Island 단위 개별 연산으로 반복 적용하는 접근 자체의 한계를 시사한다 — Boundary Topic Move(Topic 단위 이동)를 추가해도 "Move → 관계 변화 → 재-Merge → 재-Split → 재-Move"가 끝없이 반복되는 local optimization 패턴에 빠질 위험이 크다.
+
+### Decision
+Boundary Topic Move를 Island 단위 알고리즘으로 구현하지 않는다. 대신 `docs/hybrid_architecture.md`에 **Night Batch v2(Topic Graph Reconstruction)** 설계를 추가한다 — 핵심 원칙: "Night Batch의 최소 이동 단위는 Island가 아니라 Topic이다." Merge/Split/Boundary Move를 각각의 연산으로 두지 않고 "Topic Graph의 Connected Component 재계산" 하나로 통일한다.
+
+## Experiment #24: Topic Graph Reconstruction - Chaining Instability
+날짜: 2026-07-18
+
+### Hypothesis
+Night Batch v2(Topic Graph, `topic_graph_reconstruct`)를 Backend User/AI Researcher에 적용하면, Island 단위 접근에서 못 잡던 전역 중복을 Topic 단위 재계산으로 해소할 수 있을 것이다. 두 페르소나를 동시에 만족하는(Backend=1개 유지, AI Researcher=여러 개로 자연스럽게 갈리면서 중복은 낮은) edge_threshold 구간이 있는지 확인한다.
+
+### Data
+모든 Topic 쌍의 center_vector cosine similarity로 그래프를 만들고(edge_threshold 이상이면 연결), Union-Find로 Connected Component를 찾아 새 Island로 재구성. edge_threshold를 0.24(island_threshold 잠정 재사용)부터 0.60까지 스윕(`experiment_topic_graph.py`).
+
+### Result
+| Threshold | Backend User | AI Researcher |
+|---|---|---|
+| 0.24~0.35 | 1개, 중복 0% | 1개, 중복 0% |
+| 0.40 | 3개, 중복 2/9 | 3개, 중복 1/9 |
+| 0.45 | 7개, 중복 3/9 | 8개, 중복 4/9 |
+| 0.50 | 10개, 중복 5/9 | 13개, 중복 5/9 |
+| 0.55~0.60 | 13~15개, 중복 5~7/9 | 21~22개, 중복 7/9 |
+
+두 페르소나가 거의 동일하게 움직인다 — threshold를 조금만 올려도 "전부 하나"에서 "전부 쪼개지며 중복도 같이 증가"로 바로 건너뛴다. 두 페르소나를 동시에 만족하는 안정적인 중간 구간이 없다.
+
+### Insight
+원인은 pairwise threshold + Union-Find의 **체이닝(chaining)**이다 — 예를 들어 RLHF Topic이 거의 모든 다른 Topic과 0.5대 유사도를 가진 "허브" 역할을 해서, A-B와 B-C가 각각 threshold를 넘으면 A-C가 안 닮았어도 Union-Find가 셋을 하나의 Component로 묶어버린다. **이건 Experiment #6~7(Scrap 레벨 Greedy + 단일 Threshold가 안정적인 구간을 못 찾았던 문제)이 Topic 레벨에서 그대로 재현된 것**이다 — Scrap 레벨에서 Greedy+Threshold를 버리고 HDBSCAN(밀도 기반)으로 바꿔서 해결했던 것과 같은 구조의 문제가, Topic 레벨의 naive Union-Find 접근에서 다시 나타났다.
+
+### Decision
+`docs/algorithm_limitations.md`에 **Finding #004**(Pairwise Threshold Graph exhibits chaining instability) 신설 — Evidence로 Experiment #6~7(Scrap 레벨), Experiment #23(Island 단위 Split의 local-only 한계), Experiment #24(Topic 레벨 체이닝)를 연결한다. Union-Find(단일 threshold)를 Topic-level HDBSCAN으로 교체하는 게 다음 세션의 목표(**Experiment #25**, 미실행) — Experiment #22에서 HDBSCAN이 AI Researcher의 scrap 레벨 구조를 실제로 잘 나눠줬던 방법론을 이번엔 Topic 레벨(더 적고 밀도 높은 데이터 포인트)에 그대로 적용한다.

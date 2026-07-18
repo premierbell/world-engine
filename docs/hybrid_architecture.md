@@ -180,3 +180,99 @@ Night Batch v0가 다른 시나리오에서도 fragmentation을 해소하는지 
 - 좌표 불변 원칙과의 관계(위 "좌표 불변 원칙과의 관계" 절 참고) — 원래
   Island는 자리를 지키고 떨어져 나온 조각만 새 좌표를 받는다는 설계를 그대로
   적용할 수 있는지 실제 구현으로 검증해야 한다.
+
+---
+
+## Night Batch v2 — Topic Graph Reconstruction (Finding #004 이후, v0 대체 설계)
+
+### 왜 v0(Island 단위 Merge/Split)를 계속 고치지 않는가
+
+Split Prototype을 실제로 구현하고 검증하는 과정(Experiment #23, Finding #004)에서
+Island를 기본 조작 단위로 삼는 접근 자체의 한계가 드러났다:
+
+1. Merge(Island 단위)는 Backend User의 fragmentation은 해소했지만 AI
+   Researcher의 over-merge는 손대지 못했다(Finding #003).
+2. Split(Island 단위)을 추가하자 AI Researcher의 Topic 중복률이 오히려
+   77.8%→88.9%로 **악화**됐다 — 분리 대상 Island 하나만 보고 판단해서, 이미
+   존재하는 다른 Island와 겹치는 조각을 새로 만들어냈다(Finding #004).
+3. Split 직후 Merge를 다시 돌려 이를 고치려 했지만 **효과가 없었다** —
+   기존의 작은 Island들(#1/#2/#3) 자체가 이미 여러 실제 주제가 섞인
+   덩어리라 Island 단위 "다수결 라벨" 비교로는 애초에 서로를 못 찾는다.
+
+이 세 시도가 공통으로 가리키는 결론: **Merge/Split이 부족한 게 아니라,
+Island를 기본 단위로 삼은 것 자체가 문제다.** Boundary Topic Move(Topic
+단위로 옮기는 4번째 연산)를 추가로 구현해도 "Move → 관계 변화 → 다시 Merge
+→ 다시 Split → 다시 Move"가 끝없이 반복되는 local optimization 패턴에
+빠질 뿐이다.
+
+### 핵심 원칙
+
+> **Night Batch의 최소 이동 단위는 Island가 아니라 Topic이다.**
+
+지금까지의 계층 구조(`Scrap → Topic → Island → City`)를 보면 Growth도,
+Label도, Boundary Ambiguity(Finding #002/#003)도 전부 Topic 단위에서
+일어난다. Island는 처음부터 "Topic들의 묶음(결과)"였을 뿐인데, Night Batch
+v0만 Island를 직접 조작하는 연산(Merge/Split)으로 설계되어 있었다는 게
+문제의 뿌리였다.
+
+### 파이프라인
+
+Merge/Split/Boundary Move를 각각 다른 연산으로 두지 않고, 전부 하나의
+재계산으로 통일한다:
+
+1. **Topic 수집**: 현재 모든 Island의 모든 Topic을 모은다(Island 소속은
+   일단 무시).
+2. **Topic Graph 생성**: 모든 Topic 쌍에 대해 `center_vector` cosine
+   similarity를 계산하고, threshold 이상이면 두 Topic 사이에 edge를 긋는다.
+3. **Connected Component**: Union-Find로 서로 연결된 Topic 묶음을 찾는다.
+4. **Island 재구성**: 각 Connected Component가 새로운 Island가 된다.
+
+Merge(여러 Island가 하나로), Split(한 Island가 여러 개로), Boundary Move
+(Topic 하나가 다른 Island로) 전부 **"Topic Graph가 다시 연결되는 현상"**
+하나로 통일된다 — 세 가지 별도 연산이 사라진다.
+
+### Invariant 유지 방법 (v0의 원칙을 그대로 계승)
+
+- **변화 없는 Island는 그대로 둔다**: 어떤 Connected Component의 Topic
+  집합이 기존 Island 하나의 Topic 집합과 정확히 같으면, 그 Island의 id와
+  identity_vector를 재계산하지 않고 그대로 유지한다 — 좌표 불변 원칙을
+  지킨다.
+- **바뀐 Component는 Minimum Change Principle로 ID를 정한다**: Component에
+  기여한 원래 Island들 중 스크랩 수가 가장 많은 Island의 id를 유지한다
+  (Merge v0의 "오래된/큰 Island 생존" 규칙과 동일).
+- **identity_vector**: 바뀐 Component만 스크랩 평균 벡터로 다시 계산한다
+  (Split v0에서 쓴 방식과 동일 - 아직 실제 화면 좌표 시스템이 없어서
+  embedding 공간을 좌표 대신 쓴다).
+- **Growth Point**: 여전히 미구현(Step 7 보류) — 이 설계도 그 부분은
+  건드리지 않는다.
+
+### 업데이트 (Experiment #24) — pairwise threshold + Union-Find는 기각
+
+프로토타입(`topic_graph_reconstruct`, 순수 pairwise cosine similarity +
+threshold + Union-Find)을 실제로 구현해서 Backend User/AI Researcher에
+edge_threshold 0.24~0.60을 스윕해봤다. **두 페르소나가 거의 동일하게
+움직였다** — "전부 하나"(threshold≤0.35)에서 "전부 쪼개지며 중복도 같이
+증가"(threshold≥0.40)로 바로 건너뛰고, 안정적인 중간 구간이 없었다.
+원인은 체이닝(chaining) — RLHF 같은 "허브" Topic이 여러 다른 Topic과
+동시에 높은 유사도를 가져서 서로 안 닮은 것들까지 하나로 묶는다. 이건
+Scrap 레벨(Experiment #6~7)에서 이미 겪은 문제가 Topic 레벨에서 그대로
+재현된 것이다 — **Finding #004(Pairwise Threshold Graph exhibits chaining
+instability)**로 승격, `docs/algorithm_limitations.md` 참고.
+
+**결론: pairwise threshold + Union-Find는 기각한다.** 대신 Topic의
+`center_vector`들에 **HDBSCAN**(Experiment #12/#22에서 이미 검증된 밀도
+기반 방법)을 직접 돌리는 방식으로 edge/component 판단을 교체한다 — 이게
+다음 실험(**Experiment #25, 미실행**)이다. Connected Component를 새
+Island로 만드는 4단계(Island 재구성, Invariant 유지)는 그대로 재사용하고,
+2~3단계(Topic Graph 생성 → Connected Component)만 "pairwise threshold +
+Union-Find"에서 "Topic-level HDBSCAN 클러스터링"으로 바꾼다.
+
+### 아직 결정 안 된 것
+
+- offline HDBSCAN을 Topic 레벨에 적용할 때 `min_cluster_size`/`min_samples`를
+  scrap 레벨(Experiment #12/#22)과 같은 값으로 쓸지, Topic 개수가 훨씬
+  적으므로(9~15개) 별도로 조정해야 할지 — 아직 미검증.
+- v0(Merge/Split 함수, `night_batch`/`find_split_candidates`/`apply_split`)와
+  v1(pairwise threshold Topic Graph, `topic_graph_reconstruct`)은 둘 다
+  삭제하지 않는다 - Finding #003/#004의 근거가 된 코드이므로 기록으로
+  남기고, v2(HDBSCAN 기반)가 검증되면 실제 파이프라인에서는 v2로 대체한다.
