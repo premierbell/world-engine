@@ -1309,3 +1309,75 @@ Research Question #3 확장판("제품 목표를 가장 잘 근사하는 목적�
 직접 반영하는 항(예: 같은 실제 주제로 추정되는 candidate가 여러 Anchor에
 흩어지는 것에 대한 벌점, ground truth 없이 계산 가능한 근사가 필요)을
 추가하는 게 유력한 다음 후보이지만 아직 설계 전이다.
+
+## Experiment #35: Candidate-pair Similarity Distribution - Pairwise Similarity가 Fragmentation Penalty의 근거가 되지 못함
+날짜: 2026-07-18
+
+### Hypothesis
+Objective v0에 Duplication을 반영하는 Fragmentation Penalty(서로 비슷한
+candidate가 다른 target으로 갈라지면 벌점)를 추가하기 전에, 그 근거가 될
+pairwise similarity가 실제로 "같은 실제 주제"를 구분하는 신호인지 먼저
+확인한다. τ(문턱값)를 근거 없이 스윕하지 않고, 실제 candidate 쌍의 유사도
+분포를 관찰해서 고른다.
+
+### Data
+Day7/Day30 배치에서 candidate 쌍의 centroid 유사도를 전부 계산하고
+(compute_assignment_matrix 재사용), ground truth로 "같은 실제 주제 쌍"
+vs "다른 실제 주제 쌍"으로 나눠서 분포를 비교했다
+(experiment_pair_similarity_distribution.py). **이 실험에서만**(offline
+파라미터 캘리브레이션 목적) ground truth를 사용한다 - island_threshold/
+topic_threshold를 golden dataset F1로 캘리브레이션했던 것(Experiment
+#6/#7)과 같은 성격이다. 실제 attach 판단 로직(world.py)은 여전히 ground
+truth에 접근하지 않는다.
+
+### Result
+| | Backend | AI Researcher |
+|---|---|---|
+| 같은 주제 쌍 mean (range) | 0.359 (0.203~0.464) | 0.399 (0.202~0.687) |
+| 다른 주제 쌍 mean (range) | 0.333 (0.164~0.599) | 0.352 (0.158~0.578) |
+
+두 분포가 거의 겹친다. Backend는 같은 주제 쌍의 최댓값(0.464)이 다른
+주제 쌍의 상위 10% 지점(0.494)보다도 낮다 - 어떤 τ를 골라도 그 문턱을
+넘는 쌍이 진짜 같은 주제일 확률이 매우 낮다. AI Researcher는 조금
+낫지만(같은 주제 쌍의 일부가 상위 구간에 있음), 같은 문턱을 넘는 다른
+주제 쌍의 절대 개수가 압도적으로 많다.
+
+### Insight
+**Pairwise similarity는 Fragmentation Penalty의 신뢰할 만한 근거가
+아니다.** 어떤 τ를 골라도 "같은 실제 주제라서 벌점을 주는" 경우보다
+"우연히 비슷한 다른 주제라서 벌점을 주는"(=과병합 압력) 경우가
+구조적으로 더 많을 가능성이 높다.
+
+이건 이번 실험만의 결론이 아니다 - Experiment #29(Margin이 attach
+정확도의 신호가 아니었음)와 Experiment #30/31(Representation을 바꿔도
+근본 Trade-off가 안 풀림)이 전부 같은 더 큰 결론으로 수렴한다: **이
+embedding 공간에서 pairwise cosine similarity 하나만으로는 "같은
+Topic"이라는 관계를 충분히 표현하지 못한다.** λ2를 조정하는 건 이 약한
+신호(signal)를 더 세게 또는 약하게 쓰는 것일 뿐 - signal 자체가 그대로면
+Experiment #28의 threshold sweep처럼 또 다른 Trade-off 지점만 찾게 될
+가능성이 높다. 그래서 λ2 스윕(Experiment #36)은 지금 하지 않는다.
+
+### Decision
+Research Insight #006 신설(아래). Research Question을 하나 더 추가한다
+- **Research Question #4: "Duplication은 어떤 신호로 근사할 수
+있는가?"**(Similarity가 아닌 다른 근사 방법 필요). 후보로 구조적
+신호(candidate가 top-k Anchor 후보를 얼마나 공유하는지 - Experiment
+#32의 assignment matrix에서 이미 일부 수집됨)가 논의됐지만 아직 검증
+전이다. `docs/anchor_model.md`에 Research Question #4 추가.
+
+## Research Insight #006: Pairwise Similarity Is Not a Reliable Proxy for Topic Identity
+Experiment #35에서 관찰. Pairwise similarity는 attach 판단 기준(threshold,
+Experiment #28/#31)으로도, Fragmentation Penalty의 근거(Experiment #35)로도
+"같은 실제 주제인가"를 충분히 구분하지 못했다. 같은 주제 쌍과 다른 주제
+쌍의 유사도 분포가 거의 겹치고, 심지어 한 데이터셋(Backend)에서는 같은
+주제 쌍의 최댓값이 다른 주제 쌍의 상위 10% 지점보다 낮았다. 이건
+Margin(Experiment #29)이 attach 정확도의 신호가 아니었던 것과 같은
+계열의 결론이다 - **Similarity 하나로 표현 가능한 관계와, "같은
+Topic"이라는 관계 사이에는 이 embedding 공간에서 구조적인 간극이 있다.**
+
+### Next Step
+Research Question #4("Duplication은 어떤 신호로 근사할 수 있는가?")부터
+다음 세션을 시작한다 - Similarity 자체를 재조정(threshold, λ)하는 대신
+다른 종류의 신호(예: 여러 candidate가 top-k Anchor 후보를 얼마나
+공유하는지 같은 구조적 신호)를 탐색한다. Fragmentation Penalty(λ2 스윕,
+Experiment #36)는 신뢰할 만한 입력 신호가 나오기 전까지 보류한다.

@@ -174,11 +174,27 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
      Objective → Optimization**으로 한 겹 더 늘어났다 - Optimizer의
      성능보다 "그 Objective가 Product Metric을 얼마나 잘 근사하는가"가
      더 근본적인 연구 대상이 됐다.
-   - **다음 실험(미실행)**: Objective v0에 Duplication을 직접 반영하는
-     항(예: 같은 실제 주제로 추정되는 candidate가 여러 Anchor에 흩어지는
-     것에 대한 벌점, ground truth 없이 계산 가능한 근사 필요)을 추가하는
-     게 유력한 다음 후보이지만 아직 설계 전이다. Hungarian algorithm/ILP
-     같은 실제 Optimizer 구현은 여전히 그 이후 단계다.
+   - **시도했지만 근거가 무너짐 (Experiment #35)**: Duplication을 직접
+     반영하는 Fragmentation Penalty(서로 비슷한 candidate가 다른
+     Anchor/신규로 갈라지면 벌점)를 설계하려 했으나, 그 근거가 될
+     pairwise similarity 자체가 "같은 실제 주제 쌍"과 "다른 실제 주제
+     쌍"을 거의 구분하지 못한다는 게 확인됐다(Backend는 같은 주제 쌍의
+     최댓값이 다른 주제 쌍 상위 10% 지점보다 낮음) - Research Insight
+     #006("Pairwise Similarity Is Not a Reliable Proxy for Topic
+     Identity"). Margin(Experiment #29)이 attach 정확도의 신호가
+     아니었던 것과 같은 계열의 결론이다. λ2(Fragmentation Penalty
+     세기) 스윕은 입력 신호 자체가 약해서 지금 하지 않는다 - 신호를
+     세게/약하게 쓰는 것만으로는 Experiment #28의 threshold sweep처럼
+     또 다른 Trade-off 지점만 찾을 가능성이 높다.
+   - **Research Question #4(신설): "Duplication은 어떤 신호로 근사할 수
+     있는가?"** — Similarity 자체를 재조정하는 대신 다른 종류의 신호가
+     필요하다. 후보(미검증): candidate끼리 top-k Anchor 후보를 얼마나
+     공유하는지 같은 **구조적 신호**(Experiment #32의 assignment
+     matrix에서 이미 일부 수집됨 - 두 candidate가 직접적인 cosine은
+     낮아도 "같은 곳들을 바라보고 있는지"는 다른 정보일 수 있다는 게
+     아이디어).
+   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 여전히 그
+     이후 단계다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation
