@@ -908,8 +908,80 @@ Experiment #28에서 관찰. attach_threshold를 올리면 Topic Purity는 계�
 관찰되지 않았다 — attach 메커니즘 자체(nearest-anchor 단일 비교가 아닌
 다른 판단 기준)를 바꿔야 하는지가 다음 Research Question이다.
 
-### Next Step
-`docs/anchor_model.md`의 Open Questions는 여전히 유효하지만, 그보다 먼저
-"attach 메커니즘을 바꾸려면 무엇을 판단 기준으로 써야 하는가"(nearest-anchor
-단일 비교 대신 cluster 내부 일관성, top-k 후보 비교, density 기반 판단 등)를
-다음 세션의 Research Question으로 시작한다 — 아직 가설 없음.
+## Experiment #29: Margin Distribution Analysis - Margin 가설 기각
+날짜: 2026-07-18
+
+### Hypothesis
+Research Insight #001 이후, attach 메커니즘을 바로 재설계하지 않고 먼저
+관찰한다. 가설(Margin Hypothesis): 지금은 1등 Anchor가 threshold만 넘으면
+무조건 붙인다 - 2등과의 격차(margin)를 안 본다. margin이 작은("애매한")
+attach일수록 실제로 잘못된(다른 실제 주제를 섞는) 판단일 것이다.
+
+### Data
+world.py의 night_batch_anchor()에 AttachTrace(best/second similarity,
+margin, decision, attach 직전 Anchor 구성 스냅샷)를 옵션으로 추가.
+Day1→7→30 증분 시나리오(threshold=0.30)에서 모든 ATTACH 이벤트를 수집하고,
+"cluster의 다수결 실제 주제 == attach 직전 Anchor의 다수결 실제 주제"로
+사후 채점(experiment_margin_analysis.py).
+
+### Result
+- 전체 정확도: Backend User 23.1%(3/13), AI Researcher 5.6%(1/18).
+- margin vs correctness 상관계수: Backend 0.214, AI Researcher **-0.201**.
+- best_similarity vs correctness 상관계수: Backend 0.708, AI Researcher 0.229.
+- margin이 큰(확신 있게 붙인) 사례도 잘못된 attach인 경우가 흔했다 — 예:
+  AI Researcher에서 RLHF 클러스터(13개, best_sim=0.501)가 margin=0.052로
+  Transformer Anchor에 붙음.
+
+### Insight
+Margin Hypothesis는 기각됐다. 더 중요한 건 margin이 아니라 threshold를
+넘긴 ATTACH 판단 자체가 대부분 틀렸다는 것(정확도 5.6~23.1%) — 판단 규칙을
+조금 손보는 수준이 아니라는 신호다. AI Researcher에서 margin과
+best_similarity 둘 다 약하다는 건 "가까운 Anchor를 찾는 것" 자체가 이 의미
+공간에서는 신뢰할 수 있는 판단 기준이 아닐 수 있다는 뜻이다.
+
+### Decision
+Margin rule은 구현하지 않는다. **Research Question #2 신설: "Anchor는
+무엇으로 표현되어야 하는가?"** — identity_vector(단일 평균 벡터)가 정말
+Anchor를 대표하는지부터 확인한다(Experiment #30).
+
+## Experiment #30: Anchor Representation Analysis
+날짜: 2026-07-18
+
+### Hypothesis
+identity_vector 하나로 Anchor를 대표하는 방식이 판별력을 잃는다면, Anchor의
+개별 멤버 정보를 함께 사용하는 표현이 correctness와 더 높은 상관을 보여야
+한다.
+
+### Data
+Experiment #29의 ATTACH 이벤트(anchor_scraps_before로 attach 직전 Anchor
+구성을 그대로 보존)마다 세 가지 유사도를 계산: centroid_similarity(기존
+기준), nearest_member_similarity(멤버 중 최댓값), topk_avg_similarity(상위
+3개 평균). 각각을 correctness와 상관분석(experiment_representation_analysis.py).
+
+### Result
+| 지표 | Backend User | AI Researcher |
+|---|---|---|
+| centroid_similarity (기존) | 0.708 | 0.229 |
+| nearest_member_similarity | 0.661 | 0.353 |
+| topk_avg_similarity (k=3) | **0.742** | **0.517** |
+
+AI Researcher에서 top-3 평균이 centroid 대비 상관계수를 2배 이상 끌어올렸다
+(0.229→0.517). Backend도 소폭 개선(0.708→0.742). 반면 "가장 가까운 멤버 1개"
+단독은 Backend에서 오히려 centroid보다 나빴다(0.661) — 극단값 하나에 낚이는
+노이즈로 추정.
+
+### Insight
+Member 기반 비교(특히 top-k 평균)가 이 두 데이터셋에서는 단일 centroid보다
+더 판별력 있는 것으로 관찰됐다 — "평균 벡터가 정보를 잃는다"는 가설이 정량적
+증거로 지지받았다(아직 원인이 확정된 건 아니다). 다만 nearest-member 단독은
+노이즈에 취약해서 "여러 점 중 하나"가 아니라 "여러 점의 요약(top-k 평균)"이
+더 안정적인 절충점으로 보인다.
+
+### Decision
+`docs/algorithm_limitations.md`에 **Finding #007**(Representation Loss)
+신설 — Finding #004(local connectivity 문제)와는 다른 클래스의 문제로 명시.
+`docs/anchor_model.md`의 Open Questions에 **"Anchor는 무엇으로 표현되어야
+하는가?"**를 후보 목록(identity_vector/nearest member/top-k averaging/
+distribution/prototype set)과 함께 추가. 다음 세션은 이 후보들을 실제
+attach 메커니즘으로 설계/구현할지부터 시작한다 - k값, 멤버 수가 많아질 때의
+계산 비용, Provisional 단계 적용 여부는 아직 미검증.

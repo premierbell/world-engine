@@ -754,4 +754,53 @@ Topic 품질 검증 단계를 추가한다 — Step 5(Online Topic Formation) �
 이관됐다. Anchor Model v0(night_batch_anchor)를 구현해 순서 독립성은
 확인했지만(Experiment #28), attach_threshold 기반 판단만으로는 품질
 목표에 도달하지 못했다 — Research Insight #001(`v0_validation.md`) 참고.
-다음 세션은 attach 메커니즘 자체를 바꾸는 Research Question부터 시작한다.
+그 원인을 파는 과정에서 Finding #007(Representation Loss, 아래)이 새로
+발견됐다 - 다음 세션은 이 Finding의 Research Question #2부터 시작한다.
+
+## Finding #007: Anchor의 단일 벡터 표현은 판별력을 잃는다 (Representation Loss)
+
+Finding #004가 "무엇을 연결하는가"(local connectivity)의 문제였다면,
+Finding #007은 "무엇으로 비교하는가"(representation)의 문제다 - 완전히 다른
+계층의 결함이다.
+
+### Claim
+identity_vector 하나(Anchor 생성 시점에 고정된 평균 벡터, attach로 멤버가
+늘어도 절대 안 갱신됨)로 Anchor를 대표해서 새 클러스터와 비교하는 방식은,
+특히 의미가 조밀하게 붙어있는 공간(AI Researcher)에서 판별력을 크게 잃는다.
+Margin(1등-2등 격차)을 조정해도 해결 안 되고, Anchor를 구성하는 개별
+멤버들과 직접 비교하면 같은 데이터에서 판별력이 뚜렷이 회복된다.
+
+### Evidence 1 — Margin Hypothesis 기각 (Experiment #29)
+attach_threshold=0.30으로 Day1→7→30 증분 처리한 뒤, 모든 ATTACH 판단을
+ground truth로 사후 채점. 전체 정확도가 Backend 23.1%(3/13), AI Researcher
+5.6%(1/18)로 매우 낮았고, margin과 correctness의 상관계수는 Backend 0.214,
+AI Researcher -0.201(음수)로 margin이 신뢰할 수 있는 신호가 아니었다.
+best_similarity 상관계수도 Backend 0.708 대비 AI Researcher 0.229로 페르소나
+마다 크게 갈렸다.
+
+### Evidence 2 — Member 기반 비교가 더 판별력 있음 (Experiment #30)
+같은 ATTACH 이벤트에서 새 클러스터 centroid를 Anchor의 개별 멤버들과 직접
+비교. top-3 평균 유사도의 correctness 상관계수가 AI Researcher에서
+0.229→0.517로 2배 이상 개선(Backend도 0.708→0.742로 소폭 개선). "가장
+가까운 멤버 1개" 단독으로는 Backend에서 오히려 centroid보다 나빴다
+(0.661<0.708).
+
+### Candidate Mechanism (아직 Root Cause로 확정 안 됨)
+identity_vector는 Anchor 생성 시점의 (보통 작은) 초기 클러스터 centroid로
+고정되고, 이후 attach로 멤버가 아무리 늘어도 절대 갱신되지 않는다 - 그래서
+의미적으로 넓은 Anchor에서는 실제 멤버 분포를 충분히 표현하지 못할
+가능성이 있다. Experiment #30의 결과는 이 가설을 지지하지만, identity_vector
+자체가 원인인지 / top-k averaging이 우연히 이 두 데이터셋에만 맞았는지 /
+k=3이라는 값 자체가 중요한지는 아직 검증되지 않았다.
+
+### Implication
+다음 구현 후보는 centroid 기반 비교 대신 멤버 기반 표현(top-k averaging
+등)을 사용하는 방식이다 - 다만 이건 "다음 연구 후보"이지 확정된 설계가
+아니다.
+
+### Status
+**Open.** Research Question #2("Anchor는 무엇으로 표현되어야 하는가?")로
+`experiments/v0_validation.md`/`docs/anchor_model.md`에 이어짐. 다음
+세션은 후보(identity_vector/nearest member/top-k averaging/distribution/
+prototype set)를 실제 attach 메커니즘으로 설계/구현할지부터 시작한다 - k값,
+계산 비용, Provisional 단계 적용 여부는 아직 미검증.

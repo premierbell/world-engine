@@ -726,6 +726,22 @@ def selective_night_batch(
     return result
 
 
+@dataclass
+class AttachTrace:
+    """night_batch_anchor의 attach/create 판단 근거를 그대로 남긴다(Experiment
+    #29, Margin 가설 진단용) - ground truth 비교/정답 판정은 여기서 하지 않는다
+    (ai_rules.md Rule 1: 알고리즘은 판단만, 정답 채점은 실험 스크립트 몫)."""
+
+    texts: list[str]
+    best_anchor_id: int | None
+    best_similarity: float
+    second_similarity: float | None
+    margin: float | None
+    decision: str  # "ATTACH" | "CREATE"
+    attach_threshold: float
+    anchor_scraps_before: list[str] | None = None  # ATTACH일 때만: 편입 직전 Anchor 구성 스냅샷
+
+
 def night_batch_anchor(
     confirmed_islands: list[Island],
     new_scrap_texts: list[str],
@@ -733,6 +749,7 @@ def night_batch_anchor(
     min_cluster_size: int = 3,
     min_samples: int = 1,
     attach_threshold: float = 0.5,
+    trace: list[AttachTrace] | None = None,
 ) -> list[Island]:
     """Anchor Model(`docs/anchor_model.md`)의 Island-level Night Batch
     구현(v0). `confirmed_islands`(Anchor)는 routine 상황에서 절대 수정하지
@@ -755,6 +772,11 @@ def night_batch_anchor(
     Topic 세부 구조(Step 5.25, Topic 레벨 Anchor)는 이번 v0 구현에서는
     단순화해서 클러스터/Anchor 하나당 Topic 하나로 취급한다 - Topic
     레벨까지 온전히 구현하는 것은 다음 단계 과제다.
+
+    `trace`(선택)가 주어지면 매 attach/create 판단마다 AttachTrace를
+    append한다 - best/second 유사도와 margin을 그대로 남기고, 그게
+    "좋은 판단"이었는지는 정하지 않는다(ground truth 채점은 실험
+    스크립트 몫, Experiment #29).
     """
     if not new_scrap_texts:
         return list(confirmed_islands)
@@ -772,33 +794,61 @@ def night_batch_anchor(
     result: list[Island] = list(confirmed_islands)
     next_id = (max((isl.id for isl in confirmed_islands), default=-1)) + 1
 
-    def find_best_anchor(centroid: list[float]) -> tuple[Island | None, float]:
+    def find_best_two_anchors(centroid: list[float]) -> tuple[Island | None, float, float | None]:
         if not original_anchors:
-            return None, -1.0
-        scored = [(isl, cosine_similarity(centroid, isl.identity_vector)) for isl in original_anchors]
-        return max(scored, key=lambda pair: pair[1])
+            return None, -1.0, None
+        scored = sorted(
+            ((isl, cosine_similarity(centroid, isl.identity_vector)) for isl in original_anchors),
+            key=lambda pair: -pair[1],
+        )
+        best_isl, best_sim = scored[0]
+        second_sim = scored[1][1] if len(scored) > 1 else None
+        return best_isl, best_sim, second_sim
 
     def attach(anchor: Island, texts: list[str]) -> None:
         # Anchor의 identity_vector/id는 그대로 둔다 - 소속 스크랩만 늘어난다
         anchor.topics[0].scraps.extend(texts)
 
+    def record(
+        texts: list[str], best_anchor: Island | None, best_sim: float, second_sim: float | None, decision: str
+    ) -> None:
+        if trace is None:
+            return
+        margin = (best_sim - second_sim) if second_sim is not None else None
+        trace.append(
+            AttachTrace(
+                texts=list(texts),
+                best_anchor_id=best_anchor.id if best_anchor is not None else None,
+                best_similarity=best_sim,
+                second_similarity=second_sim,
+                margin=margin,
+                decision=decision,
+                attach_threshold=attach_threshold,
+                anchor_scraps_before=list(best_anchor.topics[0].scraps) if decision == "ATTACH" else None,
+            )
+        )
+
     for label, texts in clusters.items():
         if label == -1:
             # Noise는 서로 다른 스크랩을 억지로 하나로 묶지 않는다 - 각자 독립 판단
             for text in texts:
-                best_anchor, best_sim = find_best_anchor(vectors[text])
+                best_anchor, best_sim, second_sim = find_best_two_anchors(vectors[text])
                 if best_anchor is not None and best_sim >= attach_threshold:
+                    record([text], best_anchor, best_sim, second_sim, "ATTACH")
                     attach(best_anchor, [text])
                 else:
+                    record([text], best_anchor, best_sim, second_sim, "CREATE")
                     result.append(Island(next_id, vectors[text], text))
                     next_id += 1
             continue
 
         centroid = np.mean([vectors[t] for t in texts], axis=0).tolist()
-        best_anchor, best_sim = find_best_anchor(centroid)
+        best_anchor, best_sim, second_sim = find_best_two_anchors(centroid)
         if best_anchor is not None and best_sim >= attach_threshold:
+            record(texts, best_anchor, best_sim, second_sim, "ATTACH")
             attach(best_anchor, texts)
         else:
+            record(texts, best_anchor, best_sim, second_sim, "CREATE")
             new_island = Island(next_id, centroid, texts[0])
             new_island.topics[0].scraps = list(texts)
             result.append(new_island)
