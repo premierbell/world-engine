@@ -261,18 +261,42 @@ instability)**로 승격, `docs/algorithm_limitations.md` 참고.
 
 **결론: pairwise threshold + Union-Find는 기각한다.** 대신 Topic의
 `center_vector`들에 **HDBSCAN**(Experiment #12/#22에서 이미 검증된 밀도
-기반 방법)을 직접 돌리는 방식으로 edge/component 판단을 교체한다 — 이게
-다음 실험(**Experiment #25, 미실행**)이다. Connected Component를 새
-Island로 만드는 4단계(Island 재구성, Invariant 유지)는 그대로 재사용하고,
-2~3단계(Topic Graph 생성 → Connected Component)만 "pairwise threshold +
-Union-Find"에서 "Topic-level HDBSCAN 클러스터링"으로 바꾼다.
+기반 방법)을 직접 돌리는 방식으로 edge/component 판단을 교체를 시도했다
+(`topic_graph_reconstruct_hdbscan`, Experiment #25).
+
+### 업데이트 (Experiment #25) — Topic-level HDBSCAN도 기각, 더 근본적인 문제 발견
+
+두 변형(Topic centroid 직접 클러스터링 / scrap 레벨 HDBSCAN 라벨로 Topic
+재그룹화)을 시도했지만 **둘 다 Backend User마저 악화시켰다** — 최선의
+경우도 7개 Island(4~9 중복)로, 원래 Merge-only(v0)의 1개/0%보다 나쁘다.
+체이닝 문제가 아니라 **표본 크기 문제**였다: 온라인 단계가 Topic을
+21~27개까지 잘게 만들어서(스크랩 71개 기준 Topic당 평균 3개 미만) Topic
+단위 통계가 embedding noise에 취약하다. Island 단위는 여러 Topic을
+뭉뚱그려 이 노이즈를 평균화하지만, Topic 단위로 내리면 그 평균화 효과가
+사라진다.
+
+이걸 **Finding #005(Aggregation Level Trade-off)**로 승격했다
+(`docs/algorithm_limitations.md` 참고) — Island 단위(안정적이지만 저해상도)와
+Topic 단위(고해상도지만 노이즈에 취약)가 정확히 반대 방향으로 실패한다.
+Merge/Split/Graph/HDBSCAN 4가지 시도가 겉보기엔 다른 알고리즘이었지만
+전부 "의사결정을 어느 계층에서 내리는가"라는 하나의 축 위에 있었다는 게
+이번에 드러났다.
+
+**Open Question(다음 세션의 출발점)**: Night Batch의 본질은 "더 좋은
+클러스터링을 찾는 것"인가, 아니면 "문제가 있는 Island만 최소한으로
+수정하는 것"인가? 지금까지의 모든 버전은 암묵적으로 "세계 전체를 다시
+평가한다"고 가정했다 — Backend User는 Online 결과가 이미 좋았는데도
+Night Batch가 매번 다시 건드리면서 오히려 나빠졌다. "전체 재구성"이
+아니라 "purity가 낮아 의심스러운 Island만 선택적으로 재평가"하는 방향이
+다음 후보다. 다음 세션은 구현이 아니라 이 질문에 답하는 **설계 세션**으로
+시작한다.
 
 ### 아직 결정 안 된 것
 
-- offline HDBSCAN을 Topic 레벨에 적용할 때 `min_cluster_size`/`min_samples`를
-  scrap 레벨(Experiment #12/#22)과 같은 값으로 쓸지, Topic 개수가 훨씬
-  적으므로(9~15개) 별도로 조정해야 할지 — 아직 미검증.
-- v0(Merge/Split 함수, `night_batch`/`find_split_candidates`/`apply_split`)와
-  v1(pairwise threshold Topic Graph, `topic_graph_reconstruct`)은 둘 다
-  삭제하지 않는다 - Finding #003/#004의 근거가 된 코드이므로 기록으로
-  남기고, v2(HDBSCAN 기반)가 검증되면 실제 파이프라인에서는 v2로 대체한다.
+- 위 Open Question에 대한 답(선택적 재평가 vs 전체 재구성)이 가장 먼저
+  필요하다 — 이후의 파라미터 튜닝(min_cluster_size 등)은 이 질문이
+  풀리기 전까지는 의미가 크지 않다.
+- v0(Merge/Split 함수), v1(pairwise threshold Topic Graph), v2(Topic-level
+  HDBSCAN 변형 A/B)는 전부 삭제하지 않는다 - Finding #003/#004/#005의
+  근거가 된 코드이므로 기록으로 남긴다. 다음 설계가 확정되면 실제
+  파이프라인에서 어떤 버전을 쓸지(또는 완전히 새로운 v3를 만들지) 결정한다.

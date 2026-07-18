@@ -475,20 +475,130 @@ def topic_graph_reconstruct(
     for topic in all_topics:
         components[find(id(topic))].append(topic)
 
+    return _rebuild_islands_from_components(islands, list(components.values()), vectors)
+
+
+def topic_graph_reconstruct_hdbscan(
+    islands: list[Island],
+    vectors: dict[str, list[float]],
+    min_cluster_size: int = 2,
+    min_samples: int = 1,
+) -> list[Island]:
+    """Night Batch v2, 변형 A: Connectivity를 HDBSCAN으로 교체한 버전
+    (Experiment #25, Finding #004 대응). `topic_graph_reconstruct`(pairwise
+    threshold + Union-Find)가 체이닝으로 실패한 뒤 만든 버전이다 - 2~3단계
+    (Topic Graph 생성 -> Connected Component)만 Topic의 center_vector에
+    대한 HDBSCAN 클러스터링으로 바꾸고, 나머지(Invariant 유지, Island
+    재구성)는 동일하다.
+
+    **Experiment #25 결과: 기각.** 온라인 단계가 Topic을 21~27개까지 잘게
+    만들어서(스크랩 71개 기준 Topic당 평균 3개 미만) 밀도 추정 자체가
+    불안정하다 - 어떤 min_cluster_size에서도 Backend User가 12개 이상으로
+    쪼개진다(원래 Merge-only의 1개보다 훨씬 나쁨). Topic의 center_vector를
+    직접 클러스터링하는 대신 `topic_graph_reconstruct_scrap_informed`(변형
+    B)를 시도했지만 그것도 완전히는 해결하지 못했다 - Finding #005
+    (Aggregation Level Trade-off) 참고. 코드는 그 근거로 남긴다.
+
+    Noise(-1)로 분류된 Topic은 각자 독립된 Component(=자기 혼자만의 새
+    Island)가 된다 - Experiment #12/#22와 같은 정책(noise를 억지로 하나로
+    묶지 않는다).
+    """
+    all_topics = [topic for isl in islands for topic in isl.topics]
+    matrix = normalize(np.array([topic.center_vector for topic in all_topics]))
+    labels = HDBSCAN(
+        min_cluster_size=min_cluster_size, min_samples=min_samples, metric="euclidean", copy=True
+    ).fit_predict(matrix)
+
+    components: dict[int, list[Topic]] = defaultdict(list)
+    next_noise_id = int(labels.max()) + 1 if len(labels) else 0
+    for topic, label in zip(all_topics, labels):
+        if label == -1:
+            components[next_noise_id].append(topic)
+            next_noise_id += 1
+        else:
+            components[int(label)].append(topic)
+
+    return _rebuild_islands_from_components(islands, list(components.values()), vectors)
+
+
+def topic_graph_reconstruct_scrap_informed(
+    islands: list[Island],
+    vectors: dict[str, list[float]],
+    min_cluster_size: int = 5,
+    min_samples: int = 1,
+) -> list[Island]:
+    """Night Batch v2, 변형 B: Topic의 center_vector 대신, 이미 검증된 scrap
+    레벨 HDBSCAN(Experiment #12/#15/#22)의 클러스터 라벨을 참고해서 Topic을
+    재그룹화한다 - Topic 자체가 표본이 너무 적어(변형 A 참고) 직접
+    클러스터링하기 불안정하다는 문제를 피하려는 시도다. 각 Topic은 자기
+    스크랩들이 scrap 레벨에서 다수결로 속한 클러스터에 따라 그룹화된다.
+
+    **Experiment #25 결과: 부분 개선, 완전 해결은 아님.** AI Researcher는
+    개선됐지만(최선 5개 Island, 2/9 중복) Backend User가 오히려
+    나빠졌다(최선 7개, 4/9 중복 - 원래 Merge-only의 1개/0%보다 나쁨). 원인은
+    scrap 레벨 HDBSCAN 자체가 Backend User를 완벽한 1개 클러스터로 만들지
+    않기 때문이다("58+7+noise 6") - Island 단위 다수결에서는 여러 Topic의
+    스크랩이 뭉뚱그려지며 이 노이즈가 평균화되지만, Topic 단위로 내리면
+    노이즈가 그대로 드러난다. Finding #005(Aggregation Level Trade-off)의
+    핵심 근거다.
+    """
+    all_texts = [text for isl in islands for topic in isl.topics for text in topic.scraps]
+    matrix = normalize(np.array([vectors[text] for text in all_texts]))
+    labels = HDBSCAN(
+        min_cluster_size=min_cluster_size, min_samples=min_samples, metric="euclidean", copy=True
+    ).fit_predict(matrix)
+    label_of = dict(zip(all_texts, labels))
+
+    all_topics = [topic for isl in islands for topic in isl.topics]
+    components: dict[int, list[Topic]] = defaultdict(list)
+    next_noise_id = int(labels.max()) + 1 if len(labels) else 0
+    for topic in all_topics:
+        topic_labels = [label_of[text] for text in topic.scraps if label_of[text] != -1]
+        if not topic_labels:
+            components[next_noise_id].append(topic)
+            next_noise_id += 1
+            continue
+        dominant, _ = Counter(topic_labels).most_common(1)[0]
+        components[dominant].append(topic)
+
+    return _rebuild_islands_from_components(islands, list(components.values()), vectors)
+
+
+def _rebuild_islands_from_components(
+    islands: list[Island], components: list[list[Topic]], vectors: dict[str, list[float]]
+) -> list[Island]:
+    """Topic Graph 계열 함수들이 공유하는 Invariant 유지 로직. Component의
+    Topic 집합이 기존 Island 하나와 정확히 같으면 그대로 반환하고(좌표 불변),
+    바뀐 Component는 스크랩 수 기여가 가장 큰 원래 Island의 id를 물려받는다
+    (Minimum Change Principle) - 단, 그 id가 이미 다른 Component에 쓰였다면
+    (원래 하나의 Island가 여러 Component로 흩어진 경우) 새 id를 발급한다.
+    Island id는 세계 전체에서 유일해야 한다.
+    """
+    topic_origin_island: dict[int, Island] = {}
+    for isl in islands:
+        for topic in isl.topics:
+            topic_origin_island[id(topic)] = isl
     original_topic_sets: dict[int, set[int]] = {isl.id: {id(t) for t in isl.topics} for isl in islands}
 
+    next_id = (max(isl.id for isl in islands) + 1) if islands else 0
+    used_ids: set[int] = set()
     result: list[Island] = []
-    for topics in components.values():
+    for topics in components:
         topic_ids = {id(t) for t in topics}
         unchanged_island = next((isl for isl in islands if original_topic_sets[isl.id] == topic_ids), None)
         if unchanged_island is not None:
             result.append(unchanged_island)
+            used_ids.add(unchanged_island.id)
             continue
 
         contribution: dict[int, int] = defaultdict(int)
         for topic in topics:
             contribution[topic_origin_island[id(topic)].id] += len(topic.scraps)
         survivor_id = max(contribution, key=lambda island_id: contribution[island_id])
+        if survivor_id in used_ids:
+            survivor_id = next_id
+            next_id += 1
+        used_ids.add(survivor_id)
 
         for i, topic in enumerate(topics):
             topic.id = i
