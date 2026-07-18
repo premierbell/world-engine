@@ -485,8 +485,83 @@ Merge-only는 "offline 클러스터가 Online Island들의 합집합"이라고
 
 ### Status
 **Resolved (Need Split).** 원인은 명확히 규명됐다 — Merge-only의 한계가
-아니라 설계된 범위(Merge)를 벗어난 문제였다는 것이 확인됐다. 다음
-실험/구현은 Split Prototype(Step 5.5 v1.1)이다: 언제 Split을 트리거할지
-(예: Island의 purity가 낮고 내부에 여러 dominant HDBSCAN 클러스터가
-공존할 때), 어떤 기준으로 나눌지(offline 클러스터 경계를 그대로 따를지,
-Topic 단위로 재배치할지)를 설계해야 한다 — 아직 미설계.
+아니라 설계된 범위(Merge)를 벗어난 문제였다는 것이 확인됐다. Split을
+실제로 구현해서 검증한 결과는 Finding #004에서 이어진다.
+
+---
+
+## Finding #004: Pairwise Threshold Graph는 Chaining에 취약하다
+
+### Claim
+"Topic(또는 Scrap) 쌍의 유사도가 threshold를 넘으면 연결한다"는 단순
+pairwise threshold + Union-Find(또는 Greedy) 방식은, 밀도가 높은 "허브"
+노드 하나만 있어도 원하지 않는 거대 Component로 체이닝(chaining)된다.
+이건 Topic 레벨에서 새로 발견된 문제가 아니라 **Scrap 레벨(Experiment
+#6~7)에서 이미 겪은 문제가 같은 구조로 재현된 것**이다 — 단일 threshold +
+naive connectivity라는 알고리즘 클래스 자체의 특성이지, 특정 구현의 버그가
+아니다.
+
+### Evidence 1 — Scrap 레벨 (Experiment #6~7, 재해석)
+V0 초기 Threshold Sweep에서 "언더분리 → 정확히 3개 → 오버분리"로 이어지는
+안정적인 구간이 없었다(Finding #001 Evidence 1). 당시엔 이걸 "Greedy
+Online의 순서 의존성" 문제로만 분류했지만, 돌이켜보면 **단일 threshold로
+연결 여부를 정하는 방식 자체**가 원인의 일부였다 — HDBSCAN(밀도 기반)으로
+바꾸자 이 불안정성이 정확히 0으로 사라졌다(Finding #001 Evidence 5,
+Experiment #12).
+
+### Evidence 2 — Island 단위 Split의 Local 한계 (Experiment #23)
+Finding #003 이후 구현한 Split(`find_split_candidates`/`apply_split`)을
+AI Researcher에 적용하자 Topic Duplication Rate가 오히려 77.8%→88.9%로
+악화됐다 — 분리 대상 Island 하나만 보고 판단해서, 이미 존재하는 다른
+Island와 겹치는 조각을 새로 만들어냈다. Split 직후 Island 단위 재-Merge를
+시도했지만 효과가 없었다 — 기존 Island들 자체가 이미 여러 실제 주제가
+섞인 애매한 다수결 라벨을 가진 상태라, Island 단위 비교로는 새로 떨어진
+조각과 서로를 못 찾는다. 이 실패가 "Island를 기본 단위로 삼은 것 자체가
+문제"라는 재설계(`hybrid_architecture.md` "Night Batch v2")로 이어졌다.
+
+### Evidence 3 — Topic 레벨 Chaining (Experiment #24)
+Island 대신 Topic을 기본 단위로 삼은 Topic Graph Reconstruction(모든
+Topic 쌍의 유사도로 그래프를 만들고 Union-Find로 Connected Component를
+Island로 재구성)을 Backend User/AI Researcher에 적용, edge_threshold를
+0.24~0.60까지 스윕:
+
+| Threshold | Backend User | AI Researcher |
+|---|---|---|
+| 0.24~0.35 | 1개, 중복 0% | 1개, 중복 0% |
+| 0.40 | 3개, 중복 2/9 | 3개, 중복 1/9 |
+| 0.45 | 7개, 중복 3/9 | 8개, 중복 4/9 |
+| 0.50 | 10개, 중복 5/9 | 13개, 중복 5/9 |
+| 0.55~0.60 | 13~15개, 중복 5~7/9 | 21~22개, 중복 7/9 |
+
+두 페르소나가 거의 동일하게 움직인다 — "전부 하나"에서 "전부 쪼개지며
+중복도 같이 증가"로 바로 건너뛰고, Backend(1개가 정답)와 AI
+Researcher(여러 개가 정답에 가까움, Finding #003 참고)를 동시에 만족하는
+안정적인 중간 구간이 없다. 원인은 RLHF 같은 "허브" Topic이 여러 다른
+Topic과 동시에 높은 유사도를 가져서, A-B와 B-C가 각각 threshold를 넘으면
+A-C가 안 닮았어도 Union-Find가 셋을 하나로 묶어버리는 체이닝이다.
+
+### Root Cause
+같은 문제가 세 번(Scrap Greedy+Threshold, Island Split의 local-only 판단,
+Topic Union-Find+Threshold) 다른 층위에서 반복됐다 — **문제는 특정
+구현이 아니라 "단일 threshold + naive pairwise connectivity"라는 접근
+방식 자체다.** 이 접근은 전역 밀도 구조를 못 보고 지역적인(local) 연결
+여부만 보기 때문에, 체인처럼 이어지는 경로가 하나만 있어도 서로 안 닮은
+것들이 전부 하나로 묶인다. HDBSCAN 같은 밀도 기반 방법이 Scrap
+레벨에서 이 문제를 해결했던 것(Finding #001)과 정확히 같은 이유로,
+Topic 레벨에서도 밀도 기반 방법이 필요하다.
+
+### Implication
+Union-Find(단일 threshold)를 그대로 쓰는 대신, **Topic-level HDBSCAN**으로
+교체하는 것이 다음 실험/구현 목표다 — Experiment #22에서 HDBSCAN이 AI
+Researcher의 scrap 레벨 구조를 실제로 잘 나눠줬던 방법론을 이번엔 Topic
+레벨(더 적고 밀도 높은 데이터 포인트)에 그대로 적용한다. 순서(Threshold
+Graph 실험 → 체이닝 발견 → Finding #004 → 그래서 밀도 기반으로 교체)를
+먼저 밟았기 때문에, "왜 이번에도 HDBSCAN을 쓰는가"에 대한 근거가
+분명하다 — 이유 없이 HDBSCAN을 재사용하는 게 아니라, 단순한 방법이
+실패하는 걸 직접 확인한 뒤의 선택이다.
+
+### Status
+미해결 (Open). 다음 실험(#25, 미실행): Topic-level HDBSCAN이 Backend
+User는 1개로, AI Researcher는 여러 개(Foundation Model / Application AI
+등)로 자연스럽게 갈리면서 Topic Duplication Rate가 낮게 유지되는지
+검증한다.
