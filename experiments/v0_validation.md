@@ -1606,3 +1606,141 @@ Community Detection(Louvain/Leiden 등) 같은 더 정교한 그래프 알고리
 일반화한다. Research Question #5/#6을 잠정 종료하고, **Research Question
 #7: "Topic Identity는 애초에 복원해야 하는 대상인가, 아니면 시스템이
 시간이 지나며 형성(emerge)하는 대상인가?"**로 연구축을 전환한다.
+
+## Experiment #41: Temporal Consistency Analysis (교란 요인 발견)
+날짜: 2026-07-19
+
+### Hypothesis
+H1(사실상 증명됨): Topic Identity는 단일 관측으로 복원되지 않는다.
+H2(검증 대상): 반복 관측은 Identity 자체가 아니라 Identity에 대한
+Confidence를 증가시킨다 - 같은 실제 Topic의 새 candidate가 여러 Night
+Batch에 걸쳐 반복 등장할 때, 매번 "가장 가까운 Anchor"로 뽑히는 대상이
+일관되게 유지되는가?
+
+### Data
+Day1로 Anchor를 만들고, Day7/Day30 두 관측 시점에서 `compute_assignment_
+matrix()`(순수 관찰)로 각 실제 Topic이 1순위로 가리키는 Anchor id를
+기록, 두 시점을 비교(`experiment_temporal_consistency.py`).
+
+### Result
+일관성이 전혀 없었다 - Backend User 0/3, AI Researcher 0/2. 모든 실제
+Topic이 Day7과 Day30에서 서로 다른 Anchor를 1순위로 선택했다.
+
+### Insight
+**이 실험은 H2를 기각한 게 아니라, 실험 설계 자체가 H2를 검증하지
+못했다는 걸 보여준다.** Day7과 Day30은 같은 Anchor 집합을 두 번 관측한
+게 아니다 - Day7 시점엔 Day1(스크랩 5개)에서 만든 극소수 Anchor만
+존재했고, Day30 시점엔 그 사이 Day7 콘텐츠로 만들어진 Anchor들이 추가된
+다른(더 풍부해진) Anchor 집합을 봤다. 즉 실제로 비교한 건
+`Observation(t1 | AnchorSet1)` vs `Observation(t2 | AnchorSet2)`였고,
+H2가 요구하는 `Observation(t1 | 같은 AnchorSet)` vs `Observation(t2 |
+같은 AnchorSet)`이 아니었다 - 대상(candidate)과 기준(Anchor Set) 둘 다
+고정돼야 하는데 기준이 계속 바뀌었다.
+
+### Decision
+H0(신설, RQ#7의 전제조건): "Confidence 축적은 기준이 되는 Anchor Space가
+충분히 안정된 뒤에만 가능하다." Experiment #42로 Anchor Space 자체의
+안정성부터 측정한다 - Candidate의 일관성을 기대하기 전에 좌표축(Anchor)
+자체가 안정적인지 먼저 봐야 한다("GPS 위성이 계속 움직이는데 자동차
+위치가 흔들린다고 말하는 것과 같다").
+
+## Experiment #42: Anchor Creation Dynamics (Anchor Space Stability로 시작했으나 측정 대상이 좁혀짐)
+날짜: 2026-07-19
+
+### Hypothesis
+H0: Anchor Space(Anchor 집합)가 시간이 지나며 안정화되는가(신규 Anchor
+생성률이 감소하는가)?
+
+### Data
+Day1→7→30 증분 처리 중 `night_batch_anchor()`의 AttachTrace(이미 존재,
+추가 계측 없음)에서 배치마다 ATTACH/CREATE 결정 수를 집계
+(`experiment_anchor_space_stability.py`). Anchor의 identity_vector는
+설계상 절대 불변이므로 "Anchor 이동량"은 이 구현에서 애초에 측정
+대상이 아니다 - 측정 가능한 축은 생성률뿐이다.
+
+### Result
+| | Day7 신규 생성률 | Day30 신규 생성률 |
+|---|---|---|
+| Backend User | 0.0% | 45.5% |
+| AI Researcher | 40.0% | 28.6% |
+
+AI Researcher는 감소(안정화 방향), Backend User는 오히려 급증. 두
+페르소나 모두 Day30 시점에도 상당한 비율로 여전히 새 Anchor를 만들고
+있어 0%에 가까워지는 모습은 안 보였다.
+
+### Insight
+**이 실험은 "Anchor Space Stability"를 측정한다고 시작했지만, 실제로는
+"Anchor Creation Rate"만 측정했다 - 이 둘은 다르다.** Anchor Creation이
+많다고 곧 불안정한 게 아니다: 사용자가 정말 새 관심사(예: Backend User가
+Day30에 AWS/Kubernetes/Docker를 새로 시작)를 얻었다면 새 Anchor 생성은
+정상이고 오히려 기존 Anchor는 전혀 안 흔들린 안정적인 시스템일 수 있다.
+반대로 Anchor 생성이 거의 없어도 기존 Anchor의 의미가 완전히 붕괴했다면
+그게 더 불안정하다. **Anchor Creation Rate는 Reference Frame Stability의
+충분한 proxy가 아니다** - proxy라고 가정했던 것 자체가 틀렸다.
+
+### Decision
+H0를 "기각"이 아니라 **"판정 불가(Inconclusive)"**로 기록한다 - 측정
+도구(생성률)가 측정하려던 대상(안정성)을 대표하지 못했다는 게 결론이다.
+Research Question #7을 둘로 분리한다: **RQ7-A("Anchor Creation은 성장
+(Novel Expansion)인가 분열(Redundant Split)인가?")**와 **RQ7-B("Anchor
+Assignment[ATTACH]는 안정적인가?")** - Growth와 Assignment는 독립
+변수다. RQ7-A부터 Experiment #43으로 검증한다(새 Anchor 각각이 생길
+당시 가장 가까웠던 기존 Anchor와의 유사도는 이미 계산되어 있으므로
+추가 구현 없이 분류 가능).
+
+## Experiment #43: Anchor Creation Classification (Novel Expansion vs Redundant Split)
+날짜: 2026-07-19
+
+### Hypothesis
+RQ7-A 검증. 새로 생긴 Anchor를 두 가지로 분류할 수 있다면(ground truth
+사용, offline 진단 목적 - Experiment #29/#35와 같은 성격) Experiment
+#42의 높은 창조율이 정상 성장인지 회피 가능한 파편화인지 가려낼 수
+있다: **Novel Expansion**(새 Anchor의 실제 주제가 가장 가까웠던 기존
+Anchor의 실제 주제와 다름 - 정상) vs **Redundant Split**(같음 - 붙었어야
+했는데 못 붙은 파편화).
+
+### Data
+`night_batch_anchor()`가 CREATE 결정마다 이미 남기는 AttachTrace(best_
+anchor_id, best_similarity)를 활용 - 이번 실험을 위해 world.py의
+`anchor_scraps_before`를 ATTACH뿐 아니라 CREATE 케이스에도 채우도록
+확장했다(판단 로직은 안 바꿈, 진단 정보만 추가).
+`experiment_creation_classification.py`로 모든 CREATE 이벤트를 분류.
+
+### Result
+첫 배치(비교 대상 Anchor가 아직 없음)를 제외한 CREATE 이벤트가 Backend
+User 5건, AI Researcher 8건이었고, **전부 Novel Expansion으로
+분류됐다 - Redundant Split은 0건**이었다.
+
+### Insight
+**증명된 것**: 이 데이터에서는 CREATE 오류(Redundant Split)가 관측되지
+않았다("No redundant CREATE events were observed"). **증명 안 된 것**:
+"CREATE는 본질적으로 안전하다"는 아직 과한 주장이다 - 표본이 작고
+(n=13), **Precision만 확인했지 Recall은 미확인**이다:
+
+| CREATE 판단 오류 유형 | 현재 상태 |
+|---|---|
+| False Positive(Redundant Split: 안 새로운데 새로 만듦) | 관측되지 않음(n=13) |
+| False Negative(Novel인데 ATTACH해버림) | 미측정 |
+
+Experiment #42의 높은 창조율(Backend 45.5%, AI Researcher 28.6%)은
+회피 가능한 파편화가 아니라 정당한 신규 확장이었을 가능성이 크다. 더
+중요한 발견은 원인 분리다 - Duplication의 원인이 CREATE(너무 많이
+만듦)인지 ATTACH(엉뚱한 곳에 잘못 붙임)인지 갈렸던 오래된 질문에,
+증거가 **ATTACH 쪽으로 강하게 수렴한다**: Experiment #29(ATTACH 정확도
+5.6~23.1%)/#34(Objective 개선해도 Trade-off만 이동)/#41(같은 실제
+Topic이 시점마다 다른 Anchor를 1순위로 선택)이 전부 ATTACH 쪽 문제였고,
+이번 실험은 CREATE 쪽에서는 (적어도 Precision 기준) 문제를 못 찾았다.
+
+**Reference Frame = Anchor Set + Assignment Rule**이라는 개념 분리가
+이번에 생겼다 - Anchor Set(CREATE)은 잠정적으로 정상 성장으로 보이고,
+Reference Frame을 흔드는 건 Anchor Set 자체가 아니라 Assignment
+Rule(ATTACH가 어디에 붙일지 정하는 규칙)일 가능성이 크다.
+
+### Decision
+`docs/algorithm_limitations.md`에 **Finding #011**(Anchor Creation Is
+Not the Primary Source of Duplication — Assignment Is) 신설 -
+Experiment #28/#29/#34/#41/#43을 하나의 서사로 연결한다. RQ7-A는 잠정
+좁혀짐(Recall 검증 남음, 완전히 닫힌 건 아님) - **RQ7-B("Anchor
+Assignment는 안정적인가?")가 남은 최우선 질문**이 된다. 연구의 초점이
+"Anchor를 언제 새로 만들 것인가"에서 "기존 Anchor 중 어디에 붙일
+것인가"로 거의 완전히 이동한다.

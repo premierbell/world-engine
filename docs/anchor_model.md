@@ -230,16 +230,37 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
      자체가 체이닝에 취약하다"). Community Detection(Louvain/Leiden) 같은
      더 정교한 그래프 알고리즘으로 바로 넘어가지 않는다 - edge weight를
      cosine 기반으로 정의하면 Finding #008을 다시 만날 위험이 있어서다.
-   - **Research Question #7(신설, 최우선): "Topic Identity는 애초에
-     복원(recover)해야 하는 대상인가, 아니면 시스템이 시간이 지나며
-     형성(emerge)하는 대상인가?"** Document Similarity(#008) → Tag
-     String(#009) → Tag Graph Connectivity(#010)까지, "Scrap 하나 또는
-     Scrap들 사이의 지역적 관계"에서 Topic Identity를 즉시 복원하려는
-     시도가 전부 구조적 한계에 부딪혔다 - 관점을 "정적으로 이미 존재하는
-     정체성을 찾는 문제"에서 "누적/안정화 과정을 거쳐 형성되는 개체"로
-     바꿔야 하는지가 다음 질문이다. 아직 가설도 설계도 없음.
-   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 Research Question
-     #7에 대한 답이 나온 뒤로 미룬다.
+   - **Research Question #7: "Topic Identity는 애초에 복원(recover)해야
+     하는 대상인가, 아니면 시스템이 시간이 지나며 형성(emerge)하는
+     대상인가?"** Document Similarity(#008) → Tag String(#009) → Tag
+     Graph Connectivity(#010)까지, "Scrap들 사이의 지역적 관계"에서
+     Topic Identity를 즉시 복원하려는 시도가 전부 구조적 한계에
+     부딪혔다. Experiment #41(Temporal Consistency)~#43(Creation
+     Classification)으로 이어지는 과정에서 **RQ7이 둘로 분리됐다**:
+     - **RQ7-A: "Anchor Creation은 성장(Novel Expansion)인가 분열
+       (Redundant Split)인가?" — 잠정 좁혀짐(Experiment #43)**. CREATE
+       결정마다 가장 가까웠던 기존 Anchor의 실제 주제와 비교했더니,
+       관측된 CREATE 이벤트(Backend 5건, AI Researcher 8건, 전부 첫
+       배치 제외)가 전부 Novel Expansion이었다 - Redundant Split 0건.
+       다만 표본이 작고, **Precision(잘못 새로 만든 적 있는가)만
+       확인했지 Recall(Novel인데 잘못 ATTACH해버린 경우)은 미측정**이라
+       "CREATE는 본질적으로 안전하다"까지 결론 내릴 수는 없다.
+       `docs/algorithm_limitations.md` **Finding #011**(Anchor Creation
+       Is Not the Primary Source of Duplication — Assignment Is)로 승격.
+     - **RQ7-B: "Anchor Assignment(ATTACH)는 안정적인가?" — 남은
+       최우선 질문**. Experiment #29(ATTACH 정확도 5.6~23.1%)/#34
+       (Objective 개선해도 Trade-off만 이동)/#41(동일 실제 Topic이
+       시점마다 다른 Anchor를 1순위로 선택)이 전부 이쪽 문제라는 증거다.
+       **Reference Frame = Anchor Set + Assignment Rule**로 개념을
+       분리하면, Anchor Set(CREATE)은 잠정적으로 정상 성장으로 보이고
+       Reference Frame을 흔드는 건 Assignment Rule(ATTACH)일 가능성이
+       크다 - 이건 Finding #008/#009/#010(Similarity/Tag/Graph 신호가
+       전부 Topic Identity 판별에 실패)과 같은 근본 원인(약한 신호)으로
+       이어진다. 연구 초점이 "Anchor를 언제 새로 만들 것인가"에서
+       "기존 Anchor 중 어디에 붙일 것인가"로 거의 완전히 이동한다 -
+       아직 새 가설/설계는 없음.
+   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 RQ7-B에 대한
+     답이 나온 뒤로 미룬다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation

@@ -999,3 +999,61 @@ String(Finding #009) → Tag Graph Connectivity(Finding #010)까지,
 잠정 종료한다. `docs/anchor_model.md`에 **Research Question #7**: "Topic
 Identity는 애초에 복원해야 하는 대상인가, 아니면 시스템이 시간이 지나며
 형성(emerge)하는 대상인가?"를 신설한다.
+
+## Finding #011: Anchor Creation Is Not the Primary Source of Duplication — Assignment Is
+
+### Claim
+Anchor Model의 두 결정(CREATE: 새 Anchor를 만들지, ATTACH: 기존 Anchor
+중 어디에 붙일지) 중, 지금까지의 증거는 Duplication의 원인이 CREATE가
+아니라 ATTACH 쪽으로 강하게 수렴한다. 다만 "CREATE는 본질적으로
+안전하다"까지 증명된 건 아니다 - Precision(잘못 새로 만든 적 있는가)만
+확인했고 Recall(새로 만들었어야 하는데 잘못 붙인 적 있는가)은 아직
+미측정이다.
+
+### Evidence 1 — CREATE의 Precision: Redundant Split 미관측 (Experiment #43)
+CREATE 결정마다 가장 가까웠던 기존 Anchor의 실제 주제와, 새로 만든
+Anchor의 실제 주제를 ground truth로 비교했다(offline 진단 목적).
+Backend User 5건, AI Researcher 8건의 CREATE 이벤트가 전부 "Novel
+Expansion"(실제 주제가 다름 - 정상)이었고, "Redundant Split"(실제
+주제가 같음 - 회피 가능한 파편화)은 0건이었다. 표본이 작아(n=13) 일반화
+근거로는 약하지만, 관측된 범위에서는 CREATE 오류가 없었다.
+
+### Evidence 2 — ATTACH의 낮은 정확도 (Experiment #29/#34)
+attach_threshold를 넘겨 ATTACH된 판단을 ground truth로 채점하면 정확도가
+Backend 23.1%, AI Researcher 5.6%로 매우 낮았다(Finding #008 Evidence
+1). Objective v0(pairwise dissimilarity penalty)로 판단 기준을 바꿔서
+실제로 적용해도 Precision-Fragmentation Trade-off가 해결되지 않고 다른
+지점으로 이동했을 뿐이다(Research Insight #005).
+
+### Evidence 3 — 동일 실제 Topic의 1순위 Anchor가 시점마다 바뀜 (Experiment #41)
+같은 실제 Topic의 새 candidate가 Day7과 Day30에 각각 나타났을 때, 두
+시점 모두에서 1순위로 선택한 Anchor가 전부 달랐다(Backend 0/3, AI
+Researcher 0/2). 이 결과 자체는 Anchor Set이 두 시점 사이에 달라졌다는
+교란 요인이 있어 확정적이지 않지만(Experiment #42), 적어도 ATTACH
+판단이 안정적이라는 증거는 되지 못한다.
+
+### Root Cause (가설, RQ7-B로 이어짐)
+**Reference Frame = Anchor Set + Assignment Rule**로 개념을 분리하면,
+Anchor Set(CREATE로 결정되는 부분)은 잠정적으로 정상 성장으로 보이고,
+Reference Frame을 흔드는 건 Assignment Rule(ATTACH가 어디에 붙일지
+정하는 규칙)일 가능성이 크다. 이건 Finding #008/#009/#010(Similarity/
+Tag/Graph 신호 전부가 Topic Identity 판별에 실패)과 같은 근본 원인으로
+이어진다 - ATTACH 판단이 쓰는 신호(cosine similarity 및 그 파생 신호들)
+자체가 약하다는 것.
+
+### Implication
+연구의 초점이 "Anchor를 언제 새로 만들 것인가"(CREATE)에서 "기존
+Anchor 중 어디에 붙일 것인가"(ATTACH/Assignment)로 거의 완전히
+이동한다. 다만 CREATE의 Recall(Novel인데 잘못 ATTACH해버린 경우)은
+아직 측정 안 됐다는 걸 명시한다:
+
+| CREATE 판단 오류 유형 | 현재 상태 |
+|---|---|
+| False Positive(Redundant Split) | 관측되지 않음(n=13) |
+| False Negative(Novel인데 ATTACH) | 미측정 |
+
+### Status
+**Open.** Research Question #7을 RQ7-A("Anchor Creation은 성장인가
+분열인가?" - 잠정 좁혀짐, Recall 검증 남음)와 RQ7-B("Anchor
+Assignment는 안정적인가?" - 남은 최우선 질문)로 분리한다.
+`docs/anchor_model.md` 갱신.
