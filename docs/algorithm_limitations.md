@@ -624,5 +624,80 @@ Night Batch가 이걸 다시 건드리면서 오히려 나빠진 사례가 여�
 설계되지 않았다.
 
 ### Status
-미해결 (Open). 다음 세션은 구현이 아니라 **설계 세션**으로 시작한다 —
-위 Open Question에 답하는 것이 Experiment #26 이전에 먼저 필요하다.
+**업데이트**: 위 Open Question에 답하려고 `selective_night_batch`(purity
+높은 Island는 절대 안 건드리고, 낮은 Island만 Split 후보로 검토 + 조각을
+기존 Island에 흡수)를 실제로 구현해서 검증했다. Backend User는 여전히
+1개/0%로 잘 유지됐지만, **AI Researcher는 파라미터를 어떻게 바꿔도
+"전부 1개로 뭉침"과 "9개인데 8/9 중복"을 오갈 뿐, 원하는 결과(여러 개로
+자연스럽게 갈리면서 중복 낮음)에 도달하지 못했다.** 원인을 파고들다
+Finding #006으로 이어졌다 — Night Batch 설계의 문제가 아니라 그보다
+이전 단계의 문제였다.
+
+---
+
+## Finding #006: Topic 오염은 Island가 아니라 Online Topic Formation에서 시작된다
+
+### Claim
+지금까지의 모든 Night Batch 버전(v0 Merge/Split, v1 Union-Find Topic
+Graph, v2 Topic HDBSCAN, v3 Selective)은 암묵적으로 **"Topic은 신뢰할 수
+있는 원자 단위"**라고 가정했다 — Topic을 통째로 옮기거나 합치기만 했지,
+Topic 내부를 들여다보지 않았다. 이 가정 자체가 틀렸다: Online 단계에서
+이미 하나의 Topic 안에 여러 실제 주제가 섞여 들어갈 수 있고, 이러면
+Night Batch가 아무리 정교해도 고칠 수 없다 — Topic을 쪼개는 연산이
+없으면 Topic 내부 오염은 원리적으로 손댈 수 없는 영역이다.
+
+### Evidence
+`selective_night_batch` 디버깅 중 AI Researcher의 Island #0 내부를 직접
+확인했다:
+
+```
+Island 0 / Topic 0: {Transformer:6, RLHF:7, Diffusion:2, Fine-tuning:5,
+                      Evaluation:1, Multimodal:4, Agent:4,
+                      Prompt Engineering:1}  (총 30개 스크랩, 8개 실제 주제)
+```
+
+**Topic 하나가 30개 스크랩과 8개의 서로 다른 실제 주제를 섞어서 담고
+있었다.** 지금까지는 "Island가 여러 Topic을 잘못 묶었다"(Finding
+#001/#003)고 봤는데, 실은 **Topic 형성 시점부터 이미 오염**돼 있었다.
+
+### Root Cause
+`world.py`의 `Island.add()`가 새 스크랩을 기존 Topic에 편입할지
+결정하는 기준(`topic_threshold=0.42`)은 island_threshold와 **정확히
+같은 구조적 결함**을 갖는다 — EMA로 계속 갱신되는 Topic의 center_vector에
+대해 스크랩을 하나씩 순차적으로 비교하는 Online 방식이라 순서 의존적이다.
+그런데 `topic_threshold`를 캘리브레이션한 실험(Experiment #6/#7)은
+island_threshold 때와 마찬가지로 **Offline Pairwise 실험**이었다 —
+Finding #001의 Root Cause에서 이미 "Offline Pairwise 실험은 순서
+의존성이 없는 문제라 그 결과를 Online 알고리즘에 그대로 적용할 수
+없다"고 적어뒀는데, 이 문장은 island_threshold뿐 아니라 topic_threshold에도
+그대로 적용되는 얘기였다. 다만 지금까지의 Order Sensitivity 실험(#8/#9/#10)은
+전부 **Island 레벨 결과(개수, F1)만 측정**했지 Topic 순수도(purity)는
+한 번도 측정하지 않았다 — 그래서 이 문제가 오늘까지 드러나지 않았다.
+
+### Implication
+Finding #001의 패턴("단일 threshold + Greedy Online → 순서 의존적
+불안정성")이 Island 레벨뿐 아니라 **Topic 레벨에도 원래부터 존재했을
+가능성이 크다.** Step 5(Island/Topic assignment) 전체가 재검토 대상이다.
+Night Batch(Step 5.5)는 "이미 만들어진 Topic을 잘 재배치하는 문제"로
+설계됐는데, 입력(Topic) 자체가 오염되어 있으면 이 설계는 원리적으로
+한계가 있다.
+
+**로드맵 재구성**: 기존 Step 5 → Step 5.5(Hybrid) → Step 6(Label) 순서에
+Topic 품질 검증 단계를 추가한다 — Step 5(Online Topic Formation) → Step
+5.25(Topic Validation/Repair, 신설) → Step 5.5(Night Batch) → Step 6.
+Night Batch보다 Topic 자체의 품질 보장이 선행돼야 한다는 게 오늘 확인된
+사실이기 때문이다.
+
+**다음 세션 연구 질문 (Topic Formation Research, Night Batch 설계를
+대체)**:
+1. Topic이 온라인에서 어떻게 생성되어야 하는가?
+2. Topic은 immutable인가?
+3. Topic도 Night Batch(또는 그 앞 단계)의 대상인가?
+4. Topic을 scrap 단위에서 다시 만들 수 있는가?
+5. Topic의 identity_vector는 언제 확정되는가?
+
+### Status
+미해결 (Open). 오늘 시도한 모든 Night Batch 버전(v0~v3)은 폐기하지
+않는다 - Finding #003~#005의 근거로 남긴다. 다만 다음 세션은 Night
+Batch 구현을 이어가지 않고 **Topic Formation Research**로 연구 질문
+자체를 전환한다.
