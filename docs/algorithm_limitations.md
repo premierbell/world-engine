@@ -816,3 +816,70 @@ Trade-off를 해결하지 못한 접근"으로 갱신됐다. k값을 더 스윕�
 에서 **"Attach는 무엇을 최적화해야 하는가?"**로 확장됨(representation은
 그 하위 질문) - `experiments/v0_validation.md`/`docs/anchor_model.md`에
 이어짐. 다음 세션은 이 확장된 질문부터 시작한다.
+
+## Finding #008: Embedding Similarity Encodes Semantic Relatedness, Not Topic Identity
+
+### Claim
+Cosine similarity(그리고 거기서 파생되는 모든 신호 - margin, representation
+변형, structural co-candidacy)는 "두 콘텐츠가 의미적으로 얼마나
+관련있는가"(semantic relatedness)는 어느 정도 포착하지만, "두 콘텐츠가
+같은 실제 Topic인가"(topic identity)라는 더 좁은 관계는 이 embedding
+공간에서 안정적으로 판별하지 못한다. 네 가지 독립적인 신호 설계
+(margin, representation, direct pairwise similarity, structural
+co-candidacy)가 전부 같은 방식으로 실패했다.
+
+### Evidence 1 — Margin이 attach 정확도의 신호가 아님 (Experiment #29)
+attach_threshold=0.30으로 내려진 모든 ATTACH 판단을 ground truth로 사후
+채점하자 전체 정확도가 Backend 23.1%, AI Researcher 5.6%로 매우 낮았고,
+margin(1등-2등 격차)과 correctness의 상관계수는 Backend 0.214, AI
+Researcher -0.201(음수)였다.
+
+### Evidence 2 — Representation을 바꿔도 실제 정책에서는 재현 안 됨 (Experiment #30/#31)
+post-hoc 채점에서는 top-k 멤버 평균이 centroid보다 판별력이 높았지만
+(Finding #007), 실제 attach 판단 기준으로 바꾸자 Precision-Fragmentation
+Trade-off가 해결되지 않고 다른 지점으로 이동했을 뿐이었다(Research
+Insight #002).
+
+### Evidence 3 — Direct Pairwise Similarity가 같은/다른 주제를 구분 못함 (Experiment #35)
+같은 실제 주제 쌍과 다른 실제 주제 쌍의 유사도 분포가 거의 완전히
+겹쳤다(Backend mean 0.359 vs 0.333, AI Researcher mean 0.399 vs 0.352).
+Backend는 같은 주제 쌍의 최댓값(0.464)이 다른 주제 쌍의 상위 10%
+지점(0.494)보다도 낮았다 - 어떤 threshold를 골라도 그 문턱을 넘는 쌍이
+진짜 같은 주제일 확률이 매우 낮다.
+
+### Evidence 4 — 구조적 신호도 더 나쁨 (Experiment #36)
+두 candidate가 어떤 Anchor를 후보로 공유하는지(top-k overlap, 전체
+Anchor 점수 벡터 상관관계)를 시도했지만, 같은/다른 주제 쌍의 분리도가
+Direct Similarity보다도 약하거나(거의 0) 방향이 뒤집혔다(음수). Score
+Vector Correlation은 절댓값 자체가 0.96~0.98에 달해 - 소수의 "허브"
+Anchor가 거의 모든 candidate의 선호 순위를 지배하고 있어서, "같은
+Anchor를 바라보는가"가 실제 주제 동일성과 거의 무관해진다(Finding #004
+허브 체이닝과 같은 계열의 현상).
+
+### Root Cause (가설)
+Embedding similarity는 넓은 의미적 인접성(semantic relatedness)을
+포착하도록 학습된 신호다 - 예를 들어 Transformer/RLHF/Fine-tuning/
+Prompt Engineering/Agent는 전부 "LLM 연구"라는 의미 공간에서 서로
+가깝다(semantic similarity 높음). 하지만 제품 관점에서는 이 다섯 개가
+서로 다른 Topic이다. 즉 **"같은 Topic → semantic similarity 높음"은
+어느 정도 성립하지만, 그 역("semantic similarity 높음 → 같은 Topic")은
+성립하지 않는다** - Topic Identity는 semantic relatedness보다 훨씬 좁고
+구체적인 관계라서, 넓은 의미 공간에서의 거리만으로는 좁은 정체성
+경계를 못 그린다.
+
+### Implication
+Similarity에서 파생되는 어떤 신호(margin, representation, 구조적
+신호)로도 Duplication을 근사하는 시도는 이 지점에서 접는다. 다음
+연구는 "similarity를 어떻게 잘 쓸까"가 아니라 "similarity만으로 Topic
+Identity를 만들 수 있는가"를 묻고(답은 현재 증거상 "아니오" 쪽으로
+기움), Topic Identity를 정의할 다른 정보원(예: LLM 기반 판단, 구조화된
+메타데이터, 혹은 이 문제를 V1으로 미루는 엔지니어링 절충)이 필요한지
+탐색해야 한다.
+
+### Status
+**Closed (이 연구 축에 한해).** Experiment #29~#36으로 Similarity-derived
+signal을 이용한 Duplication 근사 시도를 마무리한다 - 실패로 끝난 게
+아니라, "이 접근 계열 자체가 구조적 한계를 가진다"는 걸 네 번의 독립적
+반증으로 확인한 성과로 기록한다. `docs/anchor_model.md` Research
+Question #4를 Closed로 갱신, Research Question #5("Similarity만으로
+Topic Identity를 만들 수 있는가?") 신설.

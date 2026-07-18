@@ -186,15 +186,28 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
      세기) 스윕은 입력 신호 자체가 약해서 지금 하지 않는다 - 신호를
      세게/약하게 쓰는 것만으로는 Experiment #28의 threshold sweep처럼
      또 다른 Trade-off 지점만 찾을 가능성이 높다.
-   - **Research Question #4(신설): "Duplication은 어떤 신호로 근사할 수
-     있는가?"** — Similarity 자체를 재조정하는 대신 다른 종류의 신호가
-     필요하다. 후보(미검증): candidate끼리 top-k Anchor 후보를 얼마나
-     공유하는지 같은 **구조적 신호**(Experiment #32의 assignment
-     matrix에서 이미 일부 수집됨 - 두 candidate가 직접적인 cosine은
-     낮아도 "같은 곳들을 바라보고 있는지"는 다른 정보일 수 있다는 게
-     아이디어).
-   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 여전히 그
-     이후 단계다.
+   - **Research Question #4: "Duplication은 어떤 신호로 근사할 수 있는가?"
+     — Closed (Experiment #36)**. 구조적 신호(top-k Anchor Overlap, Score
+     Vector Correlation)를 시도했지만 Direct Similarity(Experiment #35)
+     보다도 판별력이 없었다(분리도가 거의 0이거나 음수) - Score Vector
+     Correlation은 절댓값이 0.96~0.98에 달해, 소수의 "허브" Anchor가
+     모든 candidate의 선호 순위를 지배하고 있음을 보여줬다. Margin(#29)
+     /Representation(#30-31)/Direct Similarity(#35)/구조적 신호(#36) 네
+     가지 독립적 접근이 전부 실패 → **`docs/algorithm_limitations.md`
+     Finding #008(Embedding Similarity Encodes Semantic Relatedness, Not
+     Topic Identity)로 승격, 이 연구 축(similarity-derived signal로
+     Duplication 근사)은 여기서 종료한다.**
+   - **Research Question #5(신설, 최우선): "Similarity만으로 Topic
+     Identity를 만들 수 있는가?"** — 현재 증거는 "아니오" 쪽으로 기운다.
+     "같은 Topic → semantic similarity 높음"은 성립하지만 그 역은
+     성립하지 않는다(예: Transformer/RLHF/Fine-tuning/Prompt Engineering
+     /Agent는 전부 서로 가까운 semantic relatedness를 가지지만 서로 다른
+     Topic이다). 다음 연구는 Similarity 활용법이 아니라 Topic Identity를
+     정의할 다른 정보원이 필요한지를 탐색한다 - 후보(전부 미검증): LLM
+     기반 판단, 구조화된 메타데이터, 혹은 이 문제를 V1으로 미루는
+     엔지니어링 절충.
+   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 Research Question
+     #5에 대한 답이 나온 뒤로 미룬다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation
