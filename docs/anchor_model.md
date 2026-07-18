@@ -121,10 +121,22 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
 
 ## Open Questions (아직 미해결)
 
-1. **Attach 판단 기준** — candidate cluster와 Anchor 사이의 유사도를
-   어떻게 계산할지(Anchor의 identity_vector vs candidate cluster의
-   centroid? 아니면 다른 방식?), threshold는 얼마로 할지. 아직 검증
-   안 됨.
+0. **Anchor는 무엇으로 표현되어야 하는가?** (Research Question #2, 신설,
+   최우선) — v0 구현(`night_batch_anchor`, Experiment #28)은 Anchor를
+   identity_vector(생성 시점에 고정된 단일 평균 벡터) 하나로 표현했는데,
+   Experiment #29(Margin 가설 기각, ATTACH 정확도 5.6~23.1%)와 Experiment
+   #30(멤버 기반 비교가 centroid보다 판별력 있음, `docs/algorithm_limitations.md`
+   Finding #007)에서 이 표현 자체가 판별력을 잃는다는 정량적 증거가 나왔다.
+   후보(전부 미검증, 확정 아님):
+   - identity_vector (현재, 단일 centroid)
+   - nearest member (Anchor 내 가장 가까운 멤버 하나)
+   - top-k averaging (Experiment #30에서 가장 유망, k=3 고정값만 확인됨)
+   - distribution representation (Anchor를 분포로 표현)
+   - prototype set (Anchor 내 대표 멤버 여러 개를 유지)
+1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
+   유사도를 어떻게 계산할지는 Question #0(표현)에 종속된 질문이 됨.
+   Experiment #28에서 attach_threshold 단독 조정만으로는 Precision-
+   Fragmentation Trade-off를 못 깬다는 게 확인됨(Research Insight #001).
 2. **여러 candidate가 같은 Anchor를 두고 경쟁**할 때 처리 방법.
 3. **Migration Event의 정확한 트리거 조건** — 완전히 수동(사용자 요청)인지,
    일정 기준(예: Provisional 데이터가 너무 오래 Anchor에 안 붙는 경우)이
