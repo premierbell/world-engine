@@ -1087,3 +1087,111 @@ Anchor 중 어디에 붙일 것인가"(ATTACH/Assignment)로 거의 완전히
 분열인가?" - 잠정 좁혀짐, Recall 검증 남음)와 RQ7-B("Anchor
 Assignment는 안정적인가?" - 남은 최우선 질문)로 분리한다.
 `docs/anchor_model.md` 갱신.
+
+## Finding #012: Pairwise LLM Judgment Reflects a Finer Semantic Unit Than the Topic Label
+
+### Claim
+문서 하나에서 독립적으로 계산되는 신호(embedding, freeform/hierarchical
+tag, tag graph)는 전부 Topic Identity 판별에 실패했다(Finding
+#008~#010). 문서 **쌍**을 동시에 보여주고 "같은 구체적 주제를 다루는가"를
+직접 묻는 Pairwise LLM Judgment는 처음으로 뚜렷한 판별 신호를 보였다.
+다만 이 신호가 실제로 반영하는 건 "Topic Identity"가 아니라 그보다
+한 단계 더 구체적인 **Mechanism(하위 메커니즘) Identity**다.
+
+### Evidence 1 — 신호 존재 확인 (Experiment #45)
+같은 Topic 쌍(n=9) mean=0.289, 다른 Topic 쌍(n=144) mean=0.010,
+ROC-AUC 0.820 - Direct Similarity(+0.026~0.047)/Freeform Tag
+(+0.011)/Tag Graph(거의 0)보다 압도적으로 강한 분리.
+
+### Evidence 2 — 근거의 성격 (Experiment #46, Error Analysis)
+경계 사례 10건을 LLM의 rationale과 함께 검토한 결과 전부 개념적으로
+타당한 판단(Type A, Genuine Semantic)이었다 - 표면적 단어 일치에
+의존한 사례(Type B, Lexical Shortcut)는 없었다. 대신 "같은 Topic
+안의 서로 다른 구체적 메커니즘"(예: Transformer 안의 Sliding Window
+Attention vs Layer Normalization)을 LLM이 정확히 구분해서 낮은 점수를
+준 패턴이 드러났다.
+
+### Evidence 3 — 정량적 계단 확인 (Experiment #47)
+필자가 직접 주석한 mechanism sub-label로 pair를 세 그룹으로
+나누자 mean score가 계단식으로 갈렸다: Case A(같은 Topic+같은
+mechanism) 0.483 > Case B(같은 Topic+다른 mechanism) 0.135 > Case
+C(다른 Topic) 0.006. 표본을 키운 전체 ROC-AUC도 0.730으로 견고하게
+재확인됐다.
+
+### Root Cause
+LLM은 "이 두 문서가 정확히 같은 구체적 기술/개념을 다루는가"라는
+질문에 정확하게 답한다 - 이건 Similarity가 넓은 semantic
+relatedness를 포착하는 것(Finding #008)과 반대 방향의 실패 없는
+판단이다. 하지만 Virtual Dataset의 ground truth Topic 라벨은
+"Transformer"처럼 여러 구체적 메커니즘을 뭉뚱그린 넓은 범주이거나,
+"Evaluation"처럼 여러 Topic에 걸쳐 적용되는 범주 개념이다 - 즉 **LLM의
+판단 해상도(semantic resolution)가 데이터셋의 라벨링 해상도보다
+높다.**
+
+### Implication
+Pairwise LLM Judgment는 "Mechanism Detector"로는 유망하지만 "Topic
+Classifier"로 바로 대체될 수 있는지는 별개 질문이다 - 실제 시스템
+품질(Purity/Duplication) 개선 여부를 검증해야 한다(Experiment #48).
+
+### Status
+**Open.** Experiment #48로 이어짐.
+
+## Finding #013: Semantic Resolution Mismatch
+
+### Claim
+Pairwise LLM Judgment를 실제 attach 판단(reranking)에 적용하면 Topic
+Purity는 극적으로 개선되지만 Topic Duplication Rate는 개선되지
+않는다. **이 실패는 LLM 판단이 부정확해서가 아니라, 판단의 semantic
+resolution(Mechanism 수준)과 평가 지표가 전제하는 semantic
+resolution(Topic 수준)이 다르기 때문이다.** 그리고 이 불일치는
+threshold를 조정해서 해결되는 문제가 아니라, Mechanism 수준 신호와
+Topic 수준 라벨이 부분적으로만 겹치는 **Signal Separability**의
+한계다.
+
+### Evidence 1 — 실제 시스템에 적용한 결과 (Experiment #48)
+cosine으로 top-3 Anchor 후보를 뽑고 그 top-3만 Pairwise LLM
+Judgment로 재점수화하는 방식(reranker, LLM이 검색기 역할은 안 함)을
+Day1→7→30 전체에 적용해서 Control(cosine attach)과 비교했다. Backend
+Purity 0.437→0.845, AI Researcher 0.437→0.761로 극적으로 개선됐지만,
+Duplication Rate는 두 페르소나 모두 **전혀 안 바뀌었고**(66.7%,
+88.9% 그대로), Island 수는 2~2.3배로 폭증했다.
+
+### Evidence 2 — Signal Separability 정량 확인 (Experiment #49)
+Experiment #47의 캐시(추가 API 호출 없음)로 Case A/B/C의 전체 점수
+분포를 직접 비교했다. Case B(같은 Topic, 다른 mechanism, n=48)와
+Case C(다른 Topic, n=576)가 score=0.2 지점에서 절대 개수가 거의
+같다(11개 vs 13개) - Case C의 모수가 워낙 커서 비율로는 작아도
+(2.6%) 절대 개수로는 Case B와 맞먹는 노이즈가 된다.
+threshold=0.2에서 Recall 48%(26/54), Precision 63%(26/41)로,
+어떤 threshold를 선택해도 Precision↑/Recall↓ 또는 반대 방향으로
+이동할 뿐이다.
+
+### Root Cause
+The failure is not caused by inaccurate semantic judgment, but by a
+mismatch between the semantic resolution of the judgment and the
+semantic resolution assumed by the evaluation metric. LLM은
+"Sliding Window Attention vs Layer Normalization"을 정확히 "다른
+mechanism"이라고 판단했다 - 이건 옳은 판단이다. 하지만 Dataset은 이
+둘을 "Transformer"라는 하나의 Topic으로 묶는다. LLM이 맞았고,
+평가가 다른 기준으로 채점한 것이다. threshold를 0.3→0.1로 낮추면
+Case B는 더 잡히지만 Case C도 같이 올라온다 - **Mechanism과 Topic
+사이에 명확한 절단점(cut point)이 존재하지 않는다.**
+
+### Implication
+The limitation is therefore not threshold selection but signal
+separability. Mechanism-level semantic judgments and Topic-level
+evaluation labels overlap only partially, producing an unavoidable
+precision–recall trade-off. threshold sweep은 이 근본적인 한계를
+우회하지 못하므로 진행하지 않는다.
+
+### Status
+**Open.** Experiment #45~49를 "Pairwise Semantic Judgment로 Topic
+Identity를 복원할 수 있는가"라는 하나의 연구 축으로 마무리한다.
+Research Question #8("Can Topic Identity be recovered from pairwise
+semantic judgment instead of independent document features?")에
+답한다 - **부분적으로 그렇다**: Mechanism 수준에서는 강한 신호이지만
+Topic 수준 직접 대체는 signal separability 한계로 안 된다.
+`docs/anchor_model.md`에 **Research Question #9**: "Topic이라는 것은
+애초에 pairwise semantic judgment만으로 정의될 수 있는 대상인가?"
+신설 - Mechanism을 Topic으로 다시 묶는 방법(예: 여러 Anchor를 동시에
+보여주는 Ranking 방식)이 다음 후보이지만 아직 설계 전이다.

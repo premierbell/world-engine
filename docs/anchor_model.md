@@ -263,11 +263,41 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
        `docs/algorithm_limitations.md` Finding #008에 Additional
        Evidence로 편입(새 Finding 신설 안 함 - Finding #008의 결론을
        한 단계 더 정밀하게 만드는 확장).
-   - **다음 연구 방향**: "어떻게 더 안정적으로 판단할 것인가"에서
-     "무엇을 판단 신호로 쓸 것인가"로 완전히 좁혀진다 - 아직 새 질문에
-     정식 번호를 매기지 않는다(다음 세션에서 구체화).
-   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 다음 연구
-     방향에 대한 답이 나온 뒤로 미룬다.
+   - **Research Question #8: "Can Topic Identity be recovered from
+     pairwise semantic judgment instead of independent document
+     features?" — Answered(Experiment #45~49), 부분적으로 그렇다.**
+     문서 하나에서 독립적으로 계산되는 신호(embedding/tag/graph)와
+     달리, 문서 **쌍**을 동시에 보여주고 "같은 구체적 주제를 다루는가"
+     직접 묻는 Pairwise LLM Judgment(`pairwise_judge.py`, AI는 관계
+     점수만 제공 - Rule 1 유지)는 처음으로 뚜렷한 신호를 보였다(ROC-AUC
+     0.820→0.730, 표본 확대 후 재확인). 다만 Error Analysis(Experiment
+     #46)와 Granularity 라벨링(Experiment #47)으로 확인한 결과, 이
+     신호가 실제로 반영하는 건 Topic보다 한 단계 더 구체적인
+     **Mechanism** 수준이었다(Case A 같은 mechanism 0.483 > Case B
+     같은 Topic·다른 mechanism 0.135 > Case C 다른 Topic 0.006, 계단식
+     분리). `docs/algorithm_limitations.md` **Finding #012**(Pairwise
+     LLM Judgment Reflects a Finer Semantic Unit Than the Topic
+     Label)로 승격.
+     - 이 신호를 실제 attach(cosine top-3 → LLM rerank 2단계 구조,
+       LLM은 검색기가 아니라 reranker)에 적용한 결과(Experiment #48),
+       Topic Purity는 극적으로 개선됐지만(0.437→0.76~0.85) Topic
+       Duplication Rate는 전혀 안 바뀌고 Island 수만 2~2.3배로
+       폭증했다. Score 분포를 직접 비교하자(Experiment #49) Case B와
+       Case C가 score=0.2 지점에서 절대 개수가 거의 같았다(11 vs
+       13) - threshold를 어디로 옮겨도 Precision↑/Recall↓ 또는
+       반대로 이동할 뿐인 **Signal Separability 문제**로 확인됐다.
+       threshold sweep은 이 한계를 못 넘으므로 진행하지 않는다.
+       `docs/algorithm_limitations.md` **Finding #013**(Semantic
+       Resolution Mismatch)로 승격.
+   - **Research Question #9(신설, 최우선): "Topic이라는 것은 애초에
+     pairwise semantic judgment만으로 정의될 수 있는 대상인가?"**
+     Mechanism 수준 신호는 강하지만, Topic은 여러 Mechanism이 묶인
+     상위 구조(Topic ⊇ {Mechanism A, B, C, ...})로 보인다 - Pairwise
+     (둘씩 비교)가 아니라 Mechanism들을 Topic으로 다시 묶는 별도
+     연산(예: 여러 Anchor를 동시에 보여주는 Ranking 방식)이 필요할 수
+     있다. 아직 가설/설계 전.
+   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 Research
+     Question #9에 대한 답이 나온 뒤로 미룬다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation
