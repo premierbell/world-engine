@@ -300,3 +300,21 @@ Night Batch가 매번 다시 건드리면서 오히려 나빠졌다. "전체 재
   HDBSCAN 변형 A/B)는 전부 삭제하지 않는다 - Finding #003/#004/#005의
   근거가 된 코드이므로 기록으로 남긴다. 다음 설계가 확정되면 실제
   파이프라인에서 어떤 버전을 쓸지(또는 완전히 새로운 v3를 만들지) 결정한다.
+
+### 업데이트 (Finding #006) — Night Batch 설계는 여기서 일시 정지
+
+Open Question에 답하려고 `selective_night_batch`(v3, purity 높은 Island는
+안 건드리고 낮은 것만 Split 후보로)를 구현·검증했지만 AI Researcher를
+여전히 못 풀었다. 원인을 추적한 결과 **Night Batch 설계의 문제가
+아니었다** — Island #0의 Topic 하나가 이미 8개 실제 주제, 30개 스크랩을
+섞은 채로 Online 단계에서 만들어져 있었다. Night Batch의 어떤 버전도
+"Topic은 신뢰할 수 있는 단위"라는 가정 위에 서 있었기 때문에 이 문제를
+원리적으로 고칠 수 없다 — `docs/algorithm_limitations.md` **Finding
+#006** 참고.
+
+**이 문서(Night Batch v2/v3)의 다음 버전 설계는 여기서 멈춘다.** 다음
+세션은 Night Batch가 아니라 **Topic Formation Research**(Step
+5.25, 신설)로 연구 질문을 전환한다 — Online 단계에서 Topic이 애초에 왜,
+어떻게 오염되는지부터 밝혀야 Night Batch를 다시 설계하는 의미가 있다.
+로드맵: Step 5(Online Topic Formation) → **Step 5.25(Topic
+Validation/Repair)** → Step 5.5(Night Batch, 이 문서) → Step 6(Label).
