@@ -1129,3 +1129,93 @@ Research Question #3("Attach는 어떤 목적함수를 최적화해야 하는가
 가중합 형태 후보), Greedy와 Global Assignment가 그 목적함수 하에서 실제로
 다른 결정을 내리는지부터 확인한다(Experiment #33). Optimizer(Hungarian
 algorithm, min-cost matching, ILP 등) 구현은 그 이후 단계다.
+
+## Experiment #33: Objective v0 - Greedy는 적어도 하나의 합리적인 목적함수에 대해 전역 최적이 아니다
+날짜: 2026-07-18
+
+### Hypothesis
+Experiment #32에서 확인한 Anchor 경쟁이 실제로 의미가 있으려면, "같은
+Anchor에 서로 다른 candidate를 몰아넣는 것 자체에 비용이 있는" 목적함수
+하에서 Greedy와 다른(더 나은) 배정이 존재해야 한다. Optimizer(Hungarian/
+ILP)는 아직 구현하지 않고, Greedy에서 시작한 지역 탐색(local search)으로
+"더 나은 배정이 존재하는가"만 확인한다.
+
+### Data
+**Objective v0**(첫 시도, 확정된 목적함수 아님):
+
+```
+J(assignment) = Σ_c attach_score(c, assignment[c])
+                - λ · Σ_(같은 Anchor로 배정된 c1,c2 쌍) (1 - cos_sim(c1, c2))
+```
+
+각 candidate가 얻는 attach 점수(신규 Anchor 선택은 attach_threshold를
+기준값으로 취급)의 합에서, 같은 Anchor에 함께 배정된 candidate끼리 서로
+안 닮을수록 벌점을 뺀다. **λ는 탐색을 위한 실험 파라미터이며 최적값을
+의미하지 않는다** - pairwise dissimilarity penalty도 "이게 맞는
+목적함수"가 아니라 "이런 종류의 항을 하나 넣으면 Greedy와 다른 해가
+생기는가"를 보기 위한 첫 시도(Objective v0)일 뿐이다.
+
+Greedy 배정에서 시작해 각 candidate를 다른 Anchor/신규로 바꿨을 때 J가
+개선되면 채택하는 지역 탐색을 λ=0(대조군)~1.2로 스윕
+(experiment_batch_objective.py).
+
+### Result
+- λ=0(대조군): 재배정 0건 - 목적함수가 Greedy와 동일할 때는 Local
+  Search도 Greedy와 일치한다는 sanity check 통과.
+- λ≥0.10: Backend User 18개 candidate 중 7~8개(약 40%), AI Researcher
+  26개 중 9~10개(약 35~38%)가 재배정됨. J(local search)가 J(greedy)를
+  λ가 커질수록 꾸준히 앞섬(예: Backend λ=0.3에서 5.186→6.445).
+
+### Insight
+**증명된 것**: Greedy는 적어도 하나의 합리적인 목적함수(Objective v0)에
+대해 전역 최적이 아니다 - Local Search만으로도 더 높은 J를 내는 배정을
+즉시, 대량으로 찾아냈다. 이건 "Global Search가 의미를 가질 수 있다"는
+존재증명(existence proof)이다.
+
+**아직 증명 안 된 것**: J(local search) > J(greedy)만 확인했을 뿐,
+Purity가 실제로 좋아졌는지 / Duplication이 실제로 줄었는지 / 사용자
+경험이 나아지는지는 전혀 모른다. 재배정 목록을 눈으로 봤을 때(예:
+Backend의 Redis/Kafka candidate가 Spring/JPA Anchor에서 분리되는 방향)
+방향이 그럴듯해 보이는 사례는 있었지만, 이건 육안 관찰일 뿐 정량 평가가
+아니다 - Objective v0 자체가 좋은 목적함수인지는 아직 모른다.
+
+정리하면: **Experiment #33은 "Global Search가 필요하다"를 증명한 게
+아니라, "Global Search를 고려할 이유가 있다"를 증명했다.** 둘은 다르다.
+
+더 중요한 전환: Experiment #28~32는 전부 "Similarity를 어떻게 계산할까"
+(threshold, representation, margin)를 연구했다. Experiment #33은 처음으로
+**Similarity가 목적함수의 한 항일 뿐**이라는 걸 보여준다 - 이번 실험은
+"어떤 목적함수가 좋은가"를 검증한 게 아니라, 목적함수 자체를 별도의
+연구 대상으로 분리해야 함을 보여준 첫 번째 증거다. 이제 연구의 중심은
+Similarity Function이 아니라 Objective Design으로 이동한다(Similarity →
+Objective → Optimization이라는 연구 계층이 처음 분리됨).
+
+### Decision
+Research Insight #004 신설(아래). `docs/anchor_model.md` Research
+Question #3에 Experiment #33 결과 반영 - Objective v0(pairwise
+dissimilarity penalty)는 "확정된 목적함수"가 아니라 "존재증명용 첫
+시도"로 명시하고, 아직 안 들어간 후보 항(entropy penalty, purity
+estimate, anchor confidence, new-anchor cost)을 나열. 다음 세션은 이
+목적함수 후보들을 어떻게 설계/평가할지(실제 Purity/Duplication으로
+검증하는 방법 포함)부터 시작한다 - Optimizer(Hungarian/ILP) 구현은
+여전히 더 뒤 단계.
+
+## Research Insight #004: Similarity Is Just One Term in the Objective - Objective Design Is a Separate Research Layer
+Experiment #33에서 관찰. Experiment #28~32는 모두 "Similarity를 어떻게
+계산/판단할까"라는 하나의 계층 안에서 움직였다(threshold 값,
+representation 방식, margin, 경쟁 여부 관찰). Experiment #33은 처음으로
+Similarity 위에 목적함수(Objective)라는 계층이 따로 있고, 그 목적함수를
+어떻게 설계하느냐에 따라(같은 similarity 값을 쓰더라도) 완전히 다른
+배정이 나올 수 있다는 걸 보였다. Greedy는 "Objective = Σ similarity"라는
+가장 단순한(그리고 암묵적인) 목적함수 하에서의 최적해였을 뿐이다 -
+연구의 중심이 Similarity Function에서 Objective Design으로 이동한다:
+Similarity → Objective → Optimization이라는 세 계층이 이번에 처음
+분리됐다.
+
+### Next Step
+목적함수 후보 항(entropy penalty, purity estimate, anchor confidence,
+new-anchor cost 등)을 어떻게 설계/평가할지부터 다음 세션을 시작한다 -
+Objective v0(pairwise dissimilarity penalty만)는 그중 한 항의 첫
+시도였을 뿐이다. 실제 Purity/Duplication 개선으로 이어지는지 검증하는
+방법도 함께 설계해야 한다 - 지금까지는 J(추상적 목적함수 값)만 봤지,
+실제 World 상태에 반영했을 때의 품질은 한 번도 측정 안 했다.

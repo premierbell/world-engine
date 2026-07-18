@@ -135,20 +135,33 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
    모델링하는 지금 구조(Experiment #28~31이 전부 이 구조 위에서 점수
    함수만 바꿔온 것) 자체가 문제를 온전히 표현 못 할 수 있다 - attach는
    본질적으로 assignment problem일 가능성이 있다.
-   - **증명된 것**: 경쟁(같은 배치의 여러 candidate가 같은 1등 Anchor를
-     두고 겹치는 것)은 예외가 아니라 기본 상태다(Experiment #32).
-   - **아직 증명 안 된 것**: Global Optimizer가 실제로 Purity/Duplication을
-     개선하는지, 목적함수를 어떻게 정의해야 하는지(예: `Similarity -
-     PurityLoss - Fragmentation - NewAnchorCost` 형태의 가중합 등 - 확정된
-     식 아님), Greedy보다 나은 결과가 실제로 나오는지는 전부 열려 있다.
+   - **증명된 것 (Experiment #32)**: 경쟁(같은 배치의 여러 candidate가 같은
+     1등 Anchor를 두고 겹치는 것)은 예외가 아니라 기본 상태다.
+   - **증명된 것 (Experiment #33, Objective v0)**: "같은 Anchor에 서로 다른
+     candidate를 몰아넣는 것"에 비용을 매기는 목적함수(pairwise
+     dissimilarity penalty, λ>0)를 하나 넣으면, Greedy 배정에서 지역
+     탐색만으로도 candidate의 35~40%가 재배정되고 목적함수 값이 꾸준히
+     개선됐다 - **Greedy는 적어도 하나의 합리적인 목적함수에 대해 전역
+     최적이 아니다**(존재증명). 단, 이건 "Global Search가 필요하다"가
+     아니라 "Global Search를 고려할 이유가 있다"까지만 증명한 것이다.
+   - **아직 증명 안 된 것**: Objective v0(pairwise dissimilarity penalty)가
+     좋은 목적함수인지 자체가 미검증 - J가 커졌다고 실제 Purity가
+     좋아졌는지/Duplication이 줄었는지/사용자 경험이 나아지는지는 한
+     번도 측정 안 됐다. λ 값도 최적값을 찾은 게 아니라 탐색용 실험
+     파라미터일 뿐이다. 아직 시도 안 한 목적함수 항: entropy penalty,
+     purity estimate, anchor confidence, new-anchor cost 등.
    - **표현(representation) 후보** (Research Question #2, 전부 미검증):
      identity_vector(현재), nearest member, top-k averaging(Experiment
      #30/#31에서 시도, Trade-off만 이동시킴), distribution representation,
      prototype set.
-   - **다음 실험(Experiment #33, 미실행)**: candidate 목적함수를 정의하고,
-     Greedy와 Global Assignment 두 방식으로 그 목적함수를 풀었을 때 실제로
-     다른 결정이 나오는지부터 확인한다 - Hungarian algorithm/ILP 같은 실제
-     Optimizer 구현은 그 이후 단계다.
+   - **연구 계층이 분리됨 (Research Insight #004)**: Experiment #28~32는
+     전부 Similarity를 어떻게 계산/판단할지(threshold, representation,
+     margin)를 연구했다. Experiment #33은 Similarity가 목적함수의 한 항일
+     뿐이라는 걸 보였다 - 연구의 중심이 Similarity Function에서 Objective
+     Design으로 이동한다(Similarity → Objective → Optimization).
+   - **다음 실험(미실행)**: 목적함수 후보 항을 어떻게 설계/평가할지, 실제
+     Purity/Duplication 개선으로 이어지는지 검증하는 방법부터 설계한다.
+     Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 그 이후 단계다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation
