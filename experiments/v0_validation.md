@@ -812,3 +812,27 @@ Finding #001에서 Island 개수가 순서에 따라 2~4개로 흔들렸던 것(
 - `docs/algorithm_limitations.md` Finding #006을 **"Greedy + EMA + Threshold는 계층과 무관하게 같은 방식으로 실패한다 (Hierarchical Instability)"**로 재구성(원래는 "Topic Formation Failure"로 좁게 명명했었음). Evidence 2로 이번 실험 추가.
 - `docs/evaluation_metrics.md`의 Topic Purity TODO를 정식 정의로 채움.
 - **연구 질문 우선순위 재조정**: 기존 5개 질문 앞에 **Question #0(신규, 최우선): "Topic은 Online에서 확정되어야 하는가?"**를 추가 — immutable 여부를 논하기 전에 "언제 확정할지"부터 답해야 한다는 판단. Product Principle("모든 성장은 즉시 체감 가능해야 한다")과 "Topic이 아직 확정 안 됐다"는 사실이 충돌한다는 점도 명시 — "임시 Topic → Night Batch → 확정 Topic" 2단계 생애주기가 필요한지가 Question #0의 핵심 하위 주제.
+
+## Design Decision: Anchor Model (Night Batch v0~v3를 대체)
+날짜: 2026-07-18
+
+### Background
+Finding #006 이후 바로 구현으로 들어가지 않고 "Topic의 생애주기(Lifecycle)를 어떻게 정의할 것인가"부터 논의했다 — 그 결정이 나오면 알고리즘(Greedy 유지 여부, HDBSCAN 채택 등)은 자연스럽게 따라온다는 판단(Product Decision #002, Hybrid Architecture Invariants 때와 같은 "원칙 먼저, 알고리즘은 나중" 패턴).
+
+### 논의 과정
+1. **초안(Repair 모델)**: Online Provisional Topic → Night Batch가 purity를 확인해서 Confirmed로 승격("Repair"). 기각됨 — AI Researcher의 30개 스크랩짜리 오염 Topic은 "조금 고치는" 수준이 아니라 애초에 틀렸다는 게 Finding #006의 증거였다.
+2. **수정안(Reconstruction 모델)**: Night Batch는 Greedy 결과를 참고하지 않고 스크랩을 처음부터 다시 클러스터링한다. Online은 순수 UX Preview, Offline이 Truth. Topic과 Island가 완전히 같은 Lifecycle(Provisional→Confirmed)을 공유한다는 것도 이 단계에서 확인 — 아키텍처적 대칭성이 큼.
+3. **경계선 추가**: "Offline이 전부 다시 계산한다"를 문자 그대로 받아들이면 이미 Confirmed된 Anchor까지 매번 재계산 대상이 되어 좌표 불변/Minimum Change Principle과 충돌한다는 지적 — Reconstruction의 대상은 "새 스크랩만"으로 제한.
+4. **최종안(Anchor Model)**: Confirmed Topic/Island를 "움직이지 않는 Anchor"로 정의. 새 스크랩만 원점에서 재클러스터링(HDBSCAN)하고, 그 결과가 기존 Anchor와 가까우면 Attach, 아니면 새 Anchor 생성. Anchor 자체는 routine Night Batch에서 수정 대상이 아니라 판단 기준(Context)으로만 쓰인다.
+
+### Decision
+`docs/anchor_model.md` 신설 — Night Batch v0~v3(`docs/hybrid_architecture.md`)를 대체하는 통합 설계로 문서화:
+- **핵심 원칙**: Greedy Online은 Preview UX만 담당, 확정(Truth)은 Night Batch(Anchor 형성)에서만 일어난다.
+- **Lifecycle**: Scrap → Provisional Topic → Confirmed Topic(Anchor) → Provisional Island → Confirmed Island(Anchor). Topic과 Island가 동일 구조를 공유.
+- **Immutability의 예외**: routine Night Batch에서 Anchor는 불변이지만, 명시적 **Migration Event**(알고리즘 버전 업그레이드/대규모 재색인/사용자 요청)에서는 전체 재구성을 허용 — 장기 개념 드리프트(예: "LLM" Topic이 2년 뒤 Reasoning/Agents/MCP까지 포괄) 대응.
+- **Research Question #0/#1 최종 답**: Q0("Online에서 확정되는 계층이 존재해야 하는가") → 없다. Q1("Offline이 Greedy 결과를 얼마나 재사용해야 하는가", 신설) → 새 데이터는 재사용 안 함(원점 재계산), Confirmed Anchor는 Context로만 참고.
+- `docs/hybrid_architecture.md` 최상단에 "Night Batch v0~v3는 anchor_model.md로 대체됨" 업데이트 노트 추가(문서 자체는 Finding #003~#005 근거로 보존).
+- `docs/algorithm_limitations.md` Finding #006의 Status를 "Resolved(설계 확정, 구현 전)"로 갱신.
+
+### Next Step
+`docs/anchor_model.md`의 Open Questions(Attach 판단 기준/threshold, 여러 candidate가 같은 Anchor를 두고 경쟁할 때 처리, Migration Event 트리거 조건, Provisional 상태 UX 노출 여부)부터 다음 세션을 시작한다 — 아직 구현은 시작하지 않았다.
