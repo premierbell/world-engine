@@ -213,18 +213,33 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
      a Shared Topic Identity)로 승격, Experiment #29~#39를 하나의 연구
      축("문서별 독립 신호로 Topic Identity를 근사할 수 있는가")으로
      마무리한다.
-   - **Research Question #6(신설, 최우선): "Topic Identity는 개별 문서의
-     속성인가, 여러 문서에 걸친 관계적(relational) 속성인가?"** 만약
-     후자라면, 문서를 독립적으로 처리하는 접근(embedding이든 태그든)
-     자체가 원리적 한계를 갖고, 여러 문서를 함께 보는 메커니즘이
-     필요하다는 뜻이 된다. **다만 주의**: 이 방향(예: 여러 문서를 한
-     번에 보여주고 LLM이 grouping/taxonomy까지 판단하게 하는 "Batch
-     LLM" 접근)은 AI가 "이해"가 아니라 "묶음(taxonomy/grouping)"까지
-     결정하게 될 위험이 있어 `ai_rules.md` Rule 1("AI는 이해, 알고리즘은
-     결정")과의 경계를 신중하게 다시 그어야 한다 - 아직 설계 전, 바로
-     구현으로 들어가지 않는다.
+   - **Research Question #6: "Topic Identity는 개별 문서의 속성인가,
+     여러 문서에 걸친 관계적 속성인가?" — 잠정 종료(Experiment #40)**.
+     Batch LLM 같은 직접 구현으로 가기 전에, "관계 정보가 실제로 존재
+     하는가"부터 순수 그래프 관찰(임베딩/LLM 판단 추가 없이, Experiment
+     #37 태그의 co-occurrence만)로 확인했다 - 태그 co-occurrence 그래프의
+     작은 Connected Component(크기 3~8)는 대체로 단일 실제 Topic으로
+     순수했다(**관계 정보 자체는 의미가 있다는 긍정적 신호**). 하지만
+     소수의 "허브" 태그가 서로 무관한 지역들을 전부 하나의 거대
+     Component로 묶어버렸다(Backend User 태그 209개 중 88개, 42%가 7개
+     서로 다른 실제 Topic을 뒤섞음) - Finding #004(Pairwise Threshold
+     Graph Chaining)와 정확히 같은 패턴이 태그 그래프에서 재현됐다.
+     `docs/algorithm_limitations.md` **Finding #010**(Local Connectivity
+     Is Not Topic Identity)로 승격 - Finding #004와 Experiment #40을
+     하나로 묶어 일반화("연결 기준이 무엇이든, naive connectivity 규칙
+     자체가 체이닝에 취약하다"). Community Detection(Louvain/Leiden) 같은
+     더 정교한 그래프 알고리즘으로 바로 넘어가지 않는다 - edge weight를
+     cosine 기반으로 정의하면 Finding #008을 다시 만날 위험이 있어서다.
+   - **Research Question #7(신설, 최우선): "Topic Identity는 애초에
+     복원(recover)해야 하는 대상인가, 아니면 시스템이 시간이 지나며
+     형성(emerge)하는 대상인가?"** Document Similarity(#008) → Tag
+     String(#009) → Tag Graph Connectivity(#010)까지, "Scrap 하나 또는
+     Scrap들 사이의 지역적 관계"에서 Topic Identity를 즉시 복원하려는
+     시도가 전부 구조적 한계에 부딪혔다 - 관점을 "정적으로 이미 존재하는
+     정체성을 찾는 문제"에서 "누적/안정화 과정을 거쳐 형성되는 개체"로
+     바꿔야 하는지가 다음 질문이다. 아직 가설도 설계도 없음.
    - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 Research Question
-     #6에 대한 답이 나온 뒤로 미룬다.
+     #7에 대한 답이 나온 뒤로 미룬다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation

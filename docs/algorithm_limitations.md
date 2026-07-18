@@ -947,3 +947,55 @@ Identity를 안정적으로 표현할 수 없다는 게 Experiment #29~#39로 �
 Topic Identity를 근사할 수 있는가"라는 하나의 연구 축으로 마무리한다.
 `docs/anchor_model.md` Research Question #5를 답변 완료로 갱신, Research
 Question #6 신설.
+
+## Finding #010: Local Connectivity Is Not Topic Identity
+
+### Claim
+"두 항목이 직접 연결되면(또는 연결의 사슬로 이어지면) 같은 그룹"이라는
+local connectivity 규칙은, 그 연결 기준이 무엇이든(embedding pairwise
+threshold, 태그 co-occurrence) 소수의 "허브"가 서로 무관한 그룹들을
+이어버리는 체이닝에 취약하다. 이건 embedding 문제(Finding #008)나 정보
+문제(Finding #009)가 아니라, **연결성(connectivity) 그 자체**의 구조적
+한계다.
+
+### Evidence 1 — Pairwise Threshold Graph (Finding #004)
+Scrap/Topic 레벨 모두에서 pairwise threshold + Union-Find가 허브
+노드(예: RLHF) 하나로 인해 서로 안 닮은 그룹들이 전부 하나로 묶이는
+체이닝을 반복 겪었다. Anchor Model v0 구현 초기에도 배치 내에서 같은
+체이닝이 다른 메커니즘(비교 대상이 배치 중 계속 자람)으로 재현됐다
+(Finding #004 Evidence 4).
+
+### Evidence 2 — Tag Co-occurrence Graph (Experiment #40)
+같은 스크랩에 함께 등장한 태그를 엣지로 연결하고 Connected
+Component(Union-Find)로 묶었다. 크기 3~8짜리 작은 Component는 대체로
+단일 실제 Topic으로 순수했지만, 소수의 범용적인 "허브" 태그가 서로
+무관한 지역들을 전부 하나의 거대 Component로 묶어버렸다(Backend User
+209개 태그 중 88개, 42%가 Kafka/Spring-JPA/Redis/RAG/Docker/MCP/LLM을
+전부 뒤섞은 하나의 Component).
+
+### Root Cause
+Local connectivity(직접 연결 여부만 보고 전이적으로 묶는 규칙)는 전역
+구조를 보지 못한다 - 체인처럼 이어지는 경로가 하나만 있어도 서로 안
+닮은 것들이 전부 하나로 묶인다. 연결 기준을 embedding cosine
+similarity로 정의하든(Finding #004), 태그 co-occurrence로 정의하든
+(Experiment #40) 동일하게 나타났다 - **연결 기준이 무엇인지와 무관하게,
+"연결되면 무조건 합친다"는 규칙 자체가 문제**라는 게 이번에 확인됐다.
+
+### Implication
+Community Detection(Louvain/Leiden 등) 같은 더 정교한 그래프 알고리즘
+으로 바로 넘어가는 건 신중해야 한다 - 그 알고리즘들도 결국 "그래프 위에서
+연결 구조를 찾는" 접근이고, edge weight를 어떻게 정의하느냐에 따라(예:
+cosine 기반이면) Finding #008을 다시 만날 위험이 있다. **작은 Component가
+대체로 순수했다는 것("관계 정보 자체는 의미가 있다")과 naive connectivity
+가 체이닝에 취약하다는 것("연결 규칙만으로는 안 된다")은 서로 다른
+결론이다** - 전자는 긍정적 신호로 남기고, 후자를 다음 설계에서 반드시
+피해야 한다.
+
+### Status
+**Closed(이 연구 축에 한해).** Document Similarity(Finding #008) → Tag
+String(Finding #009) → Tag Graph Connectivity(Finding #010)까지,
+"Scrap 하나 또는 Scrap들 사이의 지역적 관계"로 Topic Identity를
+복원하려는 시도가 전부 구조적 한계에 부딪혔다. Research Question #5/#6은
+잠정 종료한다. `docs/anchor_model.md`에 **Research Question #7**: "Topic
+Identity는 애초에 복원해야 하는 대상인가, 아니면 시스템이 시간이 지나며
+형성(emerge)하는 대상인가?"를 신설한다.

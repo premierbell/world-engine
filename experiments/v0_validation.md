@@ -1559,3 +1559,50 @@ Understanding Cannot Produce a Shared Topic Identity) 신설 - Experiment
 유도할 메커니즘이 없음)를 공유한다. **Research Question #6(신설)**:
 "Topic Identity는 개별 문서의 속성인가, 여러 문서에 걸친 관계적
 속성인가?" - `docs/anchor_model.md` 갱신.
+
+## Experiment #40: Tag Relation Analysis (그래프 관찰, 임베딩/LLM/알고리즘 판단 없음)
+날짜: 2026-07-18
+
+### Hypothesis
+Research Question #6 첫 실험. 태그를 바로 임베딩+HDBSCAN으로 묶기 전에,
+더 앞선 질문부터 순수 관찰로 확인한다 - 태그들 사이에 실제로 안정적인
+관계 구조(connectivity)가 존재하는가? Experiment #37의 freeform 태그로
+그래프(노드=태그, 엣지="같은 스크랩에 함께 등장")를 만들고, Connected
+Component가 실제 Topic 경계와 얼마나 일치하는지만 본다 - 임베딩도 LLM
+판단도 추가로 쓰지 않는다.
+
+### Data
+Backend User/AI Researcher 각각의 태그 co-occurrence 그래프를 Union-Find로
+Connected Component 분해(`experiment_tag_network_analysis.py`, Experiment
+#37 태그 캐시 재사용, 추가 API 호출 없음).
+
+### Result
+- **작은 Component(크기 3~8)는 대체로 단일 실제 Topic으로 순수했다**
+  (예: AI Researcher의 RLHFx17, Diffusionx13, Agentx9, Transformerx6 등).
+- **하지만 거대한 "허브" Component가 하나씩 생겼다.** Backend User는
+  전체 태그 209개 중 88개(42%)가 하나의 Component로 뭉쳐서 Kafka/
+  Spring-JPA/Redis/RAG/Docker/MCP/LLM을 전부 섞었다. AI Researcher도
+  크기 29짜리 Component가 Fine-tuning/Multimodal/RLHF/Evaluation/Prompt
+  Engineering을 섞었다.
+- 허브 Component를 빼고도 같은 Topic의 태그가 여러 Component에 흩어진
+  경우가 많았다(Backend LLM 9개, AI Researcher Agent/Prompt Engineering
+  각 9개 Component).
+
+### Insight
+Finding #004(Pairwise Threshold Graph는 Chaining에 취약하다)와 정확히
+같은 실패 패턴이다 - "같은 스크랩에 함께 등장"이라는 단일 연결 기준 +
+Union-Find(연결되면 무조건 하나로 합침)는, 소수의 범용적인 "허브" 태그가
+서로 무관한 지역들을 transitively 이어버리는 체이닝에 취약하다. **관계
+구조는 존재하지만("작은 Component는 순수하다"는 긍정적 신호), 순진한
+연결성(connectivity) 판단으로는 못 쓴다** - 이 둘은 서로 다른 결론이다.
+
+### Decision
+Community Detection(Louvain/Leiden 등) 같은 더 정교한 그래프 알고리즘으로
+바로 넘어가지 않는다 - 그 알고리즘들도 결국 "그래프 위에서 연결 구조를
+찾는" 접근이고, edge weight를 cosine 기반으로 정의하면 Finding #008을
+다시 만날 위험이 있다. 대신 `docs/algorithm_limitations.md`에 **Finding
+#010**(Local Connectivity Is Not Topic Identity) 신설 - Finding #004
+(Pairwise Threshold Graph)와 Experiment #40(Tag Graph)을 하나로 묶어
+일반화한다. Research Question #5/#6을 잠정 종료하고, **Research Question
+#7: "Topic Identity는 애초에 복원해야 하는 대상인가, 아니면 시스템이
+시간이 지나며 형성(emerge)하는 대상인가?"**로 연구축을 전환한다.
