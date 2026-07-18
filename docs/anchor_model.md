@@ -232,11 +232,12 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
      cosine 기반으로 정의하면 Finding #008을 다시 만날 위험이 있어서다.
    - **Research Question #7: "Topic Identity는 애초에 복원(recover)해야
      하는 대상인가, 아니면 시스템이 시간이 지나며 형성(emerge)하는
-     대상인가?"** Document Similarity(#008) → Tag String(#009) → Tag
-     Graph Connectivity(#010)까지, "Scrap들 사이의 지역적 관계"에서
-     Topic Identity를 즉시 복원하려는 시도가 전부 구조적 한계에
-     부딪혔다. Experiment #41(Temporal Consistency)~#43(Creation
-     Classification)으로 이어지는 과정에서 **RQ7이 둘로 분리됐다**:
+     대상인가?" — Closed(Experiment #44).** Document Similarity(#008) →
+     Tag String(#009) → Tag Graph Connectivity(#010)까지, "Scrap들
+     사이의 지역적 관계"에서 Topic Identity를 즉시 복원하려는 시도가
+     전부 구조적 한계에 부딪혔다. Experiment #41(Temporal Consistency)
+     ~#44(Assignment Stability)로 이어지는 과정에서 RQ7이 둘로
+     분리됐다가, RQ7-B의 답으로 RQ7 전체가 종료됐다:
      - **RQ7-A: "Anchor Creation은 성장(Novel Expansion)인가 분열
        (Redundant Split)인가?" — 잠정 좁혀짐(Experiment #43)**. CREATE
        결정마다 가장 가까웠던 기존 Anchor의 실제 주제와 비교했더니,
@@ -247,20 +248,26 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
        "CREATE는 본질적으로 안전하다"까지 결론 내릴 수는 없다.
        `docs/algorithm_limitations.md` **Finding #011**(Anchor Creation
        Is Not the Primary Source of Duplication — Assignment Is)로 승격.
-     - **RQ7-B: "Anchor Assignment(ATTACH)는 안정적인가?" — 남은
-       최우선 질문**. Experiment #29(ATTACH 정확도 5.6~23.1%)/#34
-       (Objective 개선해도 Trade-off만 이동)/#41(동일 실제 Topic이
-       시점마다 다른 Anchor를 1순위로 선택)이 전부 이쪽 문제라는 증거다.
-       **Reference Frame = Anchor Set + Assignment Rule**로 개념을
-       분리하면, Anchor Set(CREATE)은 잠정적으로 정상 성장으로 보이고
-       Reference Frame을 흔드는 건 Assignment Rule(ATTACH)일 가능성이
-       크다 - 이건 Finding #008/#009/#010(Similarity/Tag/Graph 신호가
-       전부 Topic Identity 판별에 실패)과 같은 근본 원인(약한 신호)으로
-       이어진다. 연구 초점이 "Anchor를 언제 새로 만들 것인가"에서
-       "기존 Anchor 중 어디에 붙일 것인가"로 거의 완전히 이동한다 -
-       아직 새 가설/설계는 없음.
-   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 RQ7-B에 대한
-     답이 나온 뒤로 미룬다.
+     - **RQ7-B: "Anchor Assignment(ATTACH)는 안정적인가?" — Answered
+       (Experiment #44), 놀라운 방향으로.** Anchor Set과 클러스터링을
+       완전히 고정하고 관측(embedding)에만 작은 노이즈(epsilon
+       0.02~0.10)를 20회 주입했더니, 1순위 Anchor 선택 Consistency가
+       **99.1~100%**였다 - Assignment는 노이즈에 전혀 브리틀하지 않다.
+       그런데 이 안정적인 판단의 정확도는 Experiment #29에서
+       5.6~23.1%로 매우 낮았다. **결론: Stable but Wrong.** 이건
+       Variance 문제가 아니라 Bias 문제다 - Variance는 반복 관측으로
+       줄지만 Bias는 줄지 않는다. RQ7의 핵심 가설(H2: "반복 관측이
+       Confidence를 쌓아준다")은 분산이 큰 Weak Signal을 전제하는데,
+       지금 신호는 Strong(분산 거의 0)하지만 Biased하다 - H2는
+       기각된 게 아니라 애초에 적용 대상이 아니었다(not applicable).
+       `docs/algorithm_limitations.md` Finding #008에 Additional
+       Evidence로 편입(새 Finding 신설 안 함 - Finding #008의 결론을
+       한 단계 더 정밀하게 만드는 확장).
+   - **다음 연구 방향**: "어떻게 더 안정적으로 판단할 것인가"에서
+     "무엇을 판단 신호로 쓸 것인가"로 완전히 좁혀진다 - 아직 새 질문에
+     정식 번호를 매기지 않는다(다음 세션에서 구체화).
+   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 다음 연구
+     방향에 대한 답이 나온 뒤로 미룬다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation

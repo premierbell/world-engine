@@ -1744,3 +1744,56 @@ Experiment #28/#29/#34/#41/#43을 하나의 서사로 연결한다. RQ7-A는 잠
 Assignment는 안정적인가?")가 남은 최우선 질문**이 된다. 연구의 초점이
 "Anchor를 언제 새로 만들 것인가"에서 "기존 Anchor 중 어디에 붙일
 것인가"로 거의 완전히 이동한다.
+
+## Experiment #44: Assignment Stability under Perturbation (고정 Anchor Set)
+날짜: 2026-07-19
+
+### Hypothesis
+RQ7-B 검증. Experiment #41의 교란 요인(Anchor Set 자체가 관측 시점마다
+달랐다)을 제거하기 위해, Anchor Set(Day1+Day7)과 클러스터링을 완전히
+고정한 채 관측(embedding)만 작은 노이즈로 흔들어서, ATTACH 판단이
+관측의 작은 변화에도 안 흔들리는지("brittle하지 않은지") 측정한다 -
+단순히 "같은 입력을 여러 번 넣는" 설계는 결정론적 알고리즘에서
+"안정성"이 아니라 "결정론성"만 확인하는 함정이 있다는 지적을 반영해서,
+입력 자체를 살짝 흔드는 방식으로 설계했다.
+
+### Data
+Day1+Day7로 Anchor Set을 만들고 고정, Day30 스크랩의 클러스터링
+(candidate 구성)도 한 번만 계산해서 고정(HDBSCAN 파라미터를 흔드는 건
+다른 축의 실험이라 이번엔 다루지 않음 - 향후 확장 후보). 각 candidate의
+관측된 embedding에 epsilon(0.02/0.05/0.10) 크기의 가우시안 노이즈를
+20회(trial) 주입해서, 원본(무섭동) 1순위 Anchor와 같은 Anchor를 고르는
+비율(Consistency)과 분포의 엔트로피를 측정, margin과 consistency의
+상관관계도 함께 봄(`experiment_assignment_stability.py`).
+
+### Result
+epsilon 0.02/0.05에서 Consistency 100%(엔트로피 0, 완전히 안정),
+epsilon 0.10에서도 99.1~99.5%. margin-consistency 상관계수는 노이즈가
+커질 때만 약하게 나타남(0.2~0.34).
+
+### Insight
+Assignment는 노이즈에 전혀 브리틀하지 않다 - 매우 확정적이고 안정적
+이다. 그런데 이 안정적인 판단의 정확도는 Experiment #29에서
+5.6~23.1%로 매우 낮았다. **즉 Stable but Wrong이다.**
+
+이건 Variance 문제가 아니라 Bias 문제라는 뜻이다 - Variance는 반복
+관측(averaging)으로 줄어들지만, Bias는 반복해도 줄어들지 않는다.
+H2("반복 관측이 Confidence를 쌓아준다")는 분산이 큰 Weak Signal을
+전제로 할 때만 의미가 있는데, 지금 Assignment Signal은 Strong하지만
+(분산이 거의 0) Biased(체계적으로 편향)하다 - 완전히 다른 상황이다.
+**H2는 기각된 게 아니라, 현재 Assignment Signal 하에서는 애초에 적용
+대상이 아니다(not applicable)** - repeated observation이 실패한 게
+아니라, 이 신호가 가진 문제(체계적 편향)가 반복 관측으로 풀리는 종류의
+문제가 아니라는 게 밝혀졌다.
+
+### Decision
+`docs/algorithm_limitations.md` Finding #008에 이 결과를 Additional
+Evidence로 추가한다(새 Finding 신설 안 함 - Finding #008의 결론을 한
+단계 더 정밀하게 만드는 확장이다): "Similarity에서 파생된 Assignment는
+노이즈 많은 신호가 아니라 일관되게 잘못된 신호다." **Research Question
+#7을 여기서 종료한다** - 반복 관측이 실패해서가 아니라, 반복 관측이
+풀어야 할 종류의 문제가 애초에 아니었다는 게 밝혀졌기 때문이다. 다음
+연구 방향은 "어떻게 더 안정적으로 판단할 것인가"에서 "무엇을 판단
+신호로 쓸 것인가"로 완전히 좁혀진다 - 아직 새 질문에 정식 번호를 매기지
+않는다(다음 세션에서 구체화). `docs/anchor_model.md` Research Question
+#7을 Closed로 갱신.
