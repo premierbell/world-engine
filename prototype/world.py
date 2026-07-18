@@ -739,7 +739,7 @@ class AttachTrace:
     margin: float | None
     decision: str  # "ATTACH" | "CREATE"
     attach_threshold: float
-    anchor_scraps_before: list[str] | None = None  # ATTACH일 때만: 편입 직전 Anchor 구성 스냅샷
+    anchor_scraps_before: list[str] | None = None  # best_anchor_id가 있을 때만: 가장 가까웠던 Anchor의 그 시점 구성 스냅샷(ATTACH/CREATE 둘 다, Experiment #43에서 CREATE의 Novel/Redundant 분류에 사용)
 
 
 def _cluster_new_scraps(
@@ -899,7 +899,7 @@ def night_batch_anchor(
                 margin=margin,
                 decision=decision,
                 attach_threshold=attach_threshold,
-                anchor_scraps_before=list(best_anchor.topics[0].scraps) if decision == "ATTACH" else None,
+                anchor_scraps_before=list(best_anchor.topics[0].scraps) if best_anchor is not None else None,
             )
         )
 
