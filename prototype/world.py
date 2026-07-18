@@ -724,3 +724,84 @@ def selective_night_batch(
                 next_id += 1
 
     return result
+
+
+def night_batch_anchor(
+    confirmed_islands: list[Island],
+    new_scrap_texts: list[str],
+    vectors: dict[str, list[float]],
+    min_cluster_size: int = 3,
+    min_samples: int = 1,
+    attach_threshold: float = 0.5,
+) -> list[Island]:
+    """Anchor Model(`docs/anchor_model.md`)의 Island-level Night Batch
+    구현(v0). `confirmed_islands`(Anchor)는 routine 상황에서 절대 수정하지
+    않고 Context로만 쓴다 - identity_vector를 참고 기준으로만 비교하고,
+    이 함수 안에서 기존 Anchor의 identity_vector/id는 바뀌지 않는다.
+
+    `new_scrap_texts`(아직 Confirmed 안 된 스크랩)는 Greedy가 어디
+    두었었는지 완전히 무시하고 scrap 레벨에서 원점 HDBSCAN으로 다시
+    클러스터링한다. 각 클러스터는 **이번 배치 시작 시점의 고정된 Anchor
+    목록**(`confirmed_islands`)과만 비교한다 — 배치 도중 새로 만들어진
+    Anchor를 다른 클러스터가 다시 비교 대상으로 삼지 않는다. 이걸
+    허용하면 방금 생긴 큰 Anchor가 "허브"가 되어 뒤에 처리되는 클러스터를
+    전부 끌어당기는 체이닝(Finding #004, Evidence 3)이 그대로
+    재현된다 - 비교 기준을 배치 시작 시점 스냅샷으로 고정하는 게
+    이 함수의 핵심이다. attach_threshold 이상이면 그 Anchor에
+    편입(Attach)하고, 아니면 새 Anchor를 만든다(배치 내 새 Anchor끼리는
+    서로 합쳐지지 않는다 - 다음 Night Batch에서 스스로를 다시 Context로
+    참고하며 자연스럽게 정리될 기회를 갖는다).
+
+    Topic 세부 구조(Step 5.25, Topic 레벨 Anchor)는 이번 v0 구현에서는
+    단순화해서 클러스터/Anchor 하나당 Topic 하나로 취급한다 - Topic
+    레벨까지 온전히 구현하는 것은 다음 단계 과제다.
+    """
+    if not new_scrap_texts:
+        return list(confirmed_islands)
+
+    matrix = normalize(np.array([vectors[text] for text in new_scrap_texts]))
+    labels = HDBSCAN(
+        min_cluster_size=min_cluster_size, min_samples=min_samples, metric="euclidean", copy=True
+    ).fit_predict(matrix)
+
+    clusters: dict[int, list[str]] = defaultdict(list)
+    for text, label in zip(new_scrap_texts, labels):
+        clusters[label].append(text)
+
+    original_anchors: list[Island] = list(confirmed_islands)  # 비교 기준 스냅샷 - 배치 중 안 자란다
+    result: list[Island] = list(confirmed_islands)
+    next_id = (max((isl.id for isl in confirmed_islands), default=-1)) + 1
+
+    def find_best_anchor(centroid: list[float]) -> tuple[Island | None, float]:
+        if not original_anchors:
+            return None, -1.0
+        scored = [(isl, cosine_similarity(centroid, isl.identity_vector)) for isl in original_anchors]
+        return max(scored, key=lambda pair: pair[1])
+
+    def attach(anchor: Island, texts: list[str]) -> None:
+        # Anchor의 identity_vector/id는 그대로 둔다 - 소속 스크랩만 늘어난다
+        anchor.topics[0].scraps.extend(texts)
+
+    for label, texts in clusters.items():
+        if label == -1:
+            # Noise는 서로 다른 스크랩을 억지로 하나로 묶지 않는다 - 각자 독립 판단
+            for text in texts:
+                best_anchor, best_sim = find_best_anchor(vectors[text])
+                if best_anchor is not None and best_sim >= attach_threshold:
+                    attach(best_anchor, [text])
+                else:
+                    result.append(Island(next_id, vectors[text], text))
+                    next_id += 1
+            continue
+
+        centroid = np.mean([vectors[t] for t in texts], axis=0).tolist()
+        best_anchor, best_sim = find_best_anchor(centroid)
+        if best_anchor is not None and best_sim >= attach_threshold:
+            attach(best_anchor, texts)
+        else:
+            new_island = Island(next_id, centroid, texts[0])
+            new_island.topics[0].scraps = list(texts)
+            result.append(new_island)
+            next_id += 1
+
+    return result
