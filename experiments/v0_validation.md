@@ -1433,3 +1433,129 @@ signals(Margin, Pairwise Similarity, Anchor Overlap, Score Correlation)를
 similarity의 활용법이 아니라, Topic identity를 정의하는 다른 정보원이
 필요한지를 연구 대상으로 전환한다. `docs/anchor_model.md` Research
 Question #4를 Closed로 갱신하고 Research Question #5를 신설한다.
+
+## Experiment #37: Tag Discriminability Analysis
+날짜: 2026-07-18
+
+### Hypothesis
+Research Question #5("Similarity만으로 Topic Identity를 만들 수 있는가?")
+첫 실험. Embedding cosine similarity 대신 AI가 스크랩마다 추출한 구조화된
+키워드 태그(`tag_extractor.py`, ai_rules.md Rule 1과 충돌하지 않음 - 태그
+추출도 "이해" 계층)의 겹침(Jaccard)이 Topic Identity를 더 잘 판별하는지
+확인한다. 아직 attach 판단은 바꾸지 않는다 - 신호 자체의 판별력만 본다
+(Experiment #31의 교훈: post-hoc 신호가 실제 정책으로 이어지리라는 보장이
+없다).
+
+### Data
+Day7/Day30 배치의 candidate 쌍마다 태그 집합의 Jaccard overlap을 계산해서
+같은 실제 주제 쌍 vs 다른 실제 주제 쌍으로 비교(Experiment #35와 같은
+방법론, `experiment_tag_discriminability.py`).
+
+### Result
+Backend: 같은 주제 쌍 mean=0.012, 다른 주제 쌍 mean=0.002(차이 +0.011).
+AI Researcher: 같은 주제 쌍 mean=0.014, 다른 주제 쌍 mean=0.003(차이
++0.011). 방향은 일관되게 맞지만 절대적인 겹침 자체가 매우 드물다 -
+Backend는 같은 주제 쌍 11개 중 8개, AI Researcher는 37개 중 33개가 겹침
+정확히 0.
+
+### Insight
+Direct Similarity(Experiment #35, 차이 +0.026~0.047)보다 절대적 분리
+폭은 작지만 방향은 일관됨 - 자유형(freeform) 추출이라 같은 개념도 텍스트
+마다 다른 표현으로 갈라져서 안 겹칠 가능성이 있다(태그 자체가 나쁜
+신호라기보다 표현이 흩어진 문제일 수 있음).
+
+### Decision
+Experiment #38(Error Analysis)로 겹침이 왜 0에 가까운지 원인을 먼저
+분리한다 - 새 프롬프트를 바로 설계하지 않는다.
+
+## Experiment #38: Tag Overlap Error Analysis (정성 분석)
+날짜: 2026-07-18
+
+### Hypothesis
+Experiment #37의 낮은 겹침이 (a) 표현 불일치(synonym), (b) 추상화 수준
+불일치, (c) 추출 자체의 불안정성, (d) 진짜 정보 부족 중 어디에서 오는지
+사람이 직접 표본을 읽고 분류한다. 이 실험은 알고리즘을 만들지 않는다 -
+같은/다른 실제 주제 쌍 표본(각 10개)의 태그를 나란히 출력만 한다
+(`experiment_tag_error_analysis.py`).
+
+### Data
+AI Researcher/Backend User에서 각각 같은 주제 쌍 10개, 다른 주제 쌍 10개를
+무작위 표본으로 뽑아 태그를 나란히 검토.
+
+### Result
+- **Precision은 좋음**: 표본에서 다른 실제 주제 쌍이 우연히 태그를 공유한
+  사례는 하나도 없었다.
+- **Recall이 나쁨**: 같은 실제 주제 쌍인데도 태그가 하나도 안 겹치는
+  경우가 대부분(AI Researcher 10쌍 중 8쌍). 예: 둘 다 "Fine-tuning"인데
+  한쪽은 `[instruction_tuning, model_training, task_instruction]`, 다른
+  쪽은 `[dpo, fine_tuning, lora, ...rlhf]`로 전혀 다른 어휘.
+  "LLM/LLM" 쌍도 `llm` vs `llm_agent`처럼 어간은 같지만 정확 문자열이
+  안 겹침.
+- 프롬프트가 "영어 소문자 snake_case"를 명시했는데도 한국어 태그(예:
+  `차이점`, `학습_안정성`)가 계속 섞여 나옴.
+
+### Insight
+원인은 **Case B(추상화 수준 불일치)가 지배적**이고 Case A(표현 불일치)도
+상당하다 - 자유형 추출이 각 스크랩의 구체적 하위 기법에 초점을 맞추다
+보니 공통 상위 태그를 남기지 않는다. Case C(추출 불안정)는 노이즈로
+확인되지만 부차적. **Case D(정보 자체가 없음)는 근거가 약함** - 정답
+단어가 우연히 포함될 때는 실제로 잘 겹쳤다(정보가 없는 게 아니라
+일관되게 안 나오는 것).
+
+### Decision
+Case A/B에 대응하는 다음 실험으로 **Experiment #39(Hierarchical Tag
+Extraction)**를 설계한다 - 고정 vocabulary(유지보수 비용 크고 DPO/LoRA
+같은 신기술을 fine_tuning으로 뭉개는 정보 손실 있음) 대신, LEVEL1(넓은
+상위 범주)/LEVEL2(구체적 하위 개념) 2계층 태그로 Recall과 Precision을
+동시에 노린다.
+
+## Experiment #39: Hierarchical Tag Extraction
+날짜: 2026-07-18
+
+### Hypothesis
+자유형 태그의 낮은 Recall은 정보 부족이 아니라 추상화 수준 불일치 때문
+이다. LEVEL1(넓은 상위 범주 1개)과 LEVEL2(구체적 하위 개념 2~4개)를 함께
+추출하면, LEVEL1에서 Recall이(같은 Topic이면 LEVEL1이 겹칠 확률이 높다),
+LEVEL2에서 Precision이(DPO/RLHF 같은 세부 구분 유지) 동시에 확보될
+것이다.
+
+### Data
+`HierarchicalTagExtractor`(`tag_extractor.py`)로 2계층 태그를 추출 -
+프롬프트는 "이 스크랩이 어떤 폴더에 들어갈지"를 명시적으로 묻되, 데이터셋의
+실제 ground truth 주제명은 예시에 전혀 노출하지 않았다(다른 도메인 예시로
+형식만 학습). Experiment #37/38과 같은 방법론으로 LEVEL1 overlap/Jaccard,
+LEVEL2 Jaccard를 같은/다른 주제 쌍으로 비교(`experiment_hierarchical_tags.py`).
+
+### Result
+가설과 반대 방향. Backend User는 같은 주제 쌍의 LEVEL1 겹침 비율이
+**정확히 0%**(11쌍 전부). AI Researcher는 recall 2.7%(1/37)로 Experiment
+#37의 flat 태그보다도 낮았다. 실제 값을 확인하니, 명백히 같은
+"Transformer" 실제 주제인 8개 스크랩의 LEVEL1 태그가 `transformer_
+architecture, transformer_models, positional_encoding, multi_head_
+attention, encoder_decoder_architecture, transformer_models, layer_
+normalization, natural_language_processing`로 8개 중 2개만 일치했다 -
+"가장 넓은 상위 폴더 이름"을 명시적으로 요청해도 LLM은 여전히 각 스크랩이
+다루는 구체적 메커니즘에 초점을 맞췄다.
+
+### Insight
+이건 프롬프트 설계의 문제가 아니라 더 근본적인 구조적 한계로 보인다 -
+LLM은 각 문서를 정확하게 이해하고 있다(positional_encoding을 다루는
+문서에 대해 "이 문서의 핵심은 positional encoding"이라고 답하는 건
+틀린 게 아니다). 문제는 **여러 문서를 독립적으로(서로를 보지 못한 채)
+태깅하는 한, "이 문서들이 같은 폴더에 들어가야 한다"는 정보가 애초에
+그 판단 과정에 존재하지 않는다는 것**이다 - Document Understanding(문서
+하나의 핵심이 뭔가)과 Corpus Taxonomy(여러 문서를 어떻게 묶을까)는
+다른 문제이고, stateless(문서별 독립 처리) 추출은 원리적으로 후자를
+만들어낼 메커니즘이 없다.
+
+### Decision
+`docs/algorithm_limitations.md`에 **Finding #009**(Independent Document
+Understanding Cannot Produce a Shared Topic Identity) 신설 - Experiment
+#29~#39를 아우르는 결론으로 승격한다. **Research Question #5("Similarity
+만으로 Topic Identity를 만들 수 있는가?")에 답한다: 증거는 강하게
+"아니오" 쪽을 가리킨다** - embedding similarity, margin, representation,
+구조적 similarity, freeform tag, hierarchical tag까지 서로 다른 modality
+6가지가 전부 같은 한계(문서별 독립 생성 신호로는 corpus 수준 taxonomy를
+유도할 메커니즘이 없음)를 공유한다. **Research Question #6(신설)**:
+"Topic Identity는 개별 문서의 속성인가, 여러 문서에 걸친 관계적
+속성인가?" - `docs/anchor_model.md` 갱신.

@@ -883,3 +883,67 @@ signal을 이용한 Duplication 근사 시도를 마무리한다 - 실패로 끝
 반증으로 확인한 성과로 기록한다. `docs/anchor_model.md` Research
 Question #4를 Closed로 갱신, Research Question #5("Similarity만으로
 Topic Identity를 만들 수 있는가?") 신설.
+
+## Finding #009: Independent Document Understanding Cannot Produce a Shared Topic Identity
+
+### Claim
+문서 하나하나를 독립적으로(다른 문서를 보지 못한 채) 이해해서 얻는 신호는
+- 그게 embedding cosine similarity든, AI가 추출한 키워드 태그든 - "여러
+문서가 같은 Topic에 속하는가"라는 corpus 수준의 관계를 안정적으로
+포착하지 못한다. Document Understanding(이 문서 하나의 핵심이 뭔가)과
+Corpus Taxonomy(여러 문서를 어떻게 묶을까)는 서로 다른 문제이고,
+stateless(문서별 독립 처리) 추출은 원리적으로 후자를 만들어낼 메커니즘이
+없다.
+
+### Evidence 1~4 — Similarity-derived 신호 네 가지 (Finding #008 요약)
+Margin(Experiment #29), Representation(#30/#31), Direct Similarity(#35),
+구조적 Similarity(#36) - cosine similarity에서 파생 가능한 신호 네 가지가
+전부 "같은 Topic인지"를 판별하는 데 실패했다. 자세한 내용은 Finding
+#008 참고.
+
+### Evidence 5 — Freeform Tag Extraction의 높은 Precision, 낮은 Recall (Experiment #37/#38)
+AI가 스크랩마다 추출한 키워드 태그의 Jaccard overlap은 다른 실제 주제
+쌍에서는 거의 항상 0(false positive 없음, Precision 좋음)이었지만, 같은
+실제 주제 쌍에서도 대부분 0이었다(AI Researcher 10개 표본 중 8개).
+Error Analysis로 원인을 분류한 결과 - 추상화 수준 불일치(같은 Topic도
+스크랩마다 다른 하위 개념에 초점)가 지배적 원인이었고, "정보 자체가
+없다"는 가설은 기각됐다(정답 단어가 우연히 포함될 때는 실제로 잘
+겹쳤다).
+
+### Evidence 6 — Hierarchical Tag Extraction도 실패 (Experiment #39)
+추상화 수준 불일치 가설에 따라 LEVEL1(넓은 상위 범주)/LEVEL2(구체적
+하위 개념) 2계층 태그를 시도했지만, LEVEL1조차 문서마다 다른 값으로
+갈렸다(같은 "Transformer" 주제인 8개 문서의 LEVEL1이 8개 중 6개가
+서로 다름). "가장 넓은 상위 폴더 이름"을 명시적으로 요청해도, LLM은
+각 문서가 다루는 구체적 메커니즘에 계속 초점을 맞췄다.
+
+### Root Cause
+Evidence 6이 결정적이다 - 이건 프롬프트 설계나 추상화 수준 조정으로
+고칠 수 있는 문제가 아니다. 각 문서를 **독립적으로**(다른 문서를 보지
+못한 채) 처리하는 한, "이 문서와 저 문서가 같은 폴더에 들어가야 한다"는
+정보 자체가 그 판단 과정에 존재하지 않는다. LLM은 각 문서를 정확하게
+이해하고 있다(positional_encoding을 다루는 문서에 "이 문서의 핵심은
+positional encoding"이라고 답하는 건 틀린 게 아니다) - 문제는 "정확한
+이해"와 "다른 문서와의 일관된 어휘 수렴"이 별개의 능력이라는 것이다.
+
+### Implication
+Similarity(6가지 modality: margin/representation/direct/구조적/freeform
+tag/hierarchical tag)로 파생 가능한 어떤 문서별 독립 신호로도 Topic
+Identity를 안정적으로 표현할 수 없다는 게 Experiment #29~#39로 반복
+확인됐다. Research Question #5("Similarity만으로 Topic Identity를 만들
+수 있는가?")에 대한 답은 **"아니오" 쪽으로 강하게 기운다.**
+
+다음 연구는 "어떤 신호가 좋은가"가 아니라 더 근본적인 질문으로 올라간다
+- **Research Question #6: "Topic Identity는 개별 문서의 속성인가, 여러
+문서에 걸친 관계적(relational) 속성인가?"** 만약 후자라면, 문서를
+독립적으로 처리하는 접근(embedding이든 태그든) 자체가 원리적 한계를
+갖고, 여러 문서를 함께 보는 메커니즘이 필요하다 - 다만 이건 AI가
+"이해"가 아니라 "묶음(taxonomy/grouping)"까지 결정하게 될 위험이 있어
+`ai_rules.md` Rule 1("AI는 이해, 알고리즘은 결정")과의 경계를 신중하게
+다시 그어야 한다(아직 설계 전).
+
+### Status
+**Open.** Experiment #29~#39를 "Similarity-derived/문서별 독립 신호로
+Topic Identity를 근사할 수 있는가"라는 하나의 연구 축으로 마무리한다.
+`docs/anchor_model.md` Research Question #5를 답변 완료로 갱신, Research
+Question #6 신설.

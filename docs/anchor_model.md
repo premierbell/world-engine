@@ -197,17 +197,34 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
      Finding #008(Embedding Similarity Encodes Semantic Relatedness, Not
      Topic Identity)로 승격, 이 연구 축(similarity-derived signal로
      Duplication 근사)은 여기서 종료한다.**
-   - **Research Question #5(신설, 최우선): "Similarity만으로 Topic
-     Identity를 만들 수 있는가?"** — 현재 증거는 "아니오" 쪽으로 기운다.
-     "같은 Topic → semantic similarity 높음"은 성립하지만 그 역은
-     성립하지 않는다(예: Transformer/RLHF/Fine-tuning/Prompt Engineering
-     /Agent는 전부 서로 가까운 semantic relatedness를 가지지만 서로 다른
-     Topic이다). 다음 연구는 Similarity 활용법이 아니라 Topic Identity를
-     정의할 다른 정보원이 필요한지를 탐색한다 - 후보(전부 미검증): LLM
-     기반 판단, 구조화된 메타데이터, 혹은 이 문제를 V1으로 미루는
-     엔지니어링 절충.
+   - **Research Question #5: "Similarity만으로 Topic Identity를 만들 수
+     있는가?" — Answered(Experiment #37~39): 증거는 강하게 "아니오"를
+     가리킨다.** 태그 추출(freeform, Experiment #37/38)은 Precision은
+     좋았지만 Recall이 낮았고 - Error Analysis 결과 원인은 추상화 수준
+     불일치였다. 이를 고치려 한 Hierarchical Tag Extraction(LEVEL1/LEVEL2,
+     Experiment #39)조차 실패했다 - "가장 넓은 상위 폴더 이름"을 명시적
+     으로 요청해도, 같은 실제 Topic인 문서 8개의 LEVEL1이 8개 중 6개가
+     서로 달랐다. **원인은 프롬프트 설계가 아니라 구조적이다**: 문서를
+     독립적으로(서로를 못 보는 채) 처리하는 한, "이 문서들이 같은 폴더에
+     들어가야 한다"는 정보 자체가 판단 과정에 존재하지 않는다 -
+     Document Understanding(문서 하나의 핵심)과 Corpus Taxonomy(여러
+     문서를 어떻게 묶을까)는 다른 문제다. `docs/algorithm_limitations.md`
+     **Finding #009**(Independent Document Understanding Cannot Produce
+     a Shared Topic Identity)로 승격, Experiment #29~#39를 하나의 연구
+     축("문서별 독립 신호로 Topic Identity를 근사할 수 있는가")으로
+     마무리한다.
+   - **Research Question #6(신설, 최우선): "Topic Identity는 개별 문서의
+     속성인가, 여러 문서에 걸친 관계적(relational) 속성인가?"** 만약
+     후자라면, 문서를 독립적으로 처리하는 접근(embedding이든 태그든)
+     자체가 원리적 한계를 갖고, 여러 문서를 함께 보는 메커니즘이
+     필요하다는 뜻이 된다. **다만 주의**: 이 방향(예: 여러 문서를 한
+     번에 보여주고 LLM이 grouping/taxonomy까지 판단하게 하는 "Batch
+     LLM" 접근)은 AI가 "이해"가 아니라 "묶음(taxonomy/grouping)"까지
+     결정하게 될 위험이 있어 `ai_rules.md` Rule 1("AI는 이해, 알고리즘은
+     결정")과의 경계를 신중하게 다시 그어야 한다 - 아직 설계 전, 바로
+     구현으로 들어가지 않는다.
    - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 Research Question
-     #5에 대한 답이 나온 뒤로 미룬다.
+     #6에 대한 답이 나온 뒤로 미룬다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation
