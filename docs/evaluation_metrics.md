@@ -20,6 +20,12 @@ V0에서 알고리즘을 검증하기 위해 쓰는 지표 정의. 지표 자체
 ## Drift (TODO)
 정의 미정 — centerVector가 시간이 지나며 초기 성격에서 얼마나 벗어나는지 측정할 지표. `ai_rules.md` Rule 6(Center Vector Update)과 연결됨.
 
+## Topic Duplication Rate (Experiment #21 이후 신설)
+**Definition**: (2개 이상의 Island에 걸쳐 나타나는 실제 주제 수) / (전체 distinct 실제 주제 수)
+**용도**: Fragmentation of User Interest(Experiment #20)를 정량화하는 지표. Island 개수나 Pairwise F1은 알고리즘 설정에 따라 값이 크게 흔들리지만, 이 지표는 "같은 관심사가 여러 섬에 흩어져 있다"는 사용자가 직접 체감하는 UX 문제를 그대로 측정한다.
+**우선순위**: Hybrid Architecture(Night Batch)를 평가할 때는 Island Count/F1보다 이 지표를 우선한다 — Experiment #21에서 Online-only 88.9% → Online+Night Batch 0.0%로 개선된 것을 핵심 결과로 기록.
+**주의**: "실제 주제(ground truth topic)"가 있는 golden/virtual dataset에서만 계산 가능하다. 실사용자 데이터에는 ground truth가 없으므로 대체 측정 방법(예: 사용자 설문, Label 유사도 클러스터링)이 V1에서 별도로 필요하다.
+
 ## Evaluation Layers: Canonical Taxonomy vs Semantic Evaluation (Experiment #13 이후)
 
 `docs/algorithm_limitations.md` Finding #002(Semantic Boundary Ambiguity)를

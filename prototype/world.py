@@ -13,9 +13,12 @@ identity_vector와 growth_vector의 코사인 유사도가 Identity Stability다
 정체성에서 얼마나 멀어졌는지(drift)를 보여주는 지표 (evaluation_metrics.md).
 """
 
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 
 import numpy as np
+from sklearn.cluster import HDBSCAN
+from sklearn.preprocessing import normalize
 
 from similarity import cosine_similarity
 
@@ -201,3 +204,65 @@ def assign_scrap_topic_first(islands: list[Island], vector: list[float], text: s
         island_decision="CREATE_ISLAND",
         identity_stability=1.0,
     )
+
+
+def night_batch(
+    islands: list[Island],
+    vectors: dict[str, list[float]],
+    min_cluster_size: int = 3,
+    min_samples: int = 1,
+    purity_threshold: float = 0.5,
+) -> list[Island]:
+    """Night Batch v0 - Merge만 수행한다 (hybrid_architecture.md 5단계 중 1/2/5:
+    후보 탐색, Merge 후보, Minimum Change 필터). Split, Boundary Topic 이동은
+    다음 버전 과제로 남긴다.
+
+    offline HDBSCAN(Experiment #12/#15에서 검증된 방식)을 "참고 자료"로만
+    쓴다 - HDBSCAN이 만든 클러스터를 그대로 세계에 덮어씌우지 않고, 현재
+    Island들 중 HDBSCAN에서 같은 클러스터로 몰리는(purity가 높은) 쌍만 골라
+    합친다. 이게 Minimum Change Principle(Invariant #5)을 코드로 구현한
+    부분이다 - 애매한 후보(purity가 낮은 Island)는 그대로 둔다.
+
+    Growth Point는 아직 구현되지 않았다(Step 7 보류) - 이 함수는 그 부분은
+    건드리지 않는다.
+    """
+    all_texts = [text for isl in islands for topic in isl.topics for text in topic.scraps]
+    matrix = normalize(np.array([vectors[text] for text in all_texts]))
+    labels = HDBSCAN(
+        min_cluster_size=min_cluster_size, min_samples=min_samples, metric="euclidean", copy=True
+    ).fit_predict(matrix)
+    label_of = dict(zip(all_texts, labels))
+
+    # 각 Island의 "다수결 HDBSCAN 라벨"과 그 비율(purity)을 계산
+    dominant_label: dict[int, int] = {}
+    purity: dict[int, float] = {}
+    for isl in islands:
+        texts = [text for topic in isl.topics for text in topic.scraps]
+        island_labels = [label_of[text] for text in texts if label_of[text] != -1]
+        if not island_labels:
+            continue
+        label, count = Counter(island_labels).most_common(1)[0]
+        dominant_label[isl.id] = label
+        purity[isl.id] = count / len(texts)
+
+    # 같은 다수결 라벨을 공유하고 purity가 임계값 이상인 Island들만 merge 후보로 묶는다
+    groups: dict[int, list[Island]] = defaultdict(list)
+    for isl in islands:
+        if isl.id in dominant_label and purity[isl.id] >= purity_threshold:
+            groups[dominant_label[isl.id]].append(isl)
+
+    merged_ids: set[int] = set()
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        survivor = min(group, key=lambda isl: isl.id)  # Invariant #2: 오래된(ID가 작은) Island가 생존
+        for isl in group:
+            if isl.id == survivor.id:
+                continue
+            offset = len(survivor.topics)
+            for i, topic in enumerate(isl.topics):
+                topic.id = offset + i
+            survivor.topics.extend(isl.topics)
+            merged_ids.add(isl.id)
+
+    return [isl for isl in islands if isl.id not in merged_ids]

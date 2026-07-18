@@ -607,3 +607,44 @@ Day 30 기준 총 9개의 실제 주제(Spring/JPA/Redis/Kafka/Docker/AWS/Kubern
 - `experiments/virtual_users/backend_developer.json`(Virtual User Dataset 1호) + `simulate_growth.py`(Growth Simulator)를 PR로 기록한다.
 - 결론은 "Hybrid가 필요하다"가 아니라 **"Hybrid(Night Batch)가 해결하려는 문제가 실제로 존재함을 확인했다"**까지로 제한한다.
 - 다음 실험(#21, 미실행): Night Batch를 실제로 구현한 뒤 같은 Virtual User Dataset으로 재실행 — Island 수, Topic 중복률(이번 실험에서 쓴 지표를 그대로 재사용), Label 중복률 등을 Before/After로 비교해 Hybrid의 효과를 정량적으로 검증한다.
+
+## Experiment #21: Night Batch Before/After Comparison
+날짜: 2026-07-18
+
+### Hypothesis
+Experiment #20에서 확인한 Fragmentation of User Interest(Online-only에서 실제 주제의 89%가 여러 Island에 중복)를 Night Batch v0(Merge-only, `hybrid_architecture.md` 5단계 중 1/2/5만 구현)가 줄이는지 검증한다.
+
+### Data
+같은 Virtual User Dataset(`backend_developer.json`, 71개)을 두 갈래로 처리(`experiment_night_batch.py`):
+- Online-only: Experiment #20과 동일, `assign_scrap`만 사용.
+- Online + Night Batch: 매 day 체크포인트(1, 7, 30)가 끝날 때마다 `night_batch()`(offline HDBSCAN을 참고 자료로 쓰고, 다수결 라벨이 같고 purity≥0.5인 Island 쌍만 merge)를 실행.
+
+### Result
+| | Island 수 | Topic 중복률 |
+|---|---|---|
+| Online-only | 5 | 88.9% (9개 중 8개) |
+| Online + Night Batch | **1** | **0.0%** |
+
+Night Batch 적용 후 9개 실제 주제(Spring/JPA/Redis/Kafka/Docker/AWS/Kubernetes/MCP/RAG/LLM) 전부가 중복 없이 하나의 Island에 담겼다.
+
+### 증명된 것 (Evidence)
+동일한 Virtual User Dataset에서 Online-only는 관심사가 여러 Island로 분열(fragmentation)됐지만, Night Batch v0(Merge-only)를 적용하자 하나의 Programming Mega Island로 통합되며 Topic 중복이 제거됐다 — Island 수 5→1, Topic 중복률 88.9%→0%라는 정량적 개선.
+
+이는 Product Decision #002("Programming은 하나의 상위 의미 공간")가 정적 golden dataset뿐 아니라 **시간이 흐르며 생성된 동적 성장 시나리오에서도 재현된다**는 뜻이다 — Product Decision이 정적 스냅샷의 우연이 아니라는 근거가 하나 더 늘었다.
+
+### 아직 증명되지 않은 것 (Scope, 반드시 같이 기록)
+**"Night Batch가 Finding #001을 해결했다"라고 쓰지 않는다.** 이번 결과는 다음 범위로 제한된다:
+- 페르소나 1명(Backend 개발자), 데이터셋 1개로만 검증했다 — AI Researcher, Sports 팬, 투자자, Mixed User, 여러 사용자 동시 등은 아직 안 봤다.
+- Split·Boundary Topic 이동은 구현하지 않았다 — "정말 갈라져야 하는데 하나로 잘못 뭉친" 경우(예: Sports+Finance가 실제로는 별개여야 하는 상황)를 이 버전은 고치지 못한다. 오히려 지나치게 잘 합쳐버릴 위험은 아직 검증 안 됨.
+- `purity_threshold=0.5` 기본값이 이 데이터셋에 우연히 잘 맞았을 가능성 — 파라미터 민감도는 확인하지 않았다.
+
+정확한 표현: **"Night Batch v0가 이 Virtual Backend User 데이터셋에서 fragmentation을 해소했다"** — 일반화는 아직 아니다.
+
+### Insight
+숫자 자체보다 지표 선택이 더 중요한 결과다. Island 개수는 알고리즘 설정에 따라 얼마든지 달라질 수 있지만, **Topic Duplication Rate(같은 실제 주제가 여러 Island에 존재하는 비율)는 사용자가 직접 체감하는 UX 문제를 정량화**한다 — "내 Redis 관심사가 왜 세 군데에 흩어져 있지?"를 숫자로 잡아낸다. 앞으로 Hybrid Architecture를 평가할 때 Island Count나 Pairwise F1보다 이 지표를 핵심 제품 지표로 우선한다(`docs/evaluation_metrics.md`에 정식 정의 추가).
+
+### Decision
+- `world.py`에 `night_batch()`(Merge-only) 추가, `experiment_night_batch.py`로 Before/After 비교.
+- `docs/evaluation_metrics.md`에 **Topic Duplication Rate**를 정식 지표로 추가.
+- `docs/hybrid_architecture.md`에 **Hybrid Validation Checklist** 신설 — Backend User 외 페르소나(AI Researcher, Mixed Engineering User, Sports User, Investor)와 Multi-user, Sports+Finance Boundary Case 등으로 검증 범위를 넓히는 로드맵을 백로그로 남긴다.
+- PR 결론은 "Night Batch가 Finding #001을 해결했다"가 아니라 **"Night Batch v0가 이 realistic longitudinal 시나리오에서 fragmentation을 해소했다 — 일반화는 향후 과제"**로 제한한다.

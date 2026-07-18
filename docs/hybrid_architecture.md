@@ -134,5 +134,28 @@ Simulation)에서 Night Batch가 아직 없는 Online-only 상태로는 한 사�
 자연스러운 30일 성장 과정에서도 같은 실제 주제(Redis/Kafka/Docker 등)가
 여러 Island에 중복되는 **Fragmentation of User Interest** 현상이 나타나는
 것을 확인했다. 이건 Night Batch가 다루려는 문제가 실제로 존재한다는
-근거이지, Night Batch가 이 문제를 해결한다는 증거는 아니다 — Night Batch
-구현 후 같은 데이터셋으로 재검증이 필요하다(Experiment #21, 미실행).
+근거이지, Night Batch가 이 문제를 해결한다는 증거는 아니다.
+
+**업데이트 (Experiment #21)**: `night_batch()`(v0, Merge-only 구현 — 위
+5단계 중 1/2/5만 구현, Split·Boundary Topic 이동은 아직 없음)를 같은
+Virtual User Dataset에 적용한 결과 Island 수 5→1, Topic Duplication
+Rate(`evaluation_metrics.md` 참고) 88.9%→0.0%로 개선됐다. **단, 이 결과는
+페르소나 1명·데이터셋 1개로만 검증됐다 — "Night Batch가 Finding #001을
+해결했다"는 아직 일반화된 결론이 아니다.** 남은 검증 범위는 아래 체크리스트
+참고.
+
+### Hybrid Validation Checklist (백로그)
+
+Night Batch v0가 다른 시나리오에서도 fragmentation을 해소하는지 확인하는
+로드맵. 체크된 것 외에는 전부 미실행.
+
+- [x] Backend User (Experiment #21) — Island 5→1, Topic 중복률 88.9%→0%
+- [ ] AI Researcher User — Transformer/RLHF/Diffusion/Vector DB/Agent 등
+- [ ] Mixed Engineering User — 여러 엔지니어링 분야가 섞인 페르소나
+- [ ] Sports User — 순수 스포츠 팬, fragmentation이 안 생기는 게 정상인지 확인
+- [ ] Investor User — Finance 계열
+- [ ] Multi-user Shared World — 여러 사용자가 동시에 존재할 때 Night Batch가
+      사용자 간 경계를 깨지 않는지
+- [ ] **Sports + Finance Boundary Case** — Watch Metric #001과 직결. Night
+      Batch가 "진짜 갈라져야 하는" 경우까지 과도하게 합쳐버리지는 않는지가
+      핵심 리스크(Split 미구현 상태이므로 특히 중요)
