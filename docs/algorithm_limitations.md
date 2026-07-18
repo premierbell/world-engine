@@ -540,9 +540,20 @@ Researcher(여러 개가 정답에 가까움, Finding #003 참고)를 동시에 
 Topic과 동시에 높은 유사도를 가져서, A-B와 B-C가 각각 threshold를 넘으면
 A-C가 안 닮았어도 Union-Find가 셋을 하나로 묶어버리는 체이닝이다.
 
+### Evidence 4 — night_batch_anchor의 배치 내 체이닝 (Experiment #28)
+Anchor Model v0 구현(night_batch_anchor)의 최초 버전에서, find_best_anchor()가
+배치 처리 도중 계속 자라는 result를 비교 대상으로 삼는 버그가 있었다 — 같은
+배치 안에서 먼저 처리된 클러스터가 만든 Anchor에, 뒤이어 처리되는 클러스터가
+달라붙는 구조였다. 비교 대상을 배치 시작 시점의 고정 스냅샷으로 제한해서
+고쳤다. 이번엔 pairwise threshold graph가 아니라 "비교 대상 집합이 처리
+도중 자란다"는 다른 메커니즘이었지만, 결과는 동일했다(허브가 되는 특정
+Anchor로 전부 체이닝) — 기존 Root Cause("단일 threshold + naive local
+connectivity")의 또 다른 구현 형태로 해석된다.
+
 ### Root Cause
-같은 문제가 세 번(Scrap Greedy+Threshold, Island Split의 local-only 판단,
-Topic Union-Find+Threshold) 다른 층위에서 반복됐다 — **문제는 특정
+같은 문제가 네 번(Scrap Greedy+Threshold, Island Split의 local-only 판단,
+Topic Union-Find+Threshold, night_batch_anchor의 배치 내 체이닝) 다른
+층위/메커니즘에서 반복됐다 — **문제는 특정
 구현이 아니라 "단일 threshold + naive pairwise connectivity"라는 접근
 방식 자체다.** 이 접근은 전역 밀도 구조를 못 보고 지역적인(local) 연결
 여부만 보기 때문에, 체인처럼 이어지는 경로가 하나만 있어도 서로 안 닮은
@@ -737,8 +748,10 @@ Topic 품질 검증 단계를 추가한다 — Step 5(Online Topic Formation) �
   Confirmed되는 순간 고정된다. 상세 설계는 `docs/anchor_model.md` 참고.
 
 ### Status
-**Resolved (설계 확정, 구현 전).** 오늘 시도한 모든 Night Batch
-버전(v0~v3)은 폐기하지 않는다 - Finding #003~#005의 근거로 남긴다.
-Night Batch의 후속 설계는 `docs/anchor_model.md`로 이관됐다 — 다음
-세션은 Anchor Model의 Open Questions(Attach 판단 기준, Migration
-Event 트리거 등)부터 시작한다.
+**Resolved (설계 확정) → 구현 v0 진행 중 (Experiment #28).** 오늘 시도한
+모든 Night Batch 버전(v0~v3)은 폐기하지 않는다 - Finding #003~#005의
+근거로 남긴다. Night Batch의 후속 설계는 `docs/anchor_model.md`로
+이관됐다. Anchor Model v0(night_batch_anchor)를 구현해 순서 독립성은
+확인했지만(Experiment #28), attach_threshold 기반 판단만으로는 품질
+목표에 도달하지 못했다 — Research Insight #001(`v0_validation.md`) 참고.
+다음 세션은 attach 메커니즘 자체를 바꾸는 Research Question부터 시작한다.
