@@ -121,8 +121,9 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
 
 ## Open Questions (아직 미해결)
 
-0. **Attach는 어떤 목적함수를 최적화해야 하는가?** (Research Question #3,
-   최우선) — 처음엔 "Anchor는 무엇으로 표현되어야 하는가"(representation,
+0. **제품 목표(Purity + Duplication)를 가장 잘 근사하는 목적함수는
+   무엇인가?** (Research Question #3, 확장판, 최우선) — 처음엔 "Anchor는
+   무엇으로 표현되어야 하는가"(representation,
    Research Question #2)로 좁게 물었으나, Experiment #31에서 top-k 멤버
    평균을 실제 attach 판단 기준으로 써봤더니 Duplication Rate는 낮아졌지만
    Purity도 함께 낮아지는 식으로 같은 Precision-Fragmentation Trade-off
@@ -154,14 +155,30 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
      identity_vector(현재), nearest member, top-k averaging(Experiment
      #30/#31에서 시도, Trade-off만 이동시킴), distribution representation,
      prototype set.
-   - **연구 계층이 분리됨 (Research Insight #004)**: Experiment #28~32는
-     전부 Similarity를 어떻게 계산/판단할지(threshold, representation,
-     margin)를 연구했다. Experiment #33은 Similarity가 목적함수의 한 항일
-     뿐이라는 걸 보였다 - 연구의 중심이 Similarity Function에서 Objective
-     Design으로 이동한다(Similarity → Objective → Optimization).
-   - **다음 실험(미실행)**: 목적함수 후보 항을 어떻게 설계/평가할지, 실제
-     Purity/Duplication 개선으로 이어지는지 검증하는 방법부터 설계한다.
-     Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 그 이후 단계다.
+   - **증명된 것 (Experiment #34)**: Objective v0를 실제로 적용해서 Day1→7→30
+     전체를 돌려보니, Backend User는 Purity·Duplication 둘 다 개선됐지만
+     (0.437→0.634, 66.7%→55.6%) AI Researcher는 Purity만 개선되고
+     Duplication은 오히려 악화됐다(88.9%→100.0%, Island 수도 13→22로
+     급증) - **"J가 커지는 것"과 "제품이 원하는 방향으로 좋아지는 것"은
+     동일하지 않다**(Research Insight #005). 이 차이를 "Backend는 되고 AI
+     Researcher는 안 된다"는 페르소나 차이로 단정하지 않는다 - Virtual
+     User가 페르소나당 1개뿐이라 일반화 근거가 부족하고, 더 안전한
+     해석은 "지배적 메가토픽이 있고 Topic 간 중첩이 적은 구조"와 "여러
+     주제가 조밀하게 얽힌 구조"라는 **데이터의 구조적 차이**다. 지금
+     목적함수(pairwise dissimilarity penalty 하나뿐)는 사실상 Purity
+     쪽으로 편향된 근사치이고 Duplication을 전혀 반영하지 못한다는 것도
+     함께 드러났다.
+   - **연구 계층이 두 번 분리됨**: Experiment #28~32(Research Insight
+     #004)에서 Similarity Function → Objective Design으로 한 번 이동했고,
+     Experiment #34(Research Insight #005)에서 **Product Metric →
+     Objective → Optimization**으로 한 겹 더 늘어났다 - Optimizer의
+     성능보다 "그 Objective가 Product Metric을 얼마나 잘 근사하는가"가
+     더 근본적인 연구 대상이 됐다.
+   - **다음 실험(미실행)**: Objective v0에 Duplication을 직접 반영하는
+     항(예: 같은 실제 주제로 추정되는 candidate가 여러 Anchor에 흩어지는
+     것에 대한 벌점, ground truth 없이 계산 가능한 근사 필요)을 추가하는
+     게 유력한 다음 후보이지만 아직 설계 전이다. Hungarian algorithm/ILP
+     같은 실제 Optimizer 구현은 여전히 그 이후 단계다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation

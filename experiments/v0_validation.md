@@ -1219,3 +1219,93 @@ Objective v0(pairwise dissimilarity penalty만)는 그중 한 항의 첫
 시도였을 뿐이다. 실제 Purity/Duplication 개선으로 이어지는지 검증하는
 방법도 함께 설계해야 한다 - 지금까지는 J(추상적 목적함수 값)만 봤지,
 실제 World 상태에 반영했을 때의 품질은 한 번도 측정 안 했다.
+
+## Experiment #34: Objective v0를 실제로 적용했을 때 품질이 정말 좋아지는가
+날짜: 2026-07-18
+
+### Hypothesis
+Experiment #33은 J(local search) > J(greedy)만 확인했다 - 목적함수 값이
+개선됐다는 것이지, 실제 Island 구조의 Topic Purity/Duplication Rate가
+개선됐는지는 검증하지 않았다. Objective v0(pairwise dissimilarity
+penalty)로 찾은 재배정을 실제 World 상태에 반영해서 Day1→7→30 전체
+증분 시나리오를 끝까지 돌리고, Greedy(night_batch_anchor 그대로)와
+Experiment #28과 같은 지표로 직접 비교한다.
+
+### Data
+Day1(비교 대상 Anchor가 아직 없는 첫 배치)은 night_batch_anchor로
+그대로 처리 - Greedy와 Objective v0가 갈릴 수 있는 지점은 Anchor가 생긴
+이후(Day7/Day30)뿐이다. 그 이후 배치부터는 Local Search(Experiment #33과
+동일한 Objective v0)가 찾은 배정을 실제로 적용해서 Island를 만들고,
+다음 배치의 입력으로 이어간다(experiment_objective_quality.py). λ=0(대조군)
+~1.2로 스윕.
+
+### Result
+λ=0(대조군)은 Greedy와 정확히 동일한 결과(Backend 10개/66.7%/0.437,
+AI Researcher 13개/88.9%/0.437)로 sanity check 통과.
+
+| λ | Backend Island/Dup/Purity | AI Researcher Island/Dup/Purity |
+|---|---|---|
+| 0.00 (=Greedy) | 10 / 66.7% / 0.437 | 13 / 88.9% / 0.437 |
+| 0.10 | 11 / 55.6% / 0.577 | 17 / 100.0% / 0.451 |
+| 0.30 | 11 / 55.6% / 0.606 | 21 / 100.0% / 0.549 |
+| 0.50~1.20 | 11 / 55.6% / 0.634 | 22 / 100.0% / 0.577 |
+
+Backend User는 Purity와 Duplication이 **둘 다** 개선됐다(0.437→0.634,
+66.7%→55.6%, Island 수는 10→11로 거의 안 늘어남). AI Researcher는
+Purity는 개선됐지만(0.437→0.577) **Duplication은 오히려 악화**됐다
+(88.9%→100.0%, 9개 실제 주제 전부가 2개 이상 Island에 걸치게 됨,
+Island 수도 13→22로 급증).
+
+### Insight
+**증명된 것**: Objective v0는 실제 World 상태를 바꾼다(추상적인 J뿐 아니라
+Topic Purity가 두 데이터셋 모두에서 실제로 변한다). 하지만 그 변화가
+제품이 원하는 방향(Purity와 Duplication이 함께 좋아지는 것)과 항상
+같지는 않다 - AI Researcher에서는 Purity를 올리는 대가로 Duplication이
+뚜렷이 나빠졌다. **"J를 크게 만드는 것"과 "좋은 World를 만드는 것"은
+동일하지 않다.**
+
+**해석에 주의할 점**: 이 차이를 "Backend는 되고 AI Researcher는 안
+된다"는 페르소나 의존성으로 단정하면 안 된다 - Virtual User가 페르소나당
+1개뿐이라 일반화할 근거가 부족하다. 더 안전한 해석은 "Objective v0는
+특정 구조의 데이터(지배적인 메가토픽이 있고 Topic 간 중첩이 적은 경우)
+에서는 제품 목표와 정렬되지만, 다른 구조(9개 주제가 조밀하게 얽힌 경우)
+에서는 정렬되지 않는다"는 것 - 원인 후보는 의미 공간의 조밀도, Topic 간
+중첩 정도, 지배적 메가토픽 존재 여부 같은 **데이터의 구조적 특성**이지
+"Backend/AI라는 사람의 차이"가 아니다.
+
+AI Researcher의 결과가 오히려 더 많은 정보를 준다: Objective v0(pairwise
+dissimilarity penalty 하나뿐)가 Purity는 밀어붙이지만 Duplication은
+전혀 반영하지 못하고 있다는 신호다 - 지금 목적함수는 사실상 "Purity
+근사치"에 가깝고, 제품이 실제로 원하는 두 목표(Purity + Duplication)를
+균형 있게 반영하지 못한다.
+
+### Decision
+Research Insight #005 신설(아래). Research Question #3을 더 구체화한다 -
+"Attach는 어떤 목적함수를 최적화해야 하는가?"에서 **"제품 목표(Purity +
+Duplication)를 가장 잘 근사하는 목적함수는 무엇인가?"**로. 연구 계층이
+한 겹 더 늘어났다: Similarity → Objective → Optimization이었던 것이
+**Product Metric → Objective → Optimization**으로 재구성된다 -
+Optimizer의 성능보다 Objective Design(그리고 그 Design이 Product
+Metric을 얼마나 잘 근사하는가)이 더 근본적인 연구 대상이다.
+`docs/anchor_model.md` Research Question #3 갱신.
+
+## Research Insight #005: Objective Improvement ≠ Product Improvement
+Experiment #34에서 관찰. Experiment #33에서 J(목적함수 값)가 개선된
+배정을 실제로 적용했더니, 두 데이터셋 모두에서 Topic Purity는 실제로
+올랐다(Objective v0가 명목상 하는 일은 하고 있다) - 하지만 Topic
+Duplication Rate는 한쪽(AI Researcher)에서 오히려 악화됐다. 즉 J가
+좋아진다고 제품이 원하는 두 목표(Purity, Duplication)가 함께 좋아지는
+게 아니다 - 지금 목적함수(Objective v0)는 Purity 쪽으로 편향된
+근사치일 뿐, 제품 목표 전체를 대표하지 못한다. 이건 Research Insight
+#001(Parameter Tuning으로 Trade-off를 못 깬다)/#002(Post-hoc Metric ≠
+Online Policy)와 같은 계열의 교훈이 목적함수 계층에서도 반복된 것이다 -
+**"평가/최적화 기준으로 쓰는 대리 지표(proxy)가 좋아진다고 실제로 원하는
+결과가 좋아지는 게 보장되지 않는다"**는 패턴이 이번에는 threshold도
+representation도 아니라 목적함수 자체에서 나타났다.
+
+### Next Step
+Research Question #3 확장판("제품 목표를 가장 잘 근사하는 목적함수는
+무엇인가?")부터 다음 세션을 시작한다 - Objective v0에 Duplication을
+직접 반영하는 항(예: 같은 실제 주제로 추정되는 candidate가 여러 Anchor에
+흩어지는 것에 대한 벌점, ground truth 없이 계산 가능한 근사가 필요)을
+추가하는 게 유력한 다음 후보이지만 아직 설계 전이다.
