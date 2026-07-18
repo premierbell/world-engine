@@ -609,3 +609,118 @@ def _rebuild_islands_from_components(
         result.append(new_island)
 
     return result
+
+
+def selective_night_batch(
+    islands: list[Island],
+    vectors: dict[str, list[float]],
+    min_cluster_size: int = 5,
+    min_samples: int = 1,
+    purity_threshold: float = 0.5,
+    min_group_size: int = 3,
+) -> list[Island]:
+    """Night Batch v3 (Finding #005 대응): 세계 전체를 재구성하지 않는다.
+
+    오늘까지의 시도(Split, Union-Find Topic Graph, Topic-level HDBSCAN)는
+    전부 세계 전체를 다시 만들었고, 그때마다 이미 좋았던 Island(Backend
+    User)까지 건드려서 나빠졌다. v0 Merge가 Backend User에서 잘 작동했던
+    이유를 돌아보면 - **애초에 purity 높은 Island만 후보로 삼고 나머지는
+    그대로 뒀기 때문**이었다. 이 원칙을 명시적인 설계로 승격한다:
+
+    1. Scrap 레벨 HDBSCAN(참고 자료, Experiment #12/#22와 동일 방법론)을
+       한 번 계산해서 각 Island의 다수결 라벨/purity를 구한다.
+    2. purity >= threshold인 "건강한" Island: Merge 후보로만 검토(v0
+       `night_batch`와 동일 로직). 매칭되는 짝이 없으면 완전히 그대로
+       반환한다 - 재계산도, 재라벨링도 안 한다.
+    3. purity < threshold인 "의심스러운" Island만 Split 후보로 검토한다.
+       단, Finding #004(local split이 global 중복을 늘림)의 교훈대로,
+       분리된 조각을 곧바로 새 Island로 만들지 않는다 - 그 조각의 다수결
+       라벨이 이미 확정된(건강한, 또는 이번에 먼저 처리된) 다른 Island와
+       같으면 그 Island에 흡수시키고, 일치하는 게 없을 때만 새 Island를
+       만든다.
+    """
+    all_texts = [text for isl in islands for topic in isl.topics for text in topic.scraps]
+    matrix = normalize(np.array([vectors[text] for text in all_texts]))
+    labels = HDBSCAN(
+        min_cluster_size=min_cluster_size, min_samples=min_samples, metric="euclidean", copy=True
+    ).fit_predict(matrix)
+    label_of = dict(zip(all_texts, labels))
+
+    def island_dominant(isl: Island) -> tuple[int | None, float]:
+        texts = [text for topic in isl.topics for text in topic.scraps]
+        island_labels = [label_of[text] for text in texts if label_of[text] != -1]
+        if not island_labels:
+            return None, 0.0
+        label, count = Counter(island_labels).most_common(1)[0]
+        return label, count / len(texts)
+
+    healthy: list[Island] = []
+    suspicious: list[Island] = []
+    for isl in islands:
+        _, purity = island_dominant(isl)
+        (healthy if purity >= purity_threshold else suspicious).append(isl)
+
+    merged_healthy = night_batch(healthy, vectors, min_cluster_size, min_samples, purity_threshold)
+
+    label_to_island: dict[int, Island] = {}
+    for isl in merged_healthy:
+        label, purity = island_dominant(isl)
+        if label is not None and purity >= purity_threshold:
+            label_to_island[label] = isl
+
+    next_id = (max(isl.id for isl in islands) + 1) if islands else 0
+    result: list[Island] = list(merged_healthy)
+
+    for isl in suspicious:
+        groups: dict[int, list[Topic]] = defaultdict(list)
+        no_signal: list[Topic] = []
+        for topic in isl.topics:
+            topic_labels = [label_of[text] for text in topic.scraps if label_of[text] != -1]
+            if not topic_labels:
+                no_signal.append(topic)
+                continue
+            dominant, _ = Counter(topic_labels).most_common(1)[0]
+            groups[dominant].append(topic)
+
+        significant_groups = {
+            label: topics
+            for label, topics in groups.items()
+            if sum(len(t.scraps) for t in topics) >= min_group_size
+        }
+        if len(significant_groups) < 2:
+            result.append(isl)  # 쪼갤 만한 구조가 없음 - 그대로 둔다
+            continue
+
+        largest_label = max(
+            significant_groups, key=lambda label: sum(len(t.scraps) for t in significant_groups[label])
+        )
+        leftover = no_signal + [
+            topic for label, topics in groups.items() if label not in significant_groups for topic in topics
+        ]
+        significant_groups[largest_label] = significant_groups[largest_label] + leftover
+
+        for label, topics in significant_groups.items():
+            if label in label_to_island:
+                target = label_to_island[label]
+                offset = len(target.topics)
+                for i, topic in enumerate(topics):
+                    topic.id = offset + i
+                target.topics.extend(topics)
+                continue
+
+            for i, topic in enumerate(topics):
+                topic.id = i
+            if label == largest_label:
+                isl.topics = topics
+                result.append(isl)
+                label_to_island[label] = isl
+            else:
+                new_texts = [text for topic in topics for text in topic.scraps]
+                new_vector = np.mean([vectors[text] for text in new_texts], axis=0).tolist()
+                new_island = Island(next_id, new_vector, new_texts[0])
+                new_island.topics = topics
+                result.append(new_island)
+                label_to_island[label] = new_island
+                next_id += 1
+
+    return result
