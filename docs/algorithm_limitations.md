@@ -793,14 +793,26 @@ identity_vector는 Anchor 생성 시점의 (보통 작은) 초기 클러스터 c
 자체가 원인인지 / top-k averaging이 우연히 이 두 데이터셋에만 맞았는지 /
 k=3이라는 값 자체가 중요한지는 아직 검증되지 않았다.
 
+### Evidence 3 — Top-k를 실제 판단 기준으로 썼을 때는 재현 안 됨 (Experiment #31)
+Evidence 2는 post-hoc 채점(이미 centroid 기준으로 내려진 attach 결정을
+top-k로 다시 채점)이었다. top-k 평균을 실제 attach 판단 기준(정책)으로
+바꿔서 Experiment #28과 같은 방법론으로 재검증하자, 같은 Island 수에서
+Duplication Rate는 뚜렷이 낮아졌지만 Purity도 함께 낮아졌다(예: Backend
+10개 Island에서 Purity 0.437→0.282, Duplication 66.7%→44.4%) - "판별력이
+더 높은 지표"가 "더 좋은 의사결정"으로 이어지지 않고, 같은 Trade-off
+곡선 위의 다른 지점(Duplication 우선)으로 이동했을 뿐이다. Research
+Insight #002(`v0_validation.md`) 참고.
+
 ### Implication
-다음 구현 후보는 centroid 기반 비교 대신 멤버 기반 표현(top-k averaging
-등)을 사용하는 방식이다 - 다만 이건 "다음 연구 후보"이지 확정된 설계가
-아니다.
+멤버 기반 표현(top-k averaging)은 "다음 연구 후보"에서 "시도했지만
+Trade-off를 해결하지 못한 접근"으로 갱신됐다. k값을 더 스윕하는 것은
+같은 곡선 위의 다른 점을 찾는 작업일 가능성이 높아 우선순위를 낮춘다.
+대신 더 근본적인 질문 - attach가 지금 similarity 최대화만 목적함수로
+삼는데, 제품이 실제로 원하는 건 Purity와 Duplication이라는 서로 다른
+두 목표라는 것 - 으로 Research Question이 확장됐다.
 
 ### Status
-**Open.** Research Question #2("Anchor는 무엇으로 표현되어야 하는가?")로
-`experiments/v0_validation.md`/`docs/anchor_model.md`에 이어짐. 다음
-세션은 후보(identity_vector/nearest member/top-k averaging/distribution/
-prototype set)를 실제 attach 메커니즘으로 설계/구현할지부터 시작한다 - k값,
-계산 비용, Provisional 단계 적용 여부는 아직 미검증.
+**Open.** Research Question #2가 "Anchor는 무엇으로 표현되어야 하는가?"
+에서 **"Attach는 무엇을 최적화해야 하는가?"**로 확장됨(representation은
+그 하위 질문) - `experiments/v0_validation.md`/`docs/anchor_model.md`에
+이어짐. 다음 세션은 이 확장된 질문부터 시작한다.

@@ -750,6 +750,7 @@ def night_batch_anchor(
     min_samples: int = 1,
     attach_threshold: float = 0.5,
     trace: list[AttachTrace] | None = None,
+    member_topk: int | None = None,
 ) -> list[Island]:
     """Anchor Model(`docs/anchor_model.md`)의 Island-level Night Batch
     구현(v0). `confirmed_islands`(Anchor)는 routine 상황에서 절대 수정하지
@@ -777,6 +778,15 @@ def night_batch_anchor(
     append한다 - best/second 유사도와 margin을 그대로 남기고, 그게
     "좋은 판단"이었는지는 정하지 않는다(ground truth 채점은 실험
     스크립트 몫, Experiment #29).
+
+    `member_topk`(선택, Research Question #2 / Finding #007): None이면
+    기존과 동일하게 Anchor의 identity_vector(단일 centroid)와 비교한다.
+    정수를 주면 대신 Anchor에 속한 멤버 벡터들과 새 클러스터 centroid의
+    유사도를 개별로 계산해서, 그중 상위 k개(멤버 수가 k보다 적으면
+    전부)의 평균을 그 Anchor의 점수로 쓴다(Experiment #30에서 사후
+    진단으로만 확인했던 top-k averaging을 실제 attach 판단 기준으로
+    승격) - 아직 v0/실험 단계이므로 매 비교마다 멤버 전체를 순회한다
+    (계산 비용 최적화는 하지 않음, Finding #007 Implication 참고).
     """
     if not new_scrap_texts:
         return list(confirmed_islands)
@@ -794,11 +804,20 @@ def night_batch_anchor(
     result: list[Island] = list(confirmed_islands)
     next_id = (max((isl.id for isl in confirmed_islands), default=-1)) + 1
 
+    def anchor_score(centroid: list[float], anchor: Island) -> float:
+        if member_topk is None:
+            return cosine_similarity(centroid, anchor.identity_vector)
+        member_sims = sorted(
+            (cosine_similarity(centroid, vectors[m]) for m in anchor.topics[0].scraps), reverse=True
+        )
+        k = min(member_topk, len(member_sims))
+        return sum(member_sims[:k]) / k
+
     def find_best_two_anchors(centroid: list[float]) -> tuple[Island | None, float, float | None]:
         if not original_anchors:
             return None, -1.0, None
         scored = sorted(
-            ((isl, cosine_similarity(centroid, isl.identity_vector)) for isl in original_anchors),
+            ((isl, anchor_score(centroid, isl)) for isl in original_anchors),
             key=lambda pair: -pair[1],
         )
         best_isl, best_sim = scored[0]
