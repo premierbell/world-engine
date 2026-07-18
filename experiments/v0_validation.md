@@ -985,3 +985,75 @@ Member 기반 비교(특히 top-k 평균)가 이 두 데이터셋에서는 단�
 distribution/prototype set)과 함께 추가. 다음 세션은 이 후보들을 실제
 attach 메커니즘으로 설계/구현할지부터 시작한다 - k값, 멤버 수가 많아질 때의
 계산 비용, Provisional 단계 적용 여부는 아직 미검증.
+
+## Experiment #31: Top-k Member Representation을 실제 Attach 판단 기준으로 사용 - Trade-off 이동, 해결 아님
+날짜: 2026-07-18
+
+### Hypothesis
+Experiment #30에서 top-k 멤버 평균이 centroid보다 correctness와 더 강하게
+상관됐다면, 이걸 실제 attach 판단 기준으로 바꿨을 때 Research Insight
+#001의 Precision-Fragmentation Trade-off가 완화되어야 한다 - 같은 Island
+수에서 더 높은 Purity를 내거나, 더 적은 Island 수로 같은 Purity를 낼 수
+있어야 한다.
+
+### Data
+night_batch_anchor()에 member_topk 파라미터를 추가해 attach 판단 기준을
+centroid(identity_vector) 대신 top-3 멤버 평균 유사도로 전환. Experiment
+#28과 동일한 방법론(Day1→7→30 증분, 순서 독립성, threshold sweep)으로
+Backend User/AI Researcher를 재검증(experiment_topk_representation.py).
+
+### Result
+순서 독립성은 유지됨(Backend 9~10개, AI Researcher 9개, 셔플해도 거의
+동일). 같은 Island 수로 맞춰 비교하면:
+
+| Island 수 | Purity/Dup (centroid) | Purity/Dup (top-3) |
+|---|---|---|
+| Backend, 5개 | 0.380 / 66.7% | 0.239 / 22.2% |
+| Backend, 10개 | 0.437 / 66.7% | 0.282 / 44.4% |
+| AI Researcher, 5개 | 0.338 / 88.9% | 0.282 / 33.3% |
+| AI Researcher, 14개 | 0.451 / 88.9% | 0.394 / 66.7% |
+
+두 데이터셋 모두에서 일관된 패턴: top-3는 Duplication Rate를 뚜렷이
+낮추지만 Purity도 함께 낮아진다.
+
+### Insight
+Experiment #30(post-hoc 채점: 이미 내려진 centroid 기준 attach 결정을
+다른 지표로 다시 채점)에서 top-k가 더 잘 맞았던 것이, top-k를 실제
+의사결정 기준(online policy)으로 바꿨을 때는 재현되지 않았다 - 오히려
+같은 Precision-Fragmentation Trade-off 곡선 위에서 다른 지점(Duplication
+우선)으로 이동했을 뿐이다. **좋은 사후 평가 지표(post-hoc metric)가 좋은
+의사결정 정책(online policy)이 되는 것은 아니다** - 어떤 attach 결정을
+내리느냐에 따라 이후 Anchor의 멤버 구성 자체가 달라지므로(정책이 관측
+분포 자체를 바꾼다), 정적으로 측정한 상관관계가 정책으로 그대로 전이되지
+않는다.
+
+k값(1, 5, 전체 등)을 더 스윕하는 건 지금 하지 않는다 - 이미 확인된
+Trade-off 곡선 위의 다른 점을 찾는 작업일 가능성이 높고, 지금 필요한 건
+그 곡선 자체가 왜 존재하는지에 대한 더 근본적인 질문이다.
+
+### Decision
+Research Insight #002 신설(아래). Research Question #2를 "Anchor는
+무엇으로 표현되어야 하는가?"에서 **"Attach는 무엇을 최적화해야
+하는가?"**로 확장 - representation은 그 하위 질문이 된다. attach가 지금은
+similarity 최대화만 목적함수로 삼는데, 제품이 실제로 원하는 건 Purity와
+Duplication이라는 서로 다른 두 목표라는 게 이번 실험에서 드러났다.
+`docs/algorithm_limitations.md` Finding #007에 Evidence 3/Status 갱신,
+`docs/anchor_model.md` Open Question #0 확장.
+
+## Research Insight #002: Post-hoc Metric ≠ Online Policy
+Experiment #31에서 관찰. Experiment #30에서 top-k 멤버 평균이 correctness와
+더 강하게 상관됐던 건 이미 내려진(centroid 기준) attach 결정을 사후에
+재평가한 결과였다. 그 지표를 실제 attach 판단 기준(정책)으로 바꾸자 - 어떤
+클러스터가 어떤 Anchor에 붙는지 자체가 달라지고, Anchor의 멤버 구성도 그에
+따라 달라지므로 - 정적으로 관찰했던 상관관계가 그대로 재현되지 않았다.
+좋은 평가 함수가 자동으로 좋은 의사결정 함수가 되지는 않는다. 이건 이번
+프로젝트에서 Research Insight #001(Parameter Tuning으로 Trade-off를 못
+깬다)과 같은 계열의 교훈이다 - 둘 다 "지금 있는 축(threshold 값, 또는
+표현 방식) 위에서 이동하는 것만으로는 근본적인 Trade-off가 안 풀린다"는
+걸 보여준다.
+
+### Next Step
+Research Question #2 확장판("Attach는 무엇을 최적화해야 하는가?")부터
+다음 세션을 시작한다 - similarity 최대화 하나의 목적함수 대신 Purity와
+Duplication을 함께 고려하는 판단 기준이 필요한지, 그렇다면 어떤 형태여야
+하는지는 아직 가설조차 없다.

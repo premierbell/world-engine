@@ -121,22 +121,28 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
 
 ## Open Questions (아직 미해결)
 
-0. **Anchor는 무엇으로 표현되어야 하는가?** (Research Question #2, 신설,
-   최우선) — v0 구현(`night_batch_anchor`, Experiment #28)은 Anchor를
-   identity_vector(생성 시점에 고정된 단일 평균 벡터) 하나로 표현했는데,
-   Experiment #29(Margin 가설 기각, ATTACH 정확도 5.6~23.1%)와 Experiment
-   #30(멤버 기반 비교가 centroid보다 판별력 있음, `docs/algorithm_limitations.md`
-   Finding #007)에서 이 표현 자체가 판별력을 잃는다는 정량적 증거가 나왔다.
-   후보(전부 미검증, 확정 아님):
-   - identity_vector (현재, 단일 centroid)
-   - nearest member (Anchor 내 가장 가까운 멤버 하나)
-   - top-k averaging (Experiment #30에서 가장 유망, k=3 고정값만 확인됨)
-   - distribution representation (Anchor를 분포로 표현)
-   - prototype set (Anchor 내 대표 멤버 여러 개를 유지)
+0. **Attach는 무엇을 최적화해야 하는가?** (Research Question #2, 확장판,
+   최우선) — 처음엔 "Anchor는 무엇으로 표현되어야 하는가"(representation)로
+   좁게 물었으나, Experiment #31에서 top-k 멤버 평균을 실제 attach 판단
+   기준으로 써봤더니 Duplication Rate는 낮아졌지만 Purity도 함께 낮아지는
+   식으로 **같은 Precision-Fragmentation Trade-off 곡선 위의 다른 지점으로
+   이동했을 뿐** 해결되지 않았다(Research Insight #002: "좋은 사후 평가
+   지표가 좋은 의사결정 정책이 되는 것은 아니다"). 지금 attach는 오직
+   similarity 최대화 하나만 목적함수로 삼는데, 제품이 실제로 원하는 건
+   Purity와 Duplication이라는 서로 다른 두 목표다 - representation은 이
+   확장된 질문의 하위 요소가 됨.
+   - **표현(representation) 후보** (전부 미검증): identity_vector(현재),
+     nearest member, top-k averaging(Experiment #30/#31에서 시도, Trade-off만
+     이동시킴), distribution representation, prototype set.
+   - **목적함수 후보** (신설, 전부 미검증): similarity 최대화 단일 기준
+     대신 Purity/Duplication을 함께 반영하는 판단 기준이 필요한지, 필요하면
+     어떤 형태여야 하는지 - 아직 가설조차 없다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
-   유사도를 어떻게 계산할지는 Question #0(표현)에 종속된 질문이 됨.
-   Experiment #28에서 attach_threshold 단독 조정만으로는 Precision-
-   Fragmentation Trade-off를 못 깬다는 게 확인됨(Research Insight #001).
+   유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
+   #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation
+   Trade-off를 못 깬다는 게 확인됨(Research Insight #001), Experiment
+   #31에서 표현 방식을 바꿔도 마찬가지라는 게 추가로 확인됨(Research
+   Insight #002).
 2. **여러 candidate가 같은 Anchor를 두고 경쟁**할 때 처리 방법.
 3. **Migration Event의 정확한 트리거 조건** — 완전히 수동(사용자 요청)인지,
    일정 기준(예: Provisional 데이터가 너무 오래 Anchor에 안 붙는 경우)이
