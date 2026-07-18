@@ -718,26 +718,27 @@ Night Batch(Step 5.5)는 "이미 만들어진 Topic을 잘 재배치하는 문�
 Topic 품질 검증 단계를 추가한다 — Step 5(Online Topic Formation) → Step
 5.25(Topic Validation/Repair, 신설) → Step 5.5(Night Batch) → Step 6.
 
-**다음 세션 연구 질문 (Topic Formation Research, Night Batch 설계를
-대체) — 우선순위 재조정**:
+**연구 질문 — 최종 정리 (`docs/anchor_model.md`에서 답함)**:
 
-0. **(신규, 최우선) Topic은 Online에서 "확정"되어야 하는가?** — 지금까지는
-   "스크랩 추가 → Topic 생성 → 거의 확정"으로 암묵적으로 가정했는데,
-   Evidence 2가 그 Topic 자체가 순서에 따라 완전히 달라진다는 걸 보여줬다.
-   Immutable 여부를 논하기 전에, 애초에 "언제 확정할지"부터 답해야 한다.
-   Product Principle "모든 성장은 즉시 체감 가능해야 한다"와 "Topic이
-   아직 확정되지 않았다"는 사실이 충돌한다 — "임시 Topic → Night Batch →
-   확정 Topic"이라는 2단계 생애주기가 필요한지가 이 질문의 핵심 하위
-   주제다.
-1. Topic이 온라인에서 어떻게 생성되어야 하는가? (부분 답변됨: 현재
-   방식은 순서 의존적이라 부적절 — Evidence 2)
-2. Topic은 immutable인가?
-3. Topic도 Night Batch(또는 그 앞 단계)의 대상인가?
-4. Topic을 scrap 단위에서 다시 만들 수 있는가?
-5. Topic의 identity_vector는 언제 확정되는가?
+- **Question #0 (최종형): "Online에서 확정되는 계층이 존재해야 하는가?"**
+  — **답: 없다.** Topic이든 Island든 Greedy Online은 전부 Provisional
+  (Preview UX)이고, 확정은 오직 Night Batch에서만 일어난다(Anchor Model).
+- **Question #1 (신설): "Offline이 Greedy 결과를 얼마나 재사용해야
+  하는가?"** — **답: 새로 들어온 미확정 데이터는 재사용 안 함(원점
+  재계산), 이미 Confirmed된 Anchor는 Context로만 참고하고 routine
+  상황에서는 수정 안 함.** 오늘 실패한 Night Batch v0~v3의 공통 원인이
+  "Greedy 결과를 입력으로 재사용하려 했다"는 것이었다는 게 이 답의
+  근거다.
+- 기존 질문(Topic은 immutable인가 / Night Batch 대상인가 / scrap
+  단위로 재구성 가능한가 / identity_vector는 언제 확정되는가)은 모두
+  위 두 답으로 자연스럽게 풀린다 — Confirmed Topic(Anchor)은
+  immutable(routine 한정), Night Batch의 대상은 Anchor가 아니라 새
+  스크랩, scrap 단위 재구성은 항상 가능(원점 재계산이므로), identity_vector는
+  Confirmed되는 순간 고정된다. 상세 설계는 `docs/anchor_model.md` 참고.
 
 ### Status
-미해결 (Open). 오늘 시도한 모든 Night Batch 버전(v0~v3)은 폐기하지
-않는다 - Finding #003~#005의 근거로 남긴다. 다만 다음 세션은 Night
-Batch 구현을 이어가지 않고 **Topic Formation Research**(Question #0부터)로
-연구 질문 자체를 전환한다.
+**Resolved (설계 확정, 구현 전).** 오늘 시도한 모든 Night Batch
+버전(v0~v3)은 폐기하지 않는다 - Finding #003~#005의 근거로 남긴다.
+Night Batch의 후속 설계는 `docs/anchor_model.md`로 이관됐다 — 다음
+세션은 Anchor Model의 Open Questions(Attach 판단 기준, Migration
+Event 트리거 등)부터 시작한다.

@@ -1,5 +1,13 @@
 # Hybrid Architecture (Step 5.5)
 
+> **업데이트 (Finding #006 이후)**: 이 문서의 Night Batch v0~v3(Merge/
+> Split/Topic Graph/HDBSCAN/Selective) 설계는 **`docs/anchor_model.md`로
+> 대체됐다.** v0~v3는 전부 "Greedy가 만든 Topic/Island를 입력으로 고친다"는
+> 전제를 가졌는데, Finding #006에서 이 전제 자체가 틀렸다는 게 드러났다 —
+> Greedy Online은 Preview UX일 뿐이고 확정은 Night Batch(Anchor 형성)에서만
+> 일어나야 한다는 게 Anchor Model의 결론이다. 이 문서는 그 결론에 이르기까지의
+> 실험 근거(Finding #003/#004/#005)로 남겨둔다.
+
 Finding #001(Order Sensitivity, Resolved by Offline Clustering)과 Product
 Decision #002(Programming은 하나의 상위 의미 공간으로 취급 허용) 이후 남은
 가장 큰 미결정 사항 — "사용자가 스크랩하면 즉시 어디에 배치하고, 언제 다시
