@@ -150,7 +150,10 @@ Night Batch v0가 다른 시나리오에서도 fragmentation을 해소하는지 
 로드맵. 체크된 것 외에는 전부 미실행.
 
 - [x] Backend User (Experiment #21) — Island 5→1, Topic 중복률 88.9%→0%
-- [ ] AI Researcher User — Transformer/RLHF/Diffusion/Vector DB/Agent 등
+- [x] AI Researcher User (Experiment #22) — Merge-only로는 변화 없음(77.8%
+      유지). Fragmentation이 아니라 Over-merge 문제였다는 게 밝혀짐 —
+      **Finding #003(Status: Resolved, Need Split)**로 승격. 이 발견 덕분에
+      아래 항목들의 우선순위가 바뀜(다음 섹션 참고).
 - [ ] Mixed Engineering User — 여러 엔지니어링 분야가 섞인 페르소나
 - [ ] Sports User — 순수 스포츠 팬, fragmentation이 안 생기는 게 정상인지 확인
 - [ ] Investor User — Finance 계열
@@ -159,3 +162,21 @@ Night Batch v0가 다른 시나리오에서도 fragmentation을 해소하는지 
 - [ ] **Sports + Finance Boundary Case** — Watch Metric #001과 직결. Night
       Batch가 "진짜 갈라져야 하는" 경우까지 과도하게 합쳐버리지는 않는지가
       핵심 리스크(Split 미구현 상태이므로 특히 중요)
+
+### 우선순위 재조정 (Finding #003 이후)
+원래는 이 체크리스트를 계속 채우는 게 다음 순서였지만, Finding #003이 Merge의
+적용 범위(fragmentation은 고치고, over-merge는 못 고침)를 명확히 규명하면서
+**Split Prototype(Step 5.5 v1.1)이 나머지 체크리스트보다 먼저 와야 한다**는
+쪽으로 바뀌었다. Mixed Engineering User나 Sports+Finance Boundary Case 같은
+나머지 항목도 Split이 없으면 AI Researcher와 똑같이 "Merge만으로는 설명 못
+하는 결과"에 부딪힐 가능성이 크기 때문이다 — Split을 먼저 구현해야 나머지
+검증이 의미 있는 비교가 된다.
+
+**Split Prototype 설계 질문(아직 미설계)**:
+- 언제 Split을 트리거할지 — 예: Island의 purity가 낮고(예: <0.5) 내부에
+  여러 dominant HDBSCAN 클러스터가 공존할 때.
+- 어떤 기준으로 나눌지 — offline 클러스터 경계를 그대로 따를지, 기존 Topic
+  단위로 재배치할지.
+- 좌표 불변 원칙과의 관계(위 "좌표 불변 원칙과의 관계" 절 참고) — 원래
+  Island는 자리를 지키고 떨어져 나온 조각만 새 좌표를 받는다는 설계를 그대로
+  적용할 수 있는지 실제 구현으로 검증해야 한다.

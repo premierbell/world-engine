@@ -14,6 +14,7 @@ Experiment #20에서 확인한 "Fragmentation of User Interest"(Online-only로�
 """
 
 import json
+import sys
 from collections import defaultdict
 
 import yaml
@@ -67,7 +68,9 @@ def main() -> None:
     config = load_config()
     embedding_provider = OpenAIEmbeddingProvider(model=config["embedding"]["model"])
 
-    user = load_virtual_user("../experiments/virtual_users/backend_developer.json")
+    path = sys.argv[1] if len(sys.argv) > 1 else "../experiments/virtual_users/backend_developer.json"
+    user = load_virtual_user(path)
+    console.print(f"[bold]{user['user']}[/bold]: {user['persona']}\n")
     scraps = sorted(user["scraps"], key=lambda s: s["day"])
     text_to_ground_truth = {s["text"]: s["topic"] for s in scraps}
     vectors = {s["text"]: embedding_provider.embed(s["text"]) for s in scraps}
