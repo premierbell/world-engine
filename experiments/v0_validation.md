@@ -1052,8 +1052,80 @@ Experiment #31에서 관찰. Experiment #30에서 top-k 멤버 평균이 correct
 표현 방식) 위에서 이동하는 것만으로는 근본적인 Trade-off가 안 풀린다"는
 걸 보여준다.
 
+## Experiment #32: Assignment Matrix Analysis - Anchor 경쟁이 기본 상태임을 확인
+날짜: 2026-07-18
+
+### Hypothesis
+Global Assignment(배치 전체를 한 번에 최적화)가 Greedy(candidate마다
+독립적으로 가장 점수 높은 Anchor에 배정)보다 다른/나은 결과를 낼 가능성을
+가지려면 최소 조건이 있다: 같은 배치 안에서 서로 다른 candidate가 1등으로
+같은 Anchor를 두고 경쟁하는 상황이 실제로 존재해야 한다. 그런 경쟁이 없다면
+목적함수를 뭘로 정의하든 Greedy와 Global Assignment는 항상 같은 결과를
+낸다.
+
+### Data
+world.py에 attach 결정을 전혀 내리지 않는 순수 관찰용 함수
+`compute_assignment_matrix()`를 추가(night_batch_anchor와 완전히 같은
+클러스터링/점수 계산 로직을 공유하도록 `_cluster_new_scraps`/`_anchor_score`로
+리팩터링해서 중복·드리프트 방지, 리팩터링 후 Experiment #31과 동일 결과
+재현되는 것으로 회귀 없음 확인). Day1→7→30 증분 시나리오에서 Day7/Day30
+배치마다(비교 대상 Anchor가 있는 시점만) candidate x Anchor 유사도 행렬을
+기록(experiment_assignment_matrix.py).
+
+### Result
+- Top1-Top2 gap: Backend mean=0.046(median 0.050), AI Researcher
+  mean=0.028(median 0.024) - gap<0.02(사실상 동점)인 candidate가 Backend
+  7/18(39%), AI Researcher 11/26(42%).
+- Entropy: Backend mean 1.178, AI Researcher mean 1.554 - 점수가 소수
+  Anchor에 확 쏠리기보다 여러 Anchor에 걸쳐 퍼져있는 경향.
+- **Anchor 경쟁**: 1등 Anchor가 같은 배치의 다른 candidate와 겹치는 경우가
+  Backend 17/18건(94%), AI Researcher 25/26건(96%).
+
+### Insight
+경쟁이 예외가 아니라 기본 상태임이 확인됐다 - attach를 "candidate마다
+독립적인 binary 판단(붙인다/안 붙인다)"으로 모델링하는 것 자체가 현실을
+온전히 표현하지 못한다는 뜻이다. attach는 본질적으로 여러 candidate가
+한정된 소수의 Anchor를 두고 다투는 **assignment problem**의 성격을 가진다.
+
+이건 지금까지의 실험을 하나로 꿰는 서사이기도 하다 - Experiment #28
+(threshold 조정)과 #31(representation 개선을 실제 정책에 적용)이 둘 다
+Trade-off를 해결하지 못하고 이동만 시켰던 이유가, 애초에 각 candidate를
+독립적으로 점수 매겨 판단하는 구조 자체의 한계였을 가능성이 생겼다 -
+점수 함수(score function)를 아무리 바꿔도, 그 점수로 각자 독립 판단하는
+구조 자체가 문제라면 해결이 안 된다.
+
+**증명된 것과 아직 증명 안 된 것을 구분한다:**
+- 증명됨: 경쟁(같은 배치에서 여러 candidate가 같은 1등 Anchor를 두고
+  겹치는 것)은 예외가 아니라 기본 상태다.
+- 증명 안 됨: Global Optimizer가 실제로 품질(Purity/Duplication)을
+  개선하는지, 목적함수를 어떻게 정의해야 하는지, Greedy보다 나은 결과가
+  실제로 나오는지 - 전부 열려 있다.
+
+### Decision
+Research Insight #003 신설(아래). Research Question #2("Attach는 무엇을
+최적화해야 하는가")를 더 구체화해서 **Research Question #3: "Attach는
+어떤 목적함수를 최적화해야 하는가?"**로 좁힌다 - 목적함수 후보(예:
+`Similarity - PurityLoss - Fragmentation - NewAnchorCost` 형태의 가중합
+등, 확정된 식 아님)를 정의하고, 그 목적함수를 Greedy와 Global Assignment
+두 방식으로 풀어서 실제로 다른 결정이 나오는지 확인하는 게 다음 실험
+(Experiment #33, 미실행)이다. Hungarian algorithm/ILP 같은 실제 Optimizer
+구현은 그 이후 단계 - 지금 바로 구현하지 않는다. `docs/anchor_model.md`
+Open Question #0 갱신.
+
+## Research Insight #003: Attach Competition Is the Default State, Not the Exception
+Experiment #32에서 관찰. 같은 배치 안에서 서로 다른 candidate가 1등으로
+같은 Anchor를 선택하는 경우가 Backend 94%(17/18), AI Researcher
+96%(25/26)에 달했다 - 경쟁이 드문 예외가 아니라 거의 모든 candidate에
+해당하는 기본 상태다. 이건 attach를 candidate마다 독립적인 binary
+판단으로 모델링하는 현재 구조(Experiment #28~31이 전부 이 구조 위에서
+점수 함수만 바꿔온 것) 자체가 문제를 온전히 표현하지 못한다는 뜻이다 -
+attach는 본질적으로 assignment problem이다. 다만 이 관찰이 "Global
+Optimizer가 더 좋다"를 증명하지는 않는다 - 그건 목적함수를 정의하고
+실제로 검증해야 할 별개의 질문이다(Research Question #3).
+
 ### Next Step
-Research Question #2 확장판("Attach는 무엇을 최적화해야 하는가?")부터
-다음 세션을 시작한다 - similarity 최대화 하나의 목적함수 대신 Purity와
-Duplication을 함께 고려하는 판단 기준이 필요한지, 그렇다면 어떤 형태여야
-하는지는 아직 가설조차 없다.
+Research Question #3("Attach는 어떤 목적함수를 최적화해야 하는가?")부터
+다음 세션을 시작한다 - candidate 목적함수를 정의하고(확정 아님, 여러 항의
+가중합 형태 후보), Greedy와 Global Assignment가 그 목적함수 하에서 실제로
+다른 결정을 내리는지부터 확인한다(Experiment #33). Optimizer(Hungarian
+algorithm, min-cost matching, ILP 등) 구현은 그 이후 단계다.

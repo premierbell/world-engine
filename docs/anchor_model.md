@@ -121,22 +121,34 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
 
 ## Open Questions (아직 미해결)
 
-0. **Attach는 무엇을 최적화해야 하는가?** (Research Question #2, 확장판,
-   최우선) — 처음엔 "Anchor는 무엇으로 표현되어야 하는가"(representation)로
-   좁게 물었으나, Experiment #31에서 top-k 멤버 평균을 실제 attach 판단
-   기준으로 써봤더니 Duplication Rate는 낮아졌지만 Purity도 함께 낮아지는
-   식으로 **같은 Precision-Fragmentation Trade-off 곡선 위의 다른 지점으로
-   이동했을 뿐** 해결되지 않았다(Research Insight #002: "좋은 사후 평가
-   지표가 좋은 의사결정 정책이 되는 것은 아니다"). 지금 attach는 오직
-   similarity 최대화 하나만 목적함수로 삼는데, 제품이 실제로 원하는 건
-   Purity와 Duplication이라는 서로 다른 두 목표다 - representation은 이
-   확장된 질문의 하위 요소가 됨.
-   - **표현(representation) 후보** (전부 미검증): identity_vector(현재),
-     nearest member, top-k averaging(Experiment #30/#31에서 시도, Trade-off만
-     이동시킴), distribution representation, prototype set.
-   - **목적함수 후보** (신설, 전부 미검증): similarity 최대화 단일 기준
-     대신 Purity/Duplication을 함께 반영하는 판단 기준이 필요한지, 필요하면
-     어떤 형태여야 하는지 - 아직 가설조차 없다.
+0. **Attach는 어떤 목적함수를 최적화해야 하는가?** (Research Question #3,
+   최우선) — 처음엔 "Anchor는 무엇으로 표현되어야 하는가"(representation,
+   Research Question #2)로 좁게 물었으나, Experiment #31에서 top-k 멤버
+   평균을 실제 attach 판단 기준으로 써봤더니 Duplication Rate는 낮아졌지만
+   Purity도 함께 낮아지는 식으로 같은 Precision-Fragmentation Trade-off
+   곡선 위의 다른 지점으로 이동했을 뿐 해결되지 않았다(Research Insight
+   #002). **Experiment #32(Assignment Matrix Analysis)에서 그 이유에 대한
+   구조적 단서가 나왔다**: 같은 배치 안에서 서로 다른 candidate가 1등으로
+   같은 Anchor를 두고 경쟁하는 경우가 Backend 94%(17/18), AI Researcher
+   96%(25/26)에 달했다 - 경쟁이 예외가 아니라 기본 상태다(Research
+   Insight #003). attach를 candidate마다 독립적인 binary 판단으로
+   모델링하는 지금 구조(Experiment #28~31이 전부 이 구조 위에서 점수
+   함수만 바꿔온 것) 자체가 문제를 온전히 표현 못 할 수 있다 - attach는
+   본질적으로 assignment problem일 가능성이 있다.
+   - **증명된 것**: 경쟁(같은 배치의 여러 candidate가 같은 1등 Anchor를
+     두고 겹치는 것)은 예외가 아니라 기본 상태다(Experiment #32).
+   - **아직 증명 안 된 것**: Global Optimizer가 실제로 Purity/Duplication을
+     개선하는지, 목적함수를 어떻게 정의해야 하는지(예: `Similarity -
+     PurityLoss - Fragmentation - NewAnchorCost` 형태의 가중합 등 - 확정된
+     식 아님), Greedy보다 나은 결과가 실제로 나오는지는 전부 열려 있다.
+   - **표현(representation) 후보** (Research Question #2, 전부 미검증):
+     identity_vector(현재), nearest member, top-k averaging(Experiment
+     #30/#31에서 시도, Trade-off만 이동시킴), distribution representation,
+     prototype set.
+   - **다음 실험(Experiment #33, 미실행)**: candidate 목적함수를 정의하고,
+     Greedy와 Global Assignment 두 방식으로 그 목적함수를 풀었을 때 실제로
+     다른 결정이 나오는지부터 확인한다 - Hungarian algorithm/ILP 같은 실제
+     Optimizer 구현은 그 이후 단계다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation
