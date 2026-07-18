@@ -266,3 +266,236 @@ def night_batch(
             merged_ids.add(isl.id)
 
     return [isl for isl in islands if isl.id not in merged_ids]
+
+
+def find_split_candidates(
+    islands: list[Island],
+    vectors: dict[str, list[float]],
+    min_cluster_size: int = 3,
+    min_samples: int = 1,
+    purity_threshold: float = 0.35,
+    min_group_size: int = 3,
+) -> dict[int, dict[int, list[Topic]]]:
+    """Split Trigger + Split Plan (Finding #003 이후 신설). 실행은 apply_split()이
+    따로 담당한다 - "Split한다"와 "Split 후보가 된다"를 분리한다. Merge보다
+    훨씬 보수적으로 설계한다: Island가 갈라지면 사용자가 보던 섬이 둘로
+    나뉘고 Label도 바뀌므로, 두 조건을 동시에 만족할 때만 후보로 삼는다.
+
+    1. Island 전체 purity가 purity_threshold 미만 (전체적으로 애매하다)
+    2. Island 내부 Topic들을 offline HDBSCAN 라벨로 묶었을 때, 스크랩
+       min_group_size개 이상인 그룹이 2개 이상 나온다 (쪼갤 만한 진짜 구조가
+       있다 - 그냥 노이즈로 갈라지는 게 아니다)
+
+    확신이 없는 Topic(스크랩이 전부 HDBSCAN Noise)이거나 그룹 크기가
+    min_group_size 미만인 Topic은 통째로 버리지 않는다 - 가장 큰(=survivor로
+    남을) 그룹에 합쳐서 반환한다. Split은 "확신 있는 것만 떼어내고, 확신
+    없는 건 원래 자리에 둔다"는 Minimum Change Principle을 데이터 유실 없이
+    지켜야 한다.
+
+    반환값: {island_id: {hdbscan_label: [해당 라벨이 dominant인 Topic들]}} -
+    모든 그룹의 Topic 스크랩 총합은 원래 Island의 스크랩 총합과 같다.
+    """
+    all_texts = [text for isl in islands for topic in isl.topics for text in topic.scraps]
+    matrix = normalize(np.array([vectors[text] for text in all_texts]))
+    labels = HDBSCAN(
+        min_cluster_size=min_cluster_size, min_samples=min_samples, metric="euclidean", copy=True
+    ).fit_predict(matrix)
+    label_of = dict(zip(all_texts, labels))
+
+    candidates: dict[int, dict[int, list[Topic]]] = {}
+    for isl in islands:
+        island_texts = [text for topic in isl.topics for text in topic.scraps]
+        island_labels = [label_of[text] for text in island_texts if label_of[text] != -1]
+        if not island_labels:
+            continue
+        _, dominant_count = Counter(island_labels).most_common(1)[0]
+        island_purity = dominant_count / len(island_texts)
+        if island_purity >= purity_threshold:
+            continue  # 이미 충분히 순수함 - Split 후보 아님
+
+        groups: dict[int, list[Topic]] = defaultdict(list)
+        no_signal: list[Topic] = []
+        for topic in isl.topics:
+            topic_labels = [label_of[text] for text in topic.scraps if label_of[text] != -1]
+            if not topic_labels:
+                no_signal.append(topic)  # 전부 Noise - 확신 없음, 나중에 survivor에 귀속
+                continue
+            dominant, _ = Counter(topic_labels).most_common(1)[0]
+            groups[dominant].append(topic)
+
+        significant_groups = {
+            label: topics
+            for label, topics in groups.items()
+            if sum(len(t.scraps) for t in topics) >= min_group_size
+        }
+        if len(significant_groups) < 2:
+            continue  # 쪼갤 만한 진짜 구조가 없음
+
+        # 확신 없는 Topic들과 너무 작은 그룹은 가장 큰(=survivor) 그룹에 합쳐서
+        # 유실 없이 반환한다
+        largest_label = max(
+            significant_groups, key=lambda label: sum(len(t.scraps) for t in significant_groups[label])
+        )
+        leftover = no_signal + [
+            topic for label, topics in groups.items() if label not in significant_groups for topic in topics
+        ]
+        significant_groups[largest_label] = significant_groups[largest_label] + leftover
+
+        candidates[isl.id] = significant_groups
+
+    return candidates
+
+
+def apply_split(
+    islands: list[Island], candidates: dict[int, dict[int, list[Topic]]], vectors: dict[str, list[float]]
+) -> list[Island]:
+    """Split Plan을 실제로 실행한다 (Minimum Change Principle): 스크랩 수 기준
+    가장 큰 그룹이 기존 Island에 남아 id와 identity_vector를 그대로 유지하고,
+    나머지 그룹들만 새 Island로 떨어져 나간다. 새 Island의 identity_vector는
+    그 그룹에 속한 스크랩들의 평균 벡터로 정한다 - 아직 실제 화면 좌표 시스템이
+    없어서(map_layout.md는 설계만 있음) embedding 공간에서의 "근처"를 좌표
+    대신 쓴다.
+
+    Growth Point는 아직 구현되지 않았다(Step 7 보류) - 이 함수는 비율 분배
+    로직을 포함하지 않는다.
+    """
+    next_id = (max(isl.id for isl in islands) + 1) if islands else 0
+    result: list[Island] = []
+    for isl in islands:
+        if isl.id not in candidates:
+            result.append(isl)
+            continue
+
+        groups = candidates[isl.id]
+        largest_label = max(groups, key=lambda label: sum(len(t.scraps) for t in groups[label]))
+
+        isl.topics = groups[largest_label]
+        for i, topic in enumerate(isl.topics):
+            topic.id = i
+        result.append(isl)
+
+        for label, topics in groups.items():
+            if label == largest_label:
+                continue
+            for i, topic in enumerate(topics):
+                topic.id = i
+            new_texts = [text for topic in topics for text in topic.scraps]
+            new_vector = np.mean([vectors[text] for text in new_texts], axis=0).tolist()
+            new_island = Island(next_id, new_vector, new_texts[0])
+            new_island.topics = topics
+            result.append(new_island)
+            next_id += 1
+
+    return result
+
+
+def run_night_batch(
+    islands: list[Island],
+    vectors: dict[str, list[float]],
+    min_cluster_size: int = 3,
+    min_samples: int = 1,
+    merge_purity_threshold: float = 0.5,
+    split_purity_threshold: float = 0.35,
+    min_group_size: int = 3,
+) -> list[Island]:
+    """Night Batch 전체 사이클 (Finding #004 대응): Merge -> Split -> 재-Merge.
+
+    Finding #004(Local Split can increase global Topic duplication)의 원인은
+    `find_split_candidates`가 분리 대상 Island 하나만 보고, 그 조각이 세계에
+    이미 존재하는 다른 Island와 겹치는지는 확인하지 않는다는 것이었다. Split을
+    "새 Island를 확정하는 연산"이 아니라 "새 후보를 만드는 연산"으로 다시
+    본다 - Split 직후 만들어진 조각들을 포함해 전체 Island 집합에 대해
+    `night_batch`(Merge)를 한 번 더 돌려서, 방금 떨어져 나온 조각이 기존
+    Island와 합쳐지는 게 더 나으면 다시 합친다.
+
+    이건 완전한 "Candidate Generation -> Global Evaluation -> Apply" 재설계는
+    아니다 - Merge를 반복 적용해서 같은 효과의 일부를 얻는 실용적인 절충이다.
+    진짜 전역 최적화(목적함수: Topic Duplication 최소화, 제약: purity/좌표
+    안정성/Minimum Change)는 아직 설계되지 않았다.
+    """
+    merged = night_batch(islands, vectors, min_cluster_size, min_samples, merge_purity_threshold)
+    candidates = find_split_candidates(merged, vectors, min_cluster_size, min_samples, split_purity_threshold, min_group_size)
+    split = apply_split(merged, candidates, vectors)
+    return night_batch(split, vectors, min_cluster_size, min_samples, merge_purity_threshold)
+
+
+def topic_graph_reconstruct(
+    islands: list[Island],
+    vectors: dict[str, list[float]],
+    edge_threshold: float = 0.24,
+) -> list[Island]:
+    """Night Batch v2 (Finding #004 이후, `hybrid_architecture.md` "Night Batch v2"
+    절 참고): Island가 아니라 Topic을 기본 단위로 삼아 세계를 다시 구성한다.
+
+    Merge(v0 night_batch), Split(v0 find_split_candidates/apply_split),
+    Boundary Topic Move를 각각 다른 연산으로 두지 않는다 - 전부 "Topic Graph가
+    다시 연결되는 현상" 하나로 통일한다:
+
+    1. 모든 Island의 모든 Topic을 모은다 (Island 소속은 무시).
+    2. 모든 Topic 쌍의 center_vector cosine similarity를 계산해서
+       edge_threshold 이상이면 두 Topic 사이에 edge를 긋는다.
+    3. Union-Find로 Connected Component(=Topic Graph에서 서로 연결된 묶음)를
+       찾는다.
+    4. 각 Component가 새로운 Island가 된다.
+
+    edge_threshold=0.24는 island_threshold(V0 baseline)를 잠정 재사용한
+    값이다 - Topic-Topic 비교용으로 별도 검증된 threshold는 아직 없다.
+
+    Invariant: Component의 Topic 집합이 기존 Island 하나와 정확히 같으면 그
+    Island를 그대로 반환한다(id/identity_vector 불변 - 좌표 불변 원칙).
+    바뀐 Component는 스크랩 수가 가장 많이 기여한 원래 Island의 id를
+    물려받는다(Minimum Change Principle, v0와 동일 규칙).
+    """
+    all_topics = [topic for isl in islands for topic in isl.topics]
+    topic_origin_island: dict[int, Island] = {}
+    for isl in islands:
+        for topic in isl.topics:
+            topic_origin_island[id(topic)] = isl
+
+    parent: dict[int, int] = {id(topic): id(topic) for topic in all_topics}
+
+    def find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a: int, b: int) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    for i in range(len(all_topics)):
+        for j in range(i + 1, len(all_topics)):
+            sim = cosine_similarity(all_topics[i].center_vector, all_topics[j].center_vector)
+            if sim >= edge_threshold:
+                union(id(all_topics[i]), id(all_topics[j]))
+
+    components: dict[int, list[Topic]] = defaultdict(list)
+    for topic in all_topics:
+        components[find(id(topic))].append(topic)
+
+    original_topic_sets: dict[int, set[int]] = {isl.id: {id(t) for t in isl.topics} for isl in islands}
+
+    result: list[Island] = []
+    for topics in components.values():
+        topic_ids = {id(t) for t in topics}
+        unchanged_island = next((isl for isl in islands if original_topic_sets[isl.id] == topic_ids), None)
+        if unchanged_island is not None:
+            result.append(unchanged_island)
+            continue
+
+        contribution: dict[int, int] = defaultdict(int)
+        for topic in topics:
+            contribution[topic_origin_island[id(topic)].id] += len(topic.scraps)
+        survivor_id = max(contribution, key=lambda island_id: contribution[island_id])
+
+        for i, topic in enumerate(topics):
+            topic.id = i
+        new_texts = [text for topic in topics for text in topic.scraps]
+        new_vector = np.mean([vectors[text] for text in new_texts], axis=0).tolist()
+        new_island = Island(survivor_id, new_vector, new_texts[0])
+        new_island.topics = topics
+        result.append(new_island)
+
+    return result
