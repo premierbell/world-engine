@@ -884,6 +884,36 @@ signal을 이용한 Duplication 근사 시도를 마무리한다 - 실패로 끝
 Question #4를 Closed로 갱신, Research Question #5("Similarity만으로
 Topic Identity를 만들 수 있는가?") 신설.
 
+### Additional Evidence (Experiment #44) — Stable but Wrong
+RQ7-B("Anchor Assignment는 안정적인가?") 검증 과정에서 이 Finding의
+결론이 한 단계 더 정밀해졌다. Anchor Set과 클러스터링을 완전히 고정한
+채 관측(embedding)에만 작은 가우시안 노이즈(epsilon 0.02~0.10)를 20회
+주입해서 1순위 Anchor가 흔들리는지 측정했더니, **Consistency가
+99.1~100%**였다 - Assignment는 노이즈에 전혀 브리틀하지 않고 매우
+확정적이다. 그런데 이 안정적인 판단의 정확도는 Experiment #29에서
+5.6~23.1%로 매우 낮았다. **즉 Similarity에서 파생된 Assignment는
+"노이즈 많은 신호"가 아니라 "일관되게 잘못된(stable but wrong) 신호"다.**
+
+이건 Variance 문제가 아니라 Bias 문제라는 뜻이다 - Variance는 반복
+관측(averaging)으로 줄어들지만 Bias는 반복해도 줄어들지 않는다.
+"반복 관측이 Confidence를 쌓아준다"는 가설(Research Question #7의 H2)은
+분산이 큰 Weak Signal을 전제로 할 때만 의미가 있는데, 지금 Assignment
+Signal은 Strong하지만(분산이 거의 0) Biased(체계적으로 편향)하다 -
+완전히 다른 상황이다. H2는 기각된 게 아니라, 현재 Assignment Signal
+하에서는 애초에 적용 대상이 아니다(not applicable) - repeated
+observation이 실패한 게 아니라, 이 신호가 가진 문제(체계적 편향)가
+반복 관측으로 풀리는 종류의 문제가 아니라는 게 밝혀졌다.
+
+Finding #001(Order Sensitivity) → Finding #004(Local Connectivity) →
+Finding #007(Representation Loss) → Finding #008(Similarity is the
+wrong signal) → Experiment #44("신호가 noisy한 게 아니라 일관되게
+틀렸다")로 이어지는 서사가 여기서 하나로 수렴한다. Research Question
+#7("Topic Identity는 복원 대상인가, 형성되는 대상인가?")을 여기서
+종료한다 - `docs/anchor_model.md` 갱신. 다음 연구 방향은 "어떻게 더
+안정적으로 판단할 것인가"에서 "무엇을 판단 신호로 쓸 것인가"로
+완전히 좁혀진다(아직 새 질문에 정식 번호를 매기지 않음 - 다음 세션에서
+구체화).
+
 ## Finding #009: Independent Document Understanding Cannot Produce a Shared Topic Identity
 
 ### Claim
