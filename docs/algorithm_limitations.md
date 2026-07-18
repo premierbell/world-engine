@@ -635,7 +635,14 @@ Finding #006으로 이어졌다 — Night Batch 설계의 문제가 아니라 �
 
 ---
 
-## Finding #006: Topic 오염은 Island가 아니라 Online Topic Formation에서 시작된다
+## Finding #006: Greedy + EMA + Threshold는 계층과 무관하게 같은 방식으로 실패한다 (Hierarchical Instability)
+
+> 처음엔 "Topic Formation Failure"(Topic 형성만의 문제)로 좁게 봤다.
+> Evidence 2(Experiment #27) 이후 이름을 바꿨다 — Scrap→Topic과
+> Topic→Island가 **같은 알고리즘(Greedy + EMA + 단일 Threshold)**을 쓰고
+> **같은 이유로 같은 크기의 순서 의존성**을 보인다는 게 확인되면서,
+> "Topic만의 문제"가 아니라 "이 생성 방식이 계층과 무관하게 항상 실패한다"는
+> 게 더 정확한 설명이 됐다.
 
 ### Claim
 지금까지의 모든 Night Batch 버전(v0 Merge/Split, v1 Union-Find Topic
@@ -643,12 +650,14 @@ Graph, v2 Topic HDBSCAN, v3 Selective)은 암묵적으로 **"Topic은 신뢰할 
 있는 원자 단위"**라고 가정했다 — Topic을 통째로 옮기거나 합치기만 했지,
 Topic 내부를 들여다보지 않았다. 이 가정 자체가 틀렸다: Online 단계에서
 이미 하나의 Topic 안에 여러 실제 주제가 섞여 들어갈 수 있고, 이러면
-Night Batch가 아무리 정교해도 고칠 수 없다 — Topic을 쪼개는 연산이
-없으면 Topic 내부 오염은 원리적으로 손댈 수 없는 영역이다.
+Night Batch가 아무리 정교해도 고칠 수 없다. 더 일반화하면 — **Scrap→Topic
+편입(`Island.add()`, `topic_threshold`)과 Topic→Island 편입(`assign_scrap`,
+`island_threshold`)은 서로 다른 계층에 적용된 같은 알고리즘(Greedy +
+EMA + 단일 Threshold)이고, 같은 원인으로 같은 크기의 순서 의존성을
+만든다.**
 
-### Evidence
-`selective_night_batch` 디버깅 중 AI Researcher의 Island #0 내부를 직접
-확인했다:
+### Evidence 1 — Topic 내부 오염 직접 확인 (`selective_night_batch` 디버깅)
+AI Researcher의 Island #0 내부를 직접 확인했다:
 
 ```
 Island 0 / Topic 0: {Transformer:6, RLHF:7, Diffusion:2, Fine-tuning:5,
@@ -660,37 +669,68 @@ Island 0 / Topic 0: {Transformer:6, RLHF:7, Diffusion:2, Fine-tuning:5,
 있었다.** 지금까지는 "Island가 여러 Topic을 잘못 묶었다"(Finding
 #001/#003)고 봤는데, 실은 **Topic 형성 시점부터 이미 오염**돼 있었다.
 
+### Evidence 2 — Topic-level Order Sensitivity Test (Experiment #27)
+Finding #001의 Island Order Sensitivity(Experiment #9/#10)와 같은
+방법론을 Topic에 그대로 적용했다 — 같은 71개 스크랩을 순서만 바꿔서
+(원래 Day 순서 + 랜덤 셔플 10회) 반복 실행하고, 이번에 새로 정의한
+**Topic Purity**(각 Topic의 다수결 실제 주제 스크랩 수 합 / 전체 스크랩
+수, `evaluation_metrics.md` 참고)를 측정했다:
+
+| 지표 | 값 |
+|---|---|
+| Topic Purity 범위 | 0.577 ~ 0.817 (11회 중) |
+| Topic Purity std | 0.091 |
+| Topic 개수 범위 | 22 ~ 34개 |
+| 최대 오염 Topic 크기 | 7 ~ 34개 스크랩 (같은 데이터, 순서만 다름) |
+
+같은 데이터인데 순서만 바꿔도 Topic Purity가 24%p 가까이 흔들리고,
+가장 심하게 오염된 Topic의 크기도 7개부터 34개까지 요동친다 — Finding
+#001에서 Island 개수가 순서에 따라 2~4개로 흔들렸던 것(Experiment #9)과
+**같은 크기, 같은 성격의 불안정성**이다.
+
 ### Root Cause
 `world.py`의 `Island.add()`가 새 스크랩을 기존 Topic에 편입할지
 결정하는 기준(`topic_threshold=0.42`)은 island_threshold와 **정확히
-같은 구조적 결함**을 갖는다 — EMA로 계속 갱신되는 Topic의 center_vector에
-대해 스크랩을 하나씩 순차적으로 비교하는 Online 방식이라 순서 의존적이다.
-그런데 `topic_threshold`를 캘리브레이션한 실험(Experiment #6/#7)은
+같은 구조적 결함**을 갖는다 — EMA로 계속 갱신되는 center_vector에 대해
+스크랩을 하나씩 순차적으로 비교하는 Online 방식이라 순서 의존적이다.
+`topic_threshold`를 캘리브레이션한 실험(Experiment #6/#7)도
 island_threshold 때와 마찬가지로 **Offline Pairwise 실험**이었다 —
-Finding #001의 Root Cause에서 이미 "Offline Pairwise 실험은 순서
-의존성이 없는 문제라 그 결과를 Online 알고리즘에 그대로 적용할 수
-없다"고 적어뒀는데, 이 문장은 island_threshold뿐 아니라 topic_threshold에도
-그대로 적용되는 얘기였다. 다만 지금까지의 Order Sensitivity 실험(#8/#9/#10)은
-전부 **Island 레벨 결과(개수, F1)만 측정**했지 Topic 순수도(purity)는
-한 번도 측정하지 않았다 — 그래서 이 문제가 오늘까지 드러나지 않았다.
+Finding #001의 Root Cause 문장("Offline Pairwise 실험은 순서 의존성이
+없는 문제라 그 결과를 Online 알고리즘에 그대로 적용할 수 없다")이
+island_threshold뿐 아니라 topic_threshold에도 그대로 적용되는 얘기였다.
+Order Sensitivity 실험(#8/#9/#10)이 전부 **Island 레벨(개수, F1)만
+측정**했지 Topic 순수도는 한 번도 측정하지 않아서 오늘까지 드러나지
+않았을 뿐이다.
+
+**일반화된 결론**: 문제는 island_threshold나 topic_threshold 개별
+파라미터가 아니라, **"Greedy + EMA + 단일 Threshold"라는 생성 방식
+자체가 어느 계층에 적용되든 같은 failure mode(순서 의존성)를 만든다**는
+것이다. World Engine의 현재 파이프라인은 이 방식을 Scrap→Topic,
+Topic→Island 두 단계에 중첩 적용하고 있어서, 두 단계의 불안정성이
+누적/증폭될 수 있다.
 
 ### Implication
-Finding #001의 패턴("단일 threshold + Greedy Online → 순서 의존적
-불안정성")이 Island 레벨뿐 아니라 **Topic 레벨에도 원래부터 존재했을
-가능성이 크다.** Step 5(Island/Topic assignment) 전체가 재검토 대상이다.
 Night Batch(Step 5.5)는 "이미 만들어진 Topic을 잘 재배치하는 문제"로
-설계됐는데, 입력(Topic) 자체가 오염되어 있으면 이 설계는 원리적으로
-한계가 있다.
+설계됐는데, 입력(Topic) 자체가 이 구조적 결함으로 오염되어 있으면 이
+설계는 원리적으로 한계가 있다.
 
 **로드맵 재구성**: 기존 Step 5 → Step 5.5(Hybrid) → Step 6(Label) 순서에
 Topic 품질 검증 단계를 추가한다 — Step 5(Online Topic Formation) → Step
 5.25(Topic Validation/Repair, 신설) → Step 5.5(Night Batch) → Step 6.
-Night Batch보다 Topic 자체의 품질 보장이 선행돼야 한다는 게 오늘 확인된
-사실이기 때문이다.
 
 **다음 세션 연구 질문 (Topic Formation Research, Night Batch 설계를
-대체)**:
-1. Topic이 온라인에서 어떻게 생성되어야 하는가?
+대체) — 우선순위 재조정**:
+
+0. **(신규, 최우선) Topic은 Online에서 "확정"되어야 하는가?** — 지금까지는
+   "스크랩 추가 → Topic 생성 → 거의 확정"으로 암묵적으로 가정했는데,
+   Evidence 2가 그 Topic 자체가 순서에 따라 완전히 달라진다는 걸 보여줬다.
+   Immutable 여부를 논하기 전에, 애초에 "언제 확정할지"부터 답해야 한다.
+   Product Principle "모든 성장은 즉시 체감 가능해야 한다"와 "Topic이
+   아직 확정되지 않았다"는 사실이 충돌한다 — "임시 Topic → Night Batch →
+   확정 Topic"이라는 2단계 생애주기가 필요한지가 이 질문의 핵심 하위
+   주제다.
+1. Topic이 온라인에서 어떻게 생성되어야 하는가? (부분 답변됨: 현재
+   방식은 순서 의존적이라 부적절 — Evidence 2)
 2. Topic은 immutable인가?
 3. Topic도 Night Batch(또는 그 앞 단계)의 대상인가?
 4. Topic을 scrap 단위에서 다시 만들 수 있는가?
@@ -699,5 +739,5 @@ Night Batch보다 Topic 자체의 품질 보장이 선행돼야 한다는 게 �
 ### Status
 미해결 (Open). 오늘 시도한 모든 Night Batch 버전(v0~v3)은 폐기하지
 않는다 - Finding #003~#005의 근거로 남긴다. 다만 다음 세션은 Night
-Batch 구현을 이어가지 않고 **Topic Formation Research**로 연구 질문
-자체를 전환한다.
+Batch 구현을 이어가지 않고 **Topic Formation Research**(Question #0부터)로
+연구 질문 자체를 전환한다.

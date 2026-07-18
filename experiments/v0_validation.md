@@ -785,3 +785,30 @@ Island 0 / Topic 0: {RLHF:7, Transformer:6, Fine-tuning:5, Multimodal:4,
 
 ### Decision
 `docs/algorithm_limitations.md`에 **Finding #006** 신설(Status: Open). 로드맵을 재구성한다 — Step 5(Online Topic Formation) → **Step 5.25(Topic Validation/Repair, 신설)** → Step 5.5(Night Batch) → Step 6(Label). 다음 세션은 Night Batch 구현을 이어가지 않고 **Topic Formation Research**로 전환한다 — 연구 질문 5가지: ①Topic이 온라인에서 어떻게 생성되어야 하는가 ②Topic은 immutable인가 ③Topic도 Night Batch(또는 그 앞 단계)의 대상인가 ④Topic을 scrap 단위에서 다시 만들 수 있는가 ⑤Topic의 identity_vector는 언제 확정되는가. 오늘 구현한 Night Batch v0~v3는 전부 폐기하지 않고 Finding #003~#005의 근거로 남긴다.
+
+## Experiment #27: Topic-level Order Sensitivity Test
+날짜: 2026-07-18
+
+### Hypothesis
+Finding #006에서 발견한 Topic 오염(Island #0의 Topic 0이 8개 실제 주제를 섞음)이 우연이 아니라, Finding #001(Island Order Sensitivity)과 같은 구조적 원인(Greedy + EMA + 단일 Threshold)이 Topic 레벨에도 처음부터 있었기 때문이라면, 같은 데이터를 순서만 바꿔서 반복 실행했을 때 Topic 구성/순수도가 크게 흔들릴 것이다.
+
+### Data
+AI Researcher의 71개 스크랩을 원래 Day 순서 + 랜덤 셔플 10회(seed 1~10)로 반복 실행(`assign_scrap`만 사용, Night Batch 없음). 각 결과에서 새로 정의한 **Topic Purity**(`evaluation_metrics.md` 참고)와 Topic 개수, 최대 오염 Topic 크기를 측정(`experiment_topic_order_sensitivity.py`).
+
+### Result
+| 지표 | 값 |
+|---|---|
+| Topic Purity 범위 (11회) | 0.577 ~ 0.817 |
+| Topic Purity std | 0.091 |
+| Topic 개수 범위 | 22 ~ 34개 |
+| 최대 오염 Topic 크기 | 7 ~ 34개 스크랩 |
+
+같은 데이터, 순서만 다른데 Topic Purity가 24%p 가까이 흔들리고 최대 오염 Topic 크기도 7~34개로 요동쳤다.
+
+### Insight
+Finding #001에서 Island 개수가 순서에 따라 2~4개로 흔들렸던 것(Experiment #9)과 같은 크기, 같은 성격의 불안정성이 Topic 레벨에서도 확인됐다. 이건 우연이 아니라 **Scrap→Topic 편입(topic_threshold)과 Topic→Island 편입(island_threshold)이 서로 다른 계층에 적용된 같은 알고리즘(Greedy + EMA + 단일 Threshold)이기 때문**이다 — 계층이 다를 뿐 원인은 동일하다.
+
+### Decision
+- `docs/algorithm_limitations.md` Finding #006을 **"Greedy + EMA + Threshold는 계층과 무관하게 같은 방식으로 실패한다 (Hierarchical Instability)"**로 재구성(원래는 "Topic Formation Failure"로 좁게 명명했었음). Evidence 2로 이번 실험 추가.
+- `docs/evaluation_metrics.md`의 Topic Purity TODO를 정식 정의로 채움.
+- **연구 질문 우선순위 재조정**: 기존 5개 질문 앞에 **Question #0(신규, 최우선): "Topic은 Online에서 확정되어야 하는가?"**를 추가 — immutable 여부를 논하기 전에 "언제 확정할지"부터 답해야 한다는 판단. Product Principle("모든 성장은 즉시 체감 가능해야 한다")과 "Topic이 아직 확정 안 됐다"는 사실이 충돌한다는 점도 명시 — "임시 Topic → Night Batch → 확정 Topic" 2단계 생애주기가 필요한지가 Question #0의 핵심 하위 주제.
