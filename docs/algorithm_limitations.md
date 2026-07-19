@@ -8,10 +8,12 @@
 > 어떤 축으로도 고정된 해상도로는 Topic Identity를 안정적으로 판별할 수
 > 없었다(Finding #008~#013) - 유일하게 유효했던 신호(Pairwise LLM
 > Judgment)도 판단 해상도가 도메인의 semantic density와 맞을 때만
-> 작동했다(Finding #014). **"적정 해상도를 도메인마다 어떻게 자동으로
-> 선택할 것인가"(Adaptive Resolution)는 아직 Open Question이고, 이건
-> Phase 1의 연장이 아니라 Phase 2(RQ10)로 별도 관리한다 -
-> `research_phase_2_rq10-0.md` 참고.**
+> 작동했다(Finding #014). "적정 해상도를 도메인마다 어떻게 자동으로
+> 선택할 것인가"(Adaptive Resolution)는 Phase 1의 연장이 아니라
+> Phase 2로 별도 관리했으나, RQ10-0 실험(Experiment #52~53)에서 해상도
+> 자체가 semantic objective의 결과물임이 드러나 **Phase 2는 Semantic
+> Objective Discovery로 재구성됐다(RQ10) - `research_phase_2_rq10-0.md`
+> 참고, 재구성 이유는 그 문서 서두 "Why was Phase 2 reframed?" 참고.**
 
 > **Research Principle #001** (`experiments/v0_validation.md` 참고): World
 > Engine은 사람이 미리 정의한 카테고리를 재현하는 것이 아니라, 반복적으로

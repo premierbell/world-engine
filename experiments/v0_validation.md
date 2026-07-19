@@ -2210,3 +2210,29 @@ actively select different latent geometries to observe"**로 강화.
 Tree가 사용자가 실제로 느끼는 "관심사 구조"와 일치하는가, 아니면
 프롬프트가 만들어낸 구조일 뿐인가 - Phase 1의 Purity vs UX 간극과
 같은 축.
+
+## Phase 2 Reframed: Adaptive Resolution → Semantic Objective Discovery
+
+Experiment #52~53 결과를 종합한 뒤, Phase 2의 틀 자체를 재구성했다.
+Resolution이 독립적인 값이 아니라 semantic objective(비교 질문 자체)의
+결과물이라는 게 드러나면서, 원래 질문("해상도를 도메인마다 어떻게
+자동으로 맞출 것인가")이 한 단계 더 상위 질문에 종속된다는 게 밝혀졌기
+때문이다. RQ10-0("Does semantic resolution exist independently of the
+measurement method?")은 **🟡 Provisionally Answered**로 표시(AI
+Researcher 데이터셋 1개, 모델 1개 기준 - Backend User 등 다른 도메인
+에서 반증되면 재검토). 새 하위 질문 **RQ10-1**을 정의: "Which semantic
+objective best predicts human organizational behavior — and does that
+answer itself vary by domain or user?" - Finding #014(적정 해상도는
+도메인마다 다르다)의 교훈을 이어받아 "고정된 하나의 정답 Objective가
+있다"는 전제로 퇴행하지 않도록 질문에 도메인/사용자 의존성을 처음부터
+포함시켰다. Candidate Objectives를 Observed(Mechanism/Topic/
+Relatedness - 이미 프롬프트로 간접 테스트됨)와 Speculative(Learning
+dependency/Task substitutability/Temporal co-occurrence/User
+navigation - 완전 미탐색, User navigation은 현재 Virtual User Dataset
+스키마에 없는 행동 로그가 필요) 두 그룹으로 구분해 기록.
+`docs/research_phase_2_rq10-0.md`에 "Why was Phase 2 reframed?" 절과
+Revision History(Adaptive Resolution → Semantic Objective Discovery)
+추가, `docs/algorithm_limitations.md` 포인터도 갱신.
+`docs/research_phase_1_summary.md`는 Phase 1 종료 시점의 스냅샷이라
+수정하지 않는다 - Adaptive Resolution이 Phase 2의 최초 가설이었다는
+역사적 기록 자체가 가치 있다.

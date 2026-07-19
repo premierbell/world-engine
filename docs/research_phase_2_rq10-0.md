@@ -4,11 +4,44 @@
 > Semantic Resolution은 데이터에 내재한 속성인가, 아니면 측정 방법이
 > 만들어내는 산물인가?
 
+**Status: 🟡 Provisionally Answered** (단일 데이터셋 AI Researcher,
+단일 모델 기준 — 상태 표기는 ✅ Answered / 🟡 Provisionally Answered /
+🔄 Re-opened 세 단계를 쓴다. Backend User 등 다른 도메인에서 반증되면
+🔄 Re-opened로 되돌린다.)
+
 이 문서는 연구 결과 문서가 아니라 **연구 프로토콜(Research Protocol)**이다.
 아직 결론이 없는 상태에서 "무엇을 어떻게 검증할 것인가"만 정의한다.
 `anchor_model.md`(설계 문서, "지금 시스템이 어떻게 동작하는가")나
 `research_phase_1_summary.md`(연구 결과 문서, "무엇을 검증했고 무엇을
 알게 됐는가")와는 역할이 다르다.
+
+## Why was Phase 2 reframed?
+
+> Originally, Phase 2 aimed to discover an adaptive semantic resolution.
+> Experiments #52-53 demonstrated that resolution is not an independent
+> quantity. It emerges from the semantic objective used to compare
+> documents. Therefore the primary research question shifted from "How
+> do we adapt resolution?" to "What semantic objective should define
+> identity?"
+
+원래 Phase 2는 "해상도를 도메인마다 어떻게 자동으로 맞출 것인가"를
+풀려고 시작했다. 그런데 Experiment #52~53은 해상도가 독립적인 값이
+아니라, 문서를 비교할 때 쓰는 semantic objective(질문 자체)의 결과로
+나온다는 걸 보여줬다. 그래서 핵심 질문이 "해상도를 어떻게 적응시킬
+것인가"에서 **"Identity를 정의해야 할 semantic objective는 무엇인가"**
+로 옮겨갔다. 이 전환의 근거는 아래 "Experiment #53 Results"에 있다.
+
+### Revision History
+
+| | Framing |
+|---|---|
+| Previous (RQ10 kickoff, PR #39) | Phase 2: Adaptive Resolution |
+| Current (Experiment #52-53 이후) | Phase 2: Semantic Objective Discovery |
+
+**Reason**: Phase 2 experiments showed that semantic resolution is
+largely a consequence of the semantic objective chosen. Adaptive
+resolution therefore becomes an implementation problem that follows,
+rather than precedes, objective discovery.
 
 ## Phase 1 → Phase 2: Resolution의 재정의
 
@@ -181,9 +214,36 @@ M1(Prompt Artifact)이 M2(Model Prior)보다 현재 가장 설명력이 높은
 > Different measurement methods actively select different latent
 > geometries to observe.
 
-### Open Question (아직 실험 설계 전)
+## RQ10-1 (Next Question, 아직 실험 설계 전)
 
-Mechanism 프롬프트가 만든 Tree가 사람이 실제로 느끼는 "관심사 구조"와
-일치하는가, 아니면 프롬프트가 만들어낸 예쁜 Tree일 뿐인가? 이건 Phase 1
-전반에 걸쳐 반복된 "Ground Truth Topic 레이블 vs 사용자 체감"의 간극과
-같은 축의 질문이다 — 아직 가설도 실험 설계도 없다.
+> Which semantic objective best predicts human organizational behavior
+> — and does that answer itself vary by domain or user?
+
+RQ10-0이 "Resolution이 데이터에 내재하는가"에 답하려다 "Objective가
+Geometry를 만든다"는 걸 발견했다면, RQ10-1은 그 Objective 자체를 정면
+으로 묻는 질문이다. Finding #014(적정 해상도는 도메인마다 다르다)의
+교훈을 그대로 계승한다 — "고정된 하나의 정답 Objective가 있다"는
+전제로 퇴행하지 않기 위해, 질문 자체에 도메인/사용자 의존성을
+포함시켰다. "Mechanism이 만든 Tree가 사용자 체감 관심사 구조와
+맞는가"(Experiment #53 직후 처음 떠올렸던 질문)는 이 RQ10-1의 특수
+사례로 흡수된다.
+
+**Candidate Objectives**
+
+Observed candidates (이미 간접 증거 있음 — Experiment #45~53에서
+프롬프트로 테스트됨):
+- Mechanism similarity
+- Topic similarity
+- Conceptual relatedness (Neutral/Relation 프롬프트)
+
+Speculative candidates (완전 미탐색, 실험 설계도 없음):
+- Learning dependency
+- Task substitutability
+- Temporal co-occurrence
+- User navigation (day/topic/text만 있는 현재 Virtual User Dataset
+  스키마에 없는 행동 로그가 필요 — 실험 설계 이전에 데이터 스키마부터
+  다시 설계해야 하는 별도 작업)
+
+RQ10-1은 아직 이론 정의도 실험 설계도 없다. 이 문서(`research_phase_2_
+rq10-0.md`)는 RQ10-0 전용으로 남기고, RQ10-1이 H1/H2/H3 같은 정식
+protocol을 갖추면 RQ10-0처럼 별도 파일로 분리한다.
