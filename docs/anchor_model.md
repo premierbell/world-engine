@@ -2,7 +2,7 @@
 
 > **Research Phase 1: Complete** (RQ0~RQ9, `research_phase_1_summary.md`
 > 참고). 이 문서의 Research Question #0~#9는 전부 답변/종료됐다.
-> Research Phase 2(RQ10: Adaptive Resolution)는 아직 시작 전이다 -
+> Research Phase 2 연구는 `research_phase_2_rq10-0.md`에서 진행한다 -
 > 아래 내용은 Phase 1의 상세 기록으로 보존한다.
 
 Finding #006(Greedy + EMA + Threshold는 계층과 무관하게 같은 방식으로
