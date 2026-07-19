@@ -1,5 +1,10 @@
 # Anchor Model
 
+> **Research Phase 1: Complete** (RQ0~RQ9, `research_phase_1_summary.md`
+> 참고). 이 문서의 Research Question #0~#9는 전부 답변/종료됐다.
+> Research Phase 2(RQ10: Adaptive Resolution)는 아직 시작 전이다 -
+> 아래 내용은 Phase 1의 상세 기록으로 보존한다.
+
 Finding #006(Greedy + EMA + Threshold는 계층과 무관하게 같은 방식으로
 실패한다) 이후 Night Batch v0~v3(Merge/Split/Topic Graph/HDBSCAN/
 Selective, `hybrid_architecture.md`)를 대체하는 통합 설계다. v0~v3는

@@ -3,6 +3,15 @@
 이 문서는 V0에서 발견한, 알고리즘 자체의 구조적 한계를 기록한다. Threshold를 더
 튜닝해서 해결되는 문제가 아니라, 접근 방식 자체를 재검토해야 하는 발견들이 여기 들어간다.
 
+> **Research Phase 1: Complete** (Finding #001~#014, `research_phase_1_summary.md`
+> 참고). Phase 1에서 확인된 핵심 한계: Similarity/Tag/Graph/반복관측 등
+> 어떤 축으로도 고정된 해상도로는 Topic Identity를 안정적으로 판별할 수
+> 없었다(Finding #008~#013) - 유일하게 유효했던 신호(Pairwise LLM
+> Judgment)도 판단 해상도가 도메인의 semantic density와 맞을 때만
+> 작동했다(Finding #014). **"적정 해상도를 도메인마다 어떻게 자동으로
+> 선택할 것인가"(Adaptive Resolution)는 아직 Open Question이고, 이건
+> Phase 1의 연장이 아니라 Phase 2(RQ10)로 별도 관리한다.**
+
 > **Research Principle #001** (`experiments/v0_validation.md` 참고): World
 > Engine은 사람이 미리 정의한 카테고리를 재현하는 것이 아니라, 반복적으로
 > 관찰되는 의미 구조를 발견하고 이를 제품에 반영한다. 단, "반복 관찰"만으로
