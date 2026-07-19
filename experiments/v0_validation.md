@@ -2098,3 +2098,115 @@ semantic resolution of the judgment matches the semantic density of
 the target domain."** Adaptive Resolution(도메인마다 해상도를
 자동으로 맞추는 방향)은 백로그로 남기고 지금 실험하지 않는다 -
 Research Question #9는 여기서 종료한다. `docs/anchor_model.md` 갱신.
+
+---
+
+## Research Phase 1: Complete
+
+RQ0~RQ9, Finding #001~#014 요약은 `docs/research_phase_1_summary.md` 참고.
+
+## Research Phase 2
+
+## Research Question 10-0: Does semantic resolution exist independently of the measurement method?
+
+RQ10-0의 이론적 정의(H1 Tree/H2 Metric/H3 Graph, observable predictions,
+evaluation strategy)는 `docs/research_phase_2_rq10-0.md`에 별도 문서로
+관리한다.
+
+## Experiment #52: RQ10-0 Stage A/B — Measurement Invariance & Latent Geometry
+
+### Hypothesis
+H1/H2/H3 각각의 observable prediction(`docs/research_phase_2_rq10-0.md`
+참고)이 관측 데이터와 얼마나 맞는지 본다. Stage A는 세 measurement
+modality(embedding cosine, LLM Mechanism 프롬프트, LLM Topic 프롬프트)
+간 구조 일치도로 "Resolution이 측정 독립적인가"를 먼저 검사하고, Stage
+B는 그 위에서 각 modality가 Tree(H1)에 가까운지 Metric(H2)에 가까운지
+본다.
+
+### Data
+AI Researcher curated sample 36개(Experiment #47/#50과 동일 표본,
+seed=7). Mechanism/Topic judgment 점수는 기존 캐시
+(`pairwise_judgment_cache.json`, `pairwise_judgment_topic_cache.json`)
+재사용, embedding은 신규 계산(36건, pairwise가 아니라 O(n)이라 저렴,
+`resolution_ontology_embedding_cache.json`에 캐시). 새 LLM judgment
+호출 없음.
+
+### Result
+**Stage A (odd-one-out agreement / Kendall's τ, 우연 수준 33.3%)**:
+Embedding vs Mechanism 39.9%/0.202, Embedding vs Topic 51.0%/0.274,
+Mechanism vs Topic 65.4%/0.457 — 세 쌍 다 우연보다 높지만 균일하지
+않음.
+
+**Stage B (ultrametric violation / cophenetic avg,ward / MDS stress)**:
+Embedding 53.0%/0.708,0.585/40.17, Mechanism 0.8%/0.921,0.595/86.86,
+Topic 21.5%/0.769,0.727/32.99.
+
+### Insight
+Resolution은 completely measurement artifact도 아니고 completely
+objective도 아니다("partial measurement invariance"). Mechanism
+프롬프트는 강하게 Tree처럼 행동하고(거의 완벽한 ultrametric, 그러나
+저차원 거리공간으로는 안 펴짐), Embedding은 Tree도 Metric도 아니다
+(Finding #008의 기하학적 재확인). 즉 지금 관측된 차이는 Tree/Metric/
+Graph 세계관의 경쟁이라기보다 **측정 방법이 서로 다른 기하학을
+유도한다**는 사실로 대부분 설명된다. H3(Graph)는 기각되지 않았지만
+현재 데이터를 설명하는 데 필수적이지도 않다.
+
+### Decision
+`docs/research_phase_2_rq10-0.md`에 Stage A/B 결과와 Interim
+Conclusion("Different measurement methods do not observe the same
+latent geometry...")을 기록. H3는 "viable하지만 현재 불필요"로 보류.
+다음 실험으로 새 하위 질문 **"Mechanism Tree Effect: Prompt Artifact
+or Model Prior?"**를 정의 — Mechanism 프롬프트의 Tree-like 행동이
+prompt wording의 인공물(M1)인지 LLM 내재 구조(M2)인지, 같은 pair에
+새 프롬프트(Neutral/Relation)만 바꿔서 같은 Stage B 지표로 비교.
+
+## Experiment #53: Mechanism Tree Effect — Prompt Artifact(M1) or Model Prior(M2)?
+
+### Hypothesis
+M1(Prompt Artifact): "같은 구체적 개념/기법인가"라는 위계적 판단을
+강제하는 prompt wording 자체가 Tree 구조를 만든다 - prompt에서 그
+요구를 빼면 Tree-likeness가 무너진다. M2(Model Prior): LLM의 semantic
+knowledge 자체가 hierarchical하다 - prompt를 바꿔도 Tree-likeness가
+유지된다.
+
+### Data
+Experiment #52와 동일한 36개 curated sample, 동일한 630개 pair.
+`pairwise_judge.py`에 새 프롬프트 두 개 추가 - Neutral("두 문서가
+얼마나 밀접하게 관련되어 있는가", 위계 판단 요구 안 함), Relation("동일한
+주제가 아니어도 좋다, 연구자 입장에서 함께 공부할 가치가 있는가").
+630쌍 × 2 프롬프트 = 1260건 신규 LLM 호출(백그라운드 실행).
+
+### Result
+| Modality | Ultrametric violation | Cophenetic(avg/ward) | MDS stress |
+|---|---|---|---|
+| Mechanism | 0.8% | 0.921 / 0.595 | 86.86 |
+| Neutral | 56.6% | 0.743 / 0.683 | 34.45 |
+| Relation | 55.2% | 0.562 / 0.495 | 10.54 |
+
+"같은 구체적 기법인가"라는 요구를 빼자 Tree 적합도가 붕괴(violation
+0.8%→55~57%, cophenetic 0.921→0.5~0.7대), 동시에 MDS stress는
+86.86→34.45→10.54로 단조 감소(저차원 연속 공간에 더 매끈하게 펴짐).
+Neutral(violation 56.6%, MDS stress 34.45)은 Experiment #52의
+Embedding(53.0%, 40.17)과 상당히 근접.
+
+### Insight
+M1이 M2보다 현재 가장 설명력이 높은 가설이다. 더 큰 발견은 M1/M2
+판정 자체가 아니라 **prompt objective가 관측 가능한 semantic geometry
+자체를 선택(construct)한다**는 것 - Hierarchical 프롬프트는 Tree를,
+Relational 프롬프트는 연속적인 relatedness space를 복원한다. Neutral과
+Embedding의 유사한 프로파일은 Finding #008(Similarity는 Relatedness를
+포착하지 Identity는 아니다)을 다른 방식으로 재확인한다. Backend User
+데이터셋에서의 재현은 지금 당장 핵심 증거로 필요하지 않다(같은 데이터·
+같은 LLM에서 prompt만 바꿔 geometry가 바뀌었다는 것 자체가 이미
+인과적) - replication으로 나중에 남겨둔다.
+
+### Decision
+`docs/research_phase_2_rq10-0.md`에 **Finding P2-001**(Prompt
+Objectives Determine the Observable Semantic Geometry) 기록. RQ10-0의
+Interim Conclusion을 "Different measurement methods do not observe
+the same latent geometry"에서 **"Different measurement methods
+actively select different latent geometries to observe"**로 강화.
+새 Open Question 기록(아직 실험 설계 전): Mechanism 프롬프트가 만든
+Tree가 사용자가 실제로 느끼는 "관심사 구조"와 일치하는가, 아니면
+프롬프트가 만들어낸 구조일 뿐인가 - Phase 1의 Purity vs UX 간극과
+같은 축.
