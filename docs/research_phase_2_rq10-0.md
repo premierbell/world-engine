@@ -4,10 +4,18 @@
 > Semantic Resolution은 데이터에 내재한 속성인가, 아니면 측정 방법이
 > 만들어내는 산물인가?
 
-**Status: 🟡 Provisionally Answered** (단일 데이터셋 AI Researcher,
-단일 모델 기준 — 상태 표기는 ✅ Answered / 🟡 Provisionally Answered /
-🔄 Re-opened 세 단계를 쓴다. Backend User 등 다른 도메인에서 반증되면
-🔄 Re-opened로 되돌린다.)
+**Status: 🟢 Strongly Supported** (AI Researcher + Backend User 두
+데이터셋에서 핵심 패턴 재현, Experiment #52/#54/#55 — 상태 표기는
+✅ Answered / 🟢 Strongly Supported / 🟡 Provisionally Answered /
+🔄 Re-opened 네 단계를 쓴다. 🟢는 "2개 이상 독립 데이터셋에서 재현"을
+뜻하고, 3개 이상 도메인·다른 모델까지 확인되기 전에는 ✅로 올리지
+않는다. 반증되면 🔄 Re-opened로 되돌린다.)
+
+다만 이 판정은 균일하지 않다 — "Semantic Relatedness family(Topic/
+Neutral/Relation)는 서로 유사한 geometry를 만든다"는 2개 데이터셋에서
+재현되어 🟢지만, "Mechanism은 독립된 Hierarchical family다"는 아직
+Experiment #53 하나·단일 데이터셋에서만 나온 결과라 **🟡 Provisionally
+Answered**로 따로 남긴다("Measurement Families" 절 참고).
 
 이 문서는 연구 결과 문서가 아니라 **연구 프로토콜(Research Protocol)**이다.
 아직 결론이 없는 상태에서 "무엇을 어떻게 검증할 것인가"만 정의한다.
@@ -284,6 +292,58 @@ Ground Truth와 어떻게 정렬되는지를 보여줬다. RQ10-0 — "Resolutio
 자체가 어떤 개념(Hierarchy vs Relatedness)에 더 가깝게 만들어졌는지에
 달려 있다.
 
+## Experiment #55 — Probe 0 Replication on Backend User
+
+Probe 0(Experiment #54)은 AI Researcher 데이터셋 하나에서만 나온
+결과였다. 같은 평가 체계·같은 파이프라인으로 도메인만 바꿔서
+재현한다(Mechanism 축은 제외 — Backend에는 mechanism 주석이 없고,
+지금 확인하려는 건 Topic≈Neutral의 일반성이기 때문).
+
+| Objective | AI Researcher (AUC) | Backend (AUC) |
+|---|---|---|
+| Topic | 0.944 | 0.923 |
+| Neutral | 0.922 | 0.950 |
+| Relation | 0.893 | 0.935 |
+
+순위는 뒤집혔다(AI Researcher: Topic>Neutral>Relation, Backend:
+Neutral>Relation>Topic) — 그러나 범위는 두 도메인 모두 0.89~0.95로
+좁다. **"누가 1등이냐"는 재현되지 않았지만, "셋 다 거의 비슷하게
+잘 된다"는 재현됐다.** Backend는 세 objective 모두 Precision@0.5가
+AI Researcher보다 높다(Topic 0.490→0.556, Neutral 0.494→0.589,
+Relation 0.124→0.243) — Calibration이 전반적으로 더 타이트하다는 뜻,
+Finding #014(Backend는 Topic 간 거리가 원래 넓다)와 일관된다.
+(방법론 차이: Backend 표본은 mechanism 주석이 없어 `curated_sample`
+대신 단순 topic별 무작위 샘플링을 썼다 — Topic/Neutral/Relation
+비교엔 mechanism 로직이 관여하지 않아 비교 자체엔 영향 없음.)
+
+### Measurement Families
+
+Topic/Neutral/Relation을 서로 경쟁하는 objective로 적어온 지금까지의
+구성을 재검토한다. 두 도메인 모두에서 이 셋 사이의 AUC 격차보다, 이
+셋 전체와 Mechanism 사이의 격차가 훨씬 크다 — 그렇다면 이 셋은
+경쟁자가 아니라 같은 family로 묶는 게 더 정확하다.
+
+| Family | Objectives | Geometry (Experiment #52/53) |
+|---|---|---|
+| Semantic Relatedness | Topic, Neutral, Relation | 서로 유사, Tree도 순수 Metric도 아닌 relatedness-like |
+| Hierarchical Decomposition | Mechanism | 강한 Tree(ultrametric violation 0.8%) |
+
+> Different measurement families induce different latent geometries.
+
+> **Revision (Finding P2-001 정교화, Experiment #55 반영)**: 원래
+> 문구("Prompt wording selects which latent geometry becomes
+> observable")는 유지하되, 단위를 "프롬프트 하나하나"가 아니라
+> "measurement family"로 명시한다 — Semantic Relatedness family
+> 안에서는 프롬프트 문구가 달라도(Topic/Neutral/Relation) geometry와
+> Topic 복원력이 두 도메인 모두에서 거의 같았다. Mechanism만 별도
+> family였다.
+
+**세부 확신도**: RQ10-0 전체는 🟢 Strongly Supported로 올리지만,
+"Mechanism이 정말 독립된 Hierarchical family인가"는 아직 Experiment
+#53 하나·단일 데이터셋에서만 나온 결과라 🟡 Provisionally Answered로
+따로 남긴다 — Backend에서 Mechanism 축을 재현하려면 mechanism
+주석부터 새로 만들어야 한다(아직 하지 않음).
+
 ## RQ10-1 (Next Question, 아직 실험 설계 전)
 
 > Which semantic objective best predicts human organizational behavior
@@ -296,18 +356,24 @@ Geometry를 만든다"는 걸 발견했다면, RQ10-1은 그 Objective 자체를
 전제로 퇴행하지 않기 위해, 질문 자체에 도메인/사용자 의존성을
 포함시켰다. "Mechanism이 만든 Tree가 사용자 체감 관심사 구조와
 맞는가"(Experiment #53 직후 처음 떠올렸던 질문)는 이 RQ10-1의 특수
-사례로 흡수된다. Probe 0에서 본 Topic≈Neutral 근접은 RQ10-1이 실제
-사용자 데이터로 검증해야 할 첫 단서다 — 지금 이 가상 데이터셋에서만
-그런 것인지, 실제 사용자 관심사 조직에서도 "위계"보다 "관련성"이
-더 본질적인지는 아직 모른다.
+사례로 흡수된다. Probe 0 + Experiment #55에서 본 Topic≈Neutral≈
+Relation 근접(2개 도메인 재현)은 RQ10-1이 실제 사용자 데이터로
+검증해야 할 첫 단서다 — 지금 이 가상 데이터셋들에서만 그런 것인지,
+실제 사용자 관심사 조직에서도 "위계"보다 "관련성"이 더 본질적인지는
+아직 모른다.
 
 **Candidate Objectives**
 
-Observed candidates (이미 간접 증거 있음 — Experiment #45~53에서
-프롬프트로 테스트됨):
-- Mechanism similarity
-- Topic similarity
-- Conceptual relatedness (Neutral/Relation 프롬프트)
+이제 Topic/Neutral/Relation을 서로 다른 후보로 나열하지 않는다 —
+"Measurement Families" 절(Experiment #55)에서 이 셋은 하나의 family로
+묶였다.
+
+Observed candidates (이미 간접 증거 있음):
+- **Semantic Relatedness family** (Topic/Neutral/Relation) — 🟢
+  2개 도메인(AI Researcher, Backend)에서 서로 유사한 geometry·Topic
+  복원력 확인
+- **Hierarchical Decomposition family** (Mechanism) — 🟡 1개 도메인
+  (AI Researcher)에서만 확인, 독립된 family인지 아직 Provisional
 
 Speculative candidates (완전 미탐색, 실험 설계도 없음):
 - Learning dependency

@@ -2282,3 +2282,52 @@ Reconstruction"을 RQ10-0 Stage A/B/Experiment #53 다음, RQ10-1 앞에
 Interim Conclusion을 Probe 0까지 반영해서 재작성. RQ10-1 섹션에는
 Probe 0의 Topic≈Neutral 근접이 "실제 사용자 데이터로 검증해야 할 첫
 단서"라는 연결 문장 추가.
+
+## Experiment #55: RQ10-0 Probe 0 Replication on Backend User
+
+### Hypothesis
+Probe 0(Experiment #54)은 AI Researcher 데이터셋 하나에서만 나온
+결과다 - "Topic ≈ Neutral"이 도메인 고유 현상인지 일반적인 현상인지
+확인한다. 같은 평가 체계·같은 파이프라인으로 도메인만 바꾼다
+(replication study). Mechanism 축은 뺀다 - Backend에는 mechanism
+주석이 없고, 지금 확인하려는 건 Mechanism이 아니라 Topic≈Neutral의
+일반성이기 때문(Topic/Neutral/Relation 세 objective만).
+
+### Data
+Backend User 71개 중 단순 topic별 무작위 샘플링(mechanism 주석이
+없어 `curated_sample` 대신 `simple_per_topic_sample` 사용, seed=7,
+per_topic_cap=4) → 36개, 630개 pair. Topic/Neutral/Relation 세
+캐시에 신규 LLM 호출(백그라운드 실행).
+
+### Result
+| Objective | AI Researcher (AUC) | Backend (AUC) |
+|---|---|---|
+| Topic | 0.944 | 0.923 |
+| Neutral | 0.922 | 0.950 |
+| Relation | 0.893 | 0.935 |
+
+순위는 뒤집혔다(AI Researcher: Topic>Neutral>Relation, Backend:
+Neutral>Relation>Topic) - 그러나 범위는 두 도메인 모두 0.89~0.95로
+좁다. Backend는 세 objective 모두 Precision@0.5가 AI Researcher보다
+높음(Calibration이 더 타이트, Finding #014와 일관).
+
+### Insight
+"누가 1등이냐"는 재현되지 않았지만 "셋 다 거의 비슷하게 잘 된다"는
+재현됐다 - Topic/Neutral/Relation을 경쟁하는 objective가 아니라 같은
+**Measurement Family**(Semantic Relatedness)로 묶는 게 더 정확하다.
+두 도메인 모두에서 이 셋 사이의 격차보다 이 셋 전체와 Mechanism
+사이의 격차가 훨씬 크다 - Mechanism만 별도 family(Hierarchical
+Decomposition)로 보인다. Finding P2-001을 "Prompt wording이
+geometry를 고른다"에서 "Measurement family가 geometry를 고른다"로
+정교화한다(family 안에서는 프롬프트 문구가 달라도 geometry가 거의
+같음).
+
+### Decision
+RQ10-0을 🟡 Provisionally Answered → **🟢 Strongly Supported**로
+상향(AI Researcher + Backend 두 데이터셋 재현). 단 "Mechanism이 정말
+독립된 family인가"는 Experiment #53 하나·단일 데이터셋에서만 나온
+결과라 🟡 Provisionally Answered로 별도 유지 - RQ10-0 판정이 균일하지
+않음을 명시. `docs/research_phase_2_rq10-0.md`에 "Measurement
+Families" 절 신설, 상태 표기 체계에 🟢 Strongly Supported 티어 추가
+(✅/🟢/🟡/🔄 네 단계), RQ10-1의 Candidate Objectives를 family 단위로
+재구성.
