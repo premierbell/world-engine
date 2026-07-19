@@ -57,8 +57,8 @@ def load_cache() -> dict[str, float]:
         return {}
 
 
-def save_cache(cache: dict[str, float]) -> None:
-    with open(CACHE_PATH, "w") as f:
+def save_cache(cache: dict[str, float], cache_path: str = CACHE_PATH) -> None:
+    with open(cache_path, "w") as f:
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
 
@@ -67,10 +67,12 @@ def pair_key(text_a: str, text_b: str) -> str:
     return f"{a}|||{b}"
 
 
-def cached_score(cache: dict[str, float], judge: OpenAIPairwiseJudge, text_a: str, text_b: str) -> float:
+def cached_score(
+    cache: dict[str, float], judge: OpenAIPairwiseJudge, text_a: str, text_b: str, mode: str = "mechanism"
+) -> float:
     key = pair_key(text_a, text_b)
     if key not in cache:
-        cache[key] = judge.score(text_a, text_b)
+        cache[key] = judge.score(text_a, text_b, mode=mode)
     return cache[key]
 
 
@@ -89,6 +91,8 @@ def run_llm_rerank(
     llm_threshold: float,
     judge: OpenAIPairwiseJudge,
     cache: dict[str, float],
+    mode: str = "mechanism",
+    cache_path: str = CACHE_PATH,
 ) -> list[Island]:
     islands: list[Island] = []
     for day in sorted({s["day"] for s in scraps}):
@@ -104,7 +108,8 @@ def run_llm_rerank(
             candidate_text = texts[0]
             top_idx = sorted(range(len(row)), key=lambda i: -row[i])[:TOP_K_CANDIDATES]
             llm_scored = [
-                (i, cached_score(cache, judge, candidate_text, anchors[i].topics[0].scraps[0])) for i in top_idx
+                (i, cached_score(cache, judge, candidate_text, anchors[i].topics[0].scraps[0], mode=mode))
+                for i in top_idx
             ]
             best_i, best_llm_score = max(llm_scored, key=lambda p: p[1])
             if best_llm_score >= llm_threshold:
@@ -117,7 +122,7 @@ def run_llm_rerank(
                 new_island.topics[0].scraps = list(texts)
                 islands.append(new_island)
                 next_id += 1
-        save_cache(cache)
+        save_cache(cache, cache_path)
     return islands
 
 
