@@ -286,18 +286,36 @@ Graph/HDBSCAN/Selective)가 전부 실패했던 공통 원인이 "Greedy 결과�
        Case C가 score=0.2 지점에서 절대 개수가 거의 같았다(11 vs
        13) - threshold를 어디로 옮겨도 Precision↑/Recall↓ 또는
        반대로 이동할 뿐인 **Signal Separability 문제**로 확인됐다.
-       threshold sweep은 이 한계를 못 넘으므로 진행하지 않는다.
-       `docs/algorithm_limitations.md` **Finding #013**(Semantic
-       Resolution Mismatch)로 승격.
-   - **Research Question #9(신설, 최우선): "Topic이라는 것은 애초에
-     pairwise semantic judgment만으로 정의될 수 있는 대상인가?"**
-     Mechanism 수준 신호는 강하지만, Topic은 여러 Mechanism이 묶인
-     상위 구조(Topic ⊇ {Mechanism A, B, C, ...})로 보인다 - Pairwise
-     (둘씩 비교)가 아니라 Mechanism들을 Topic으로 다시 묶는 별도
-     연산(예: 여러 Anchor를 동시에 보여주는 Ranking 방식)이 필요할 수
-     있다. 아직 가설/설계 전.
-   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 Research
-     Question #9에 대한 답이 나온 뒤로 미룬다.
+       threshold sweep(같은 프롬프트 안에서 문턱값만 조정)은 이 한계를
+       못 넘는다. `docs/algorithm_limitations.md` **Finding #013**
+       (Judgment Resolution Must Match the Evaluation Resolution,
+       원래 이름 "Semantic Resolution Mismatch"에서 수정)으로 승격.
+   - **Research Question #9: "Topic이라는 것은 애초에 pairwise semantic
+     judgment만으로 정의될 수 있는 대상인가?" — Closed(Experiment
+     #50/#51).** threshold가 아니라 **프롬프트 자체**(요구하는 판단
+     해상도)를 Mechanism→Topic으로 바꾸자 신호가 크게 개선됐다
+     (Experiment #50: ROC-AUC 0.730→0.944, Case B에서 Δ가 가장 큼
+     +0.569) - Finding #013의 원인이 "LLM 능력 한계"가 아니라 "Prompt
+     Objective"였다는 뜻이다. 이 프롬프트 교체를 실제 attach에
+     적용하자(Experiment #51), 결과가 도메인마다 반대로 갈렸다 -
+     Backend는 Purity·Duplication 동시 개선(66.7%→44.4%)됐지만, AI
+     Researcher는 Duplication이 오히려 악화(88.9%→100%)됐다. 원인은
+     AI Researcher의 실제 Topic들(RLHF/Fine-tuning/Prompt
+     Engineering/Agent/Transformer)이 전부 "LLM 연구"라는 하나의
+     의미 공간에 밀집해 있어서(Finding #008의 원래 예시와 같은 구조),
+     판단 해상도를 Topic으로 넓히면 서로 다른 실제 Topic도 뭉뚱그려지기
+     때문이다. `docs/algorithm_limitations.md` **Finding #014**
+     (Optimal Semantic Resolution Is Domain-dependent)로 승격.
+     **최종 답**: "Pairwise semantic judgment is sufficient to recover
+     Topic Identity, but only when the semantic resolution of the
+     judgment matches the semantic density of the target domain."
+     Adaptive Resolution(도메인별 자동 해상도 조정)은 백로그로 남기고
+     지금 세션에서는 실험하지 않는다.
+   - Hungarian algorithm/ILP 같은 실제 Optimizer 구현은 여전히 미룬다 -
+     RQ9는 닫혔지만 "적정 해상도를 도메인마다 어떻게 자동으로 맞출
+     것인가"(Adaptive Resolution, Finding #014 Implication)는 아직
+     설계 전이라, Optimizer를 붙일 안정적인 attach 메커니즘 자체가
+     아직 없다.
 1. **Attach 판단 기준(threshold)** — candidate cluster와 Anchor 사이의
    유사도를 어떻게 계산할지는 Question #0에 종속된 질문이 됨. Experiment
    #28에서 attach_threshold 단독 조정만으로는 Precision-Fragmentation

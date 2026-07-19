@@ -1999,3 +1999,102 @@ Mismatch) 신설 - threshold sweep은 하지 않는다("threshold를 더
 수준 직접 대체는 안 됨).** Research Question #9 신설: "Topic이라는
 것은 애초에 pairwise semantic judgment만으로 정의될 수 있는
 대상인가?" - `docs/anchor_model.md` 갱신.
+
+## Experiment #50: Topic-level Prompt Judgment - Prompt Objective의 통제 실험
+날짜: 2026-07-19
+
+### Hypothesis
+Finding #013의 가장 큰 대안 설명(Prompt Artifact)을 제거한다 -
+Experiment #45의 프롬프트가 "같은 상위 분야라는 이유만으로 높은 점수를
+주지 말 것"을 명시했으므로, LLM이 Mechanism 수준으로 판단한 게 LLM의
+능력 한계가 아니라 그렇게 물어봤기 때문일 수 있다. 딱 하나만 바꾼다 -
+프롬프트.
+
+### Data
+Experiment #47과 완전히 같은 pair(같은 36개 스크랩, 같은 Case A/B/C
+분류)에 정반대 지시("구체적 기법이 달라도 같은 상위 주제면 높은
+점수를 줘라")를 담은 Topic Prompt로 다시 점수를 매기고, 핵심 지표로
+**Δ = score_topic - score_mechanism**을 Case별로 비교
+(`pairwise_judge.py`에 mode 파라미터 추가, `experiment_topic_prompt_judgment.py`).
+
+### Result
+| Case | mean mechanism_score | mean topic_score | mean Δ |
+|---|---|---|---|
+| A | 0.483 | 0.875 | +0.392 |
+| B | 0.135 | 0.704 | **+0.569** |
+| C | 0.006 | 0.262 | +0.256 |
+
+전체 ROC-AUC가 **0.730 → 0.944**로 크게 개선됐다. Δ가 Case B에서
+가장 컸다(+0.569 > A +0.392 > C +0.256) - Case C도 어느 정도 올랐지만
+(topic이라는 개념 자체가 mechanism보다 넓으므로 자연스러운 현상) A·B
+만큼은 아니다.
+
+### Insight
+Finding #013의 원인이 "LLM의 semantic prior 한계"가 아니라 **"Prompt
+Objective가 Mechanism 수준을 요구했기 때문"**이라는 강한 증거다 - 같은
+LLM, 같은 pair, 같은 데이터에서 프롬프트만 바꿨는데 AUC가 이만큼
+뛰었다는 건 LLM capability가 아니라 Objective가 바뀐 것이다.
+
+### Decision
+아직 Finding으로 승격하지 않는다 - 지금은 offline 신호만 좋아졌을
+뿐, 실제 attach 품질(Purity/Duplication)까지 좋아졌는지는 확인 안
+됐다. Research Insight로 잠정 기록하고, Experiment #48을 Topic
+Prompt로 재실행해서 실제 시스템 품질까지 개선되는지 확인한다
+(Experiment #51).
+
+## Experiment #51: LLM-Reranked Attach, Topic Prompt로 재실행
+날짜: 2026-07-19
+
+### Hypothesis
+Experiment #50의 offline 신호 개선(AUC 0.730→0.944)이 실제 시스템
+품질(Purity/Duplication/Island 수)에도 이어지는가? Experiment #48과
+완전히 같은 설계(cosine top-3 → LLM rerank)에서 mode만
+"mechanism"→"topic"으로 바꾼다.
+
+### Data
+`experiment_llm_rerank_attach.py`의 `run_llm_rerank`에 mode/cache_path
+파라미터를 추가해서 재사용, `experiment_llm_rerank_attach_topic.py`
+(Experiment #51)로 Topic Prompt 점수 분포(Case A 0.875/B 0.704/C
+0.262, Experiment #50)에 맞춰 llm_threshold를 0.4/0.5/0.6으로 조정해서
+Control(cosine)과 비교.
+
+### Result
+| | Control(Cosine) | Treatment(Topic Prompt, threshold=0.5) |
+|---|---|---|
+| Backend Purity | 0.437 | 0.761 |
+| Backend Duplication | 66.7% | **44.4%(개선)** |
+| Backend Island 수 | 10 | 17 |
+| AI Researcher Purity | 0.437 | 0.704 |
+| AI Researcher Duplication | 88.9% | **100.0%(악화)** |
+| AI Researcher Island 수 | 13 | 23 |
+
+Backend User는 Purity·Duplication이 동시에 개선됐다(사용자가 예상한
+"시나리오 1"). AI Researcher는 반대로 Duplication이 오히려
+악화됐다(88.9%→100%) - Mechanism Prompt(Experiment #48)보다도
+나쁘다.
+
+### Insight
+Topic Prompt가 "정답"이 아니라, 도메인마다 반응이 갈린다. Backend의
+실제 Topic들(Redis/Kafka/Spring/Docker)은 기술적으로 서로 뚜렷이
+구분되는 semantic gap이 큰 도메인이라 해상도를 넓혀도(Topic Prompt)
+잘 안 섞인다. 반면 AI Researcher의 실제 Topic들(RLHF/Fine-tuning/
+Prompt Engineering/Agent/Transformer)은 전부 "LLM 연구"라는 하나의
+큰 의미공간 안에 밀집해 있다(Finding #008의 원래 예시와 정확히
+같은 구조) - Topic Prompt로 해상도를 넓히면 LLM이 "다 같은 LLM
+연구잖아"라고 보는 게 오히려 자연스러운 반응이 된다. **LLM이 틀린 게
+아니라, Topic label이 요구하는 해상도보다 한 단계 위에서 판단한
+것이다.**
+
+### Decision
+Finding #013을 수정한다 - Claim을 "Semantic Resolution Mismatch"에서
+**"Judgment Resolution Must Match the Evaluation Resolution"**으로
+재구성(Experiment #50이 원인을 Prompt Objective로 좁힘). 그 위에
+`docs/algorithm_limitations.md`에 **Finding #014**(Optimal Semantic
+Resolution Is Domain-dependent) 신설 - "적정 해상도"가 고정 상수가
+아니라 도메인의 semantic density에 따라 달라진다는 게 이번 실험의
+핵심 결론. Research Question #9에 답한다: **"Pairwise semantic
+judgment is sufficient to recover Topic Identity, but only when the
+semantic resolution of the judgment matches the semantic density of
+the target domain."** Adaptive Resolution(도메인마다 해상도를
+자동으로 맞추는 방향)은 백로그로 남기고 지금 실험하지 않는다 -
+Research Question #9는 여기서 종료한다. `docs/anchor_model.md` 갱신.

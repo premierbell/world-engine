@@ -1136,17 +1136,24 @@ Classifier"로 바로 대체될 수 있는지는 별개 질문이다 - 실제 �
 ### Status
 **Open.** Experiment #48로 이어짐.
 
-## Finding #013: Semantic Resolution Mismatch
+## Finding #013: Judgment Resolution Must Match the Evaluation Resolution
+
+> **수정 이력(Experiment #50)**: 원래 Claim은 "Semantic Resolution
+> Mismatch"(LLM 판단의 semantic resolution과 평가 지표의 resolution이
+> 근본적으로 다르다)였다. Experiment #50이 같은 pair·같은 LLM에서
+> **프롬프트만** Mechanism 지향에서 Topic 지향으로 바꿨더니 ROC-AUC가
+> 0.730→0.944로 크게 개선됐다 - 이건 "LLM의 semantic prior 한계"가
+> 아니라 "Prompt Objective가 Mechanism 수준을 요구했기 때문"이었다는
+> 뜻이라 Claim을 아래처럼 좁혀서 수정한다.
 
 ### Claim
-Pairwise LLM Judgment를 실제 attach 판단(reranking)에 적용하면 Topic
-Purity는 극적으로 개선되지만 Topic Duplication Rate는 개선되지
-않는다. **이 실패는 LLM 판단이 부정확해서가 아니라, 판단의 semantic
-resolution(Mechanism 수준)과 평가 지표가 전제하는 semantic
-resolution(Topic 수준)이 다르기 때문이다.** 그리고 이 불일치는
-threshold를 조정해서 해결되는 문제가 아니라, Mechanism 수준 신호와
-Topic 수준 라벨이 부분적으로만 겹치는 **Signal Separability**의
-한계다.
+Pairwise LLM Judgment를 실제 attach 판단(reranking)에 적용했을 때
+Topic Purity는 개선되지만 Topic Duplication Rate가 개선 안 되는 현상은
+**LLM의 판단 능력 한계가 아니라, 프롬프트가 요구한 판단 해상도
+(judgment resolution)와 평가 지표가 전제하는 해상도(evaluation
+resolution)가 어긋났기 때문**이다. 이 어긋남은 프롬프트를 조정해서
+크게 줄일 수 있다(Experiment #50) - 다만 그 효과가 도메인에 따라
+달라진다는 것은 Finding #014에서 별도로 다룬다.
 
 ### Evidence 1 — 실제 시스템에 적용한 결과 (Experiment #48)
 cosine으로 top-3 Anchor 후보를 뽑고 그 top-3만 Pairwise LLM
@@ -1164,34 +1171,96 @@ Case C(다른 Topic, n=576)가 score=0.2 지점에서 절대 개수가 거의
 (2.6%) 절대 개수로는 Case B와 맞먹는 노이즈가 된다.
 threshold=0.2에서 Recall 48%(26/54), Precision 63%(26/41)로,
 어떤 threshold를 선택해도 Precision↑/Recall↓ 또는 반대 방향으로
-이동할 뿐이다.
+이동할 뿐이었다 - Mechanism Prompt 하나만 놓고 보면 이건 여전히
+사실이다(같은 프롬프트로는 threshold sweep이 근본 해결이 안 됨).
+
+### Evidence 3 — 프롬프트만 바꾸자 신호가 크게 개선됨 (Experiment #50)
+Evidence 1/2와 완전히 같은 pair·같은 LLM에서 프롬프트만 "구체적
+기법이 같은가"(Mechanism)에서 "같은 상위 주제인가, 세부 기법이
+달라도 괜찮다"(Topic)로 바꾸자 - Case A 0.483→0.875, **Case B
+0.135→0.704(Δ=+0.569, 세 Case 중 가장 크게 개선)**, Case C
+0.006→0.262. 전체 ROC-AUC가 0.730→0.944로 뛰었다.
 
 ### Root Cause
-The failure is not caused by inaccurate semantic judgment, but by a
-mismatch between the semantic resolution of the judgment and the
-semantic resolution assumed by the evaluation metric. LLM은
-"Sliding Window Attention vs Layer Normalization"을 정확히 "다른
-mechanism"이라고 판단했다 - 이건 옳은 판단이다. 하지만 Dataset은 이
-둘을 "Transformer"라는 하나의 Topic으로 묶는다. LLM이 맞았고,
-평가가 다른 기준으로 채점한 것이다. threshold를 0.3→0.1로 낮추면
-Case B는 더 잡히지만 Case C도 같이 올라온다 - **Mechanism과 Topic
-사이에 명확한 절단점(cut point)이 존재하지 않는다.**
+LLM은 "Sliding Window Attention vs Layer Normalization"을 정확히
+"다른 mechanism"이라고 판단했다 - 이건 틀린 게 아니라 **프롬프트가
+그렇게 판단하라고 명시적으로 지시했기 때문**이다(Experiment #45의
+프롬프트: "같은 상위 분야라는 이유만으로 높은 점수를 주면 안
+된다"). Evidence 3은 이게 LLM의 고정된 semantic prior가 아니라
+Prompt Objective의 산물이었음을 보여준다 - **The failure is not
+caused by inaccurate semantic judgment, but by a mismatch between
+the resolution the prompt asked for and the resolution the
+evaluation metric assumes.**
 
 ### Implication
-The limitation is therefore not threshold selection but signal
-separability. Mechanism-level semantic judgments and Topic-level
-evaluation labels overlap only partially, producing an unavoidable
-precision–recall trade-off. threshold sweep은 이 근본적인 한계를
-우회하지 못하므로 진행하지 않는다.
+threshold sweep(같은 프롬프트 안에서 문턱값만 조정)은 여전히 근본
+해결이 안 된다(Evidence 2) - 하지만 **프롬프트 자체(요구하는 판단
+해상도)를 바꾸는 건 효과가 있다**(Evidence 3). 다음 단계는 이 프롬프트
+교체가 실제 시스템 품질(Purity/Duplication)에도 이어지는지 확인하는
+것이다(Experiment #51) - 그 결과는 도메인에 따라 갈렸고, Finding
+#014로 별도 기록한다.
 
 ### Status
-**Open.** Experiment #45~49를 "Pairwise Semantic Judgment로 Topic
-Identity를 복원할 수 있는가"라는 하나의 연구 축으로 마무리한다.
-Research Question #8("Can Topic Identity be recovered from pairwise
-semantic judgment instead of independent document features?")에
-답한다 - **부분적으로 그렇다**: Mechanism 수준에서는 강한 신호이지만
-Topic 수준 직접 대체는 signal separability 한계로 안 된다.
+**Open, Finding #014와 함께 이어짐.** Research Question #8("Can Topic
+Identity be recovered from pairwise semantic judgment instead of
+independent document features?")에 답한다 - **부분적으로 그렇다**:
+판단 해상도를 프롬프트로 Topic 수준에 맞추면 신호 자체는 크게
+개선되지만(Evidence 3), 그 효과가 시스템 품질로 이어지는지는
+도메인에 따라 다르다(Finding #014).
 `docs/anchor_model.md`에 **Research Question #9**: "Topic이라는 것은
 애초에 pairwise semantic judgment만으로 정의될 수 있는 대상인가?"
 신설 - Mechanism을 Topic으로 다시 묶는 방법(예: 여러 Anchor를 동시에
 보여주는 Ranking 방식)이 다음 후보이지만 아직 설계 전이다.
+
+## Finding #014: Optimal Semantic Resolution Is Domain-dependent
+
+### Claim
+Finding #013(Judgment Resolution Must Match the Evaluation
+Resolution)이 프롬프트를 Topic 지향으로 바꾸면 신호가 개선된다는 걸
+보였지만, 그 신호 개선이 **실제 시스템 품질(Purity/Duplication)로
+이어지는지는 도메인마다 다르다.** 판단의 "적정 해상도"는 고정된
+상수가 아니라, 그 도메인의 실제 Topic들이 의미 공간에서 얼마나
+밀집해 있는가(semantic density)에 따라 달라진다.
+
+### Evidence — Topic Prompt를 실제 attach에 적용한 결과가 도메인마다 반대 방향 (Experiment #51)
+Experiment #48과 완전히 같은 설계(cosine top-3 → LLM rerank)에서
+프롬프트만 Mechanism→Topic으로 바꿔 재실행했다.
+
+| | Control(Cosine) | Mechanism Prompt(#48) | Topic Prompt(#51) |
+|---|---|---|---|
+| Backend Duplication | 66.7% | 66.7%(동일) | **44.4%(개선)** |
+| AI Researcher Duplication | 88.9% | 88.9%(동일) | **100.0%(악화)** |
+
+Backend User는 Purity·Duplication이 동시에 개선됐다. AI Researcher는
+Duplication이 오히려 Mechanism Prompt 때보다도 악화됐다.
+
+### Root Cause
+Backend의 실제 Topic(Redis/Kafka/Spring/Docker)은 기술적으로 서로
+뚜렷이 구분되는 semantic gap이 큰 도메인이라, 판단 해상도를
+Topic으로 넓혀도(더 관대하게 봐도) 서로 잘 안 섞인다. 반면 AI
+Researcher의 실제 Topic(RLHF/Fine-tuning/Prompt Engineering/Agent/
+Transformer)은 전부 "LLM 연구"라는 하나의 큰 의미 공간 안에 밀집해
+있다 - Finding #008의 원래 예시("Transformer/RLHF/Fine-tuning/Prompt
+Engineering/Agent는 전부 서로 가까운 semantic relatedness를 가지지만
+서로 다른 Topic이다")와 정확히 같은 구조다. 판단 해상도를 Topic
+수준으로 넓히면 LLM이 "다 같은 LLM 연구잖아"라고 보는 게 오히려
+자연스러운 반응이 된다 - **LLM이 틀린 게 아니라, 그 도메인에서
+Topic label이 실제로 요구하는 해상도보다 한 단계 위에서 판단한
+것이다.**
+
+### Implication
+"Topic Prompt가 정답"이라는 단순한 결론은 성립하지 않는다 - 판단
+해상도를 도메인의 semantic density에 맞게 조정해야 한다는 더 일반적인
+원리로 올라간다. Adaptive Resolution(도메인마다 판단 해상도를
+자동으로 맞추는 메커니즘, 예: semantic density를 먼저 측정해서
+Mechanism/Topic 중 어느 프롬프트를 쓸지 정하는 방식)이 다음 연구
+후보이지만, 지금 세션에서는 실험하지 않는다(백로그로 남김) - 이미 이
+지점에서 충분히 큰 결론을 얻었다는 판단.
+
+### Status
+**Open (백로그).** Research Question #9("Topic이라는 것은 애초에
+pairwise semantic judgment만으로 정의될 수 있는 대상인가?")를 여기서
+종료한다 - 최종 답: **"Pairwise semantic judgment is sufficient to
+recover Topic Identity, but only when the semantic resolution of the
+judgment matches the semantic density of the target domain."**
+`docs/anchor_model.md` Research Question #9를 Closed로 갱신.
