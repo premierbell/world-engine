@@ -77,4 +77,113 @@ latent model — 트리 cut / 거리 threshold / 그래프 traversal은 완전�
 다른 실험 설계로 이어지기 때문에, 그 갈림길 이전에 구현으로 먼저
 들어가지 않는다.
 
-아직 실험은 설계되지 않았다. 이 문서는 이론 정의 단계의 기록이다.
+## Stage A/B Results (Experiment #52)
+
+> Semantic resolution exhibits partial measurement invariance.
+
+**Stage A — Measurement Invariance**
+
+| 비교 | Odd-one-out agreement | Kendall's τ |
+|---|---|---|
+| Embedding vs Mechanism | 39.9% | 0.202 |
+| Embedding vs Topic | 51.0% | 0.274 |
+| Mechanism vs Topic | 65.4% | 0.457 |
+
+(우연 수준 33.3%) 세 modality 모두 우연보다 agreement가 높다 — Resolution은
+completely measurement artifact는 아니다. 그러나 agreement가 높지 않다 —
+completely objective도 아니다. Embedding은 두 LLM 프롬프트보다 확실히
+다른 종류의 신호로 분리된다.
+
+**Stage B — Latent Geometry**
+
+| Modality | Ultrametric violation | Cophenetic(avg/ward) | MDS stress |
+|---|---|---|---|
+| Embedding | 53.0% | 0.708 / 0.585 | 40.17 |
+| Mechanism | 0.8% | 0.921 / 0.595 | 86.86 |
+| Topic | 21.5% | 0.769 / 0.727 | 32.99 |
+
+Mechanism 프롬프트는 극단적으로 Tree에 가깝게 행동한다(거의 완벽한
+ultrametric, 저차원 거리공간으로는 안 펴짐). Embedding does not exhibit
+strong tree structure, and is not well explained by a low-dimensional
+metric representation — Finding #008("Similarity는 Relatedness를
+포착하지, Identity는 아니다")을 기하학적으로 재확인한 것에 가깝다.
+
+**Interim Conclusion**
+
+> Different measurement methods do not observe the same latent geometry.
+> They partially agree on local semantic relationships, but induce
+> different global geometries.
+
+세 measurement family가 드러났다:
+
+- Embedding → semantic proximity (관계적 유사도)
+- Mechanism prompt → hierarchical decomposition (Tree에 가까움)
+- Topic prompt → semantic abstraction (그 사이)
+
+These are observations about the behavior of the measurement methods,
+not yet claims about the underlying latent structure.
+
+즉 지금 관측된 차이는 Tree/Metric/Graph라는 세계관의 경쟁이 아니라,
+**측정 방법이 서로 다른 기하학을 유도한다**는 더 근본적인 사실로 대부분
+설명된다. H3(Graph)는 아직 기각되지 않았지만, 현재 데이터를 설명하는 데
+필수적이지도 않다.
+
+**H3 status**: H3 remains a viable hypothesis, but current evidence does
+not require it.
+
+**Open sub-question — Mechanism Tree Effect: Prompt Artifact or Model
+Prior?** Mechanism 프롬프트가 왜 이렇게 Tree처럼 행동하는가 — LLM이
+원래 갖고 있는 semantic hierarchy 때문인가(M2), 아니면 prompt wording이
+hierarchy를 강제로 유도한 것인가(M1)? 후자라면 우리는 잠재 구조를
+관측한 게 아니라 측정기를 설계한 것이다. 이 둘을 분리하는 것이 다음
+실험이다.
+
+## Experiment #53 Results — Mechanism Tree Effect: Prompt Artifact or Model Prior?
+
+같은 36개 표본, 같은 630개 pair를 "같은 구체적 기법인가"를 요구하지
+않는 두 프롬프트(Neutral: "얼마나 밀접하게 관련되어 있는가", Relation:
+"함께 공부할 가치가 있는가")로 다시 채점했다.
+
+| Modality | Ultrametric violation | Cophenetic(avg/ward) | MDS stress |
+|---|---|---|---|
+| Mechanism | 0.8% | 0.921 / 0.595 | 86.86 |
+| Neutral | 56.6% | 0.743 / 0.683 | 34.45 |
+| Relation | 55.2% | 0.562 / 0.495 | 10.54 |
+
+"같은 구체적 기법인가"라는 요구를 빼는 순간 Tree 적합도가 붕괴한다
+(violation 0.8%→55~57%, cophenetic 0.921→0.5~0.7대). 동시에 MDS
+stress는 86.86→34.45→10.54로 단조 감소한다 — 위계적 판단을 덜 요구할수록
+저차원 연속 공간에 더 매끈하게 펴진다. Neutral의 수치(violation 56.6%,
+MDS stress 34.45)는 Experiment #52의 Embedding(53.0%, 40.17)과 상당히
+근접하다.
+
+### Finding P2-001: Prompt Objectives Determine the Observable Semantic Geometry
+
+> Prompt wording selects which latent geometry becomes observable.
+> Hierarchical prompts induce tree-like semantic organization, whereas
+> relational prompts recover a continuous relatedness space.
+
+M1(Prompt Artifact)이 M2(Model Prior)보다 현재 가장 설명력이 높은
+가설이다 — 다만 "M1 채택, M2 기각"이라고 확정하지는 않는다(AI Researcher
+데이터셋 하나, 모델 하나에서 나온 결과). LLM 자체가 원래 Tree 구조를
+갖고 있어서가 아니라, 프롬프트가 관측하려는 기하학 좌표계 자체를
+고르는 것으로 보인다. Neutral과 Embedding이 비슷한 프로파일을 보인다는
+것도 이를 뒷받침한다 — Embedding이 Relatedness를 보고, Neutral 프롬프트를
+받은 LLM도 Relatedness를 본다. Mechanism 프롬프트만 Hierarchy를 본다.
+이건 Finding #008을 다른 방식으로 재현한 것에 가깝다.
+
+> **Revision (Experiment #53 반영)**: Stage A/B의 Interim Conclusion을
+> "Different measurement methods do not observe the same latent
+> geometry"에서 아래로 강화한다 — 관측되는 지오메트리가 그냥 다른 게
+> 아니라, 프롬프트가 어느 지오메트리를 관측할지를 **적극적으로
+> 선택(construct)**한다는 것이 Experiment #53의 핵심 발견이기 때문이다.
+
+> Different measurement methods actively select different latent
+> geometries to observe.
+
+### Open Question (아직 실험 설계 전)
+
+Mechanism 프롬프트가 만든 Tree가 사람이 실제로 느끼는 "관심사 구조"와
+일치하는가, 아니면 프롬프트가 만들어낸 예쁜 Tree일 뿐인가? 이건 Phase 1
+전반에 걸쳐 반복된 "Ground Truth Topic 레이블 vs 사용자 체감"의 간극과
+같은 축의 질문이다 — 아직 가설도 실험 설계도 없다.
