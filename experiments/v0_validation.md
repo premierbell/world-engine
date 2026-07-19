@@ -2236,3 +2236,49 @@ Revision History(Adaptive Resolution → Semantic Objective Discovery)
 `docs/research_phase_1_summary.md`는 Phase 1 종료 시점의 스냅샷이라
 수정하지 않는다 - Adaptive Resolution이 Phase 2의 최초 가설이었다는
 역사적 기록 자체가 가치 있다.
+
+## Experiment #54: RQ10-1 Probe 0 — Existing Topic Reconstruction
+
+### Hypothesis
+이 Probe가 실제로 답하는 질문은 "어떤 semantic objective가 기존 Topic
+레이블을 가장 잘 복원하는가"이지, "어떤 objective가 실제 사용자 조직
+방식을 반영하는가"(RQ10-1의 질문)가 아니다 - ground truth가 여전히
+가상 데이터셋의 수작업 Topic 레이블이기 때문. RQ10-1의 첫 실험이
+아니라 RQ10-0을 닫는 마지막 sanity check로 위치시킨다.
+
+### Data
+Experiment #47/#50/#52/#53과 동일한 36개 curated sample, 동일한 630개
+pair. Mechanism/Topic/Neutral/Relation 네 캐시 전부 재사용 - 새 LLM
+호출 없음.
+
+### Result
+| Objective | ROC-AUC | Precision@0.5 | Recall@0.5 | F1@0.5 | Cohen's d |
+|---|---|---|---|---|---|
+| Mechanism | 0.730 | 0.857 | 0.111 | 0.197 | 2.037 |
+| Topic | 0.944 | 0.490 | 0.870 | 0.627 | 3.242 |
+| Neutral | 0.922 | 0.494 | 0.741 | 0.593 | 2.586 |
+| Relation | 0.893 | 0.124 | 1.000 | 0.220 | 1.334 |
+
+두 층으로 읽는다 - Layer 1(Ranking, AUC): Topic≈Neutral(0.944/0.922,
+차이 0.022로 36개 표본 수준에서 강하게 구분 어려움) >> Relation(0.893)
+>> Mechanism(0.730). Layer 2(Calibration, Precision/Recall@0.5):
+Mechanism은 매우 보수적, Relation은 매우 관대, Neutral/Topic은 중간 -
+AUC는 순위 능력을, Precision/Recall은 채점기의 관대함/보수성을 본다.
+
+### Insight
+핵심은 "Topic이 이겼다"가 아니라 "Neutral이 거의 다 했다"는 것 -
+아무 위계/주제 프레이밍도 요구하지 않은 Neutral이 0.922를 기록했다는
+건, 이 가상 데이터셋의 Ground Truth Topic 레이블이 Hierarchy보다
+General Relatedness에 훨씬 가까운 정의로 만들어졌을 가능성을 시사한다.
+Mechanism 최하위는 Tree geometry가 틀렸다는 뜻이 아니다 - Precision은
+높고(0.857) Recall만 낮아서(0.111), Tree의 분기가 Topic 레이블보다 더
+세밀했을 가능성이 높다(resolution mismatch, Tree geometry 자체의
+기각이 아님).
+
+### Decision
+`docs/research_phase_2_rq10-0.md`에 "Probe 0: Existing Topic
+Reconstruction"을 RQ10-0 Stage A/B/Experiment #53 다음, RQ10-1 앞에
+배치 - RQ10-1의 첫 실험이 아니라 RQ10-0의 마지막 조각으로 기록. RQ10-0
+Interim Conclusion을 Probe 0까지 반영해서 재작성. RQ10-1 섹션에는
+Probe 0의 Topic≈Neutral 근접이 "실제 사용자 데이터로 검증해야 할 첫
+단서"라는 연결 문장 추가.

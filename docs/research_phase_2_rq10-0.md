@@ -214,6 +214,76 @@ M1(Prompt Artifact)이 M2(Model Prior)보다 현재 가장 설명력이 높은
 > Different measurement methods actively select different latent
 > geometries to observe.
 
+## Probe 0: Existing Topic Reconstruction (RQ10-0의 마지막 sanity check)
+
+> Which semantic objective best reconstructs the existing Topic labels?
+
+**아직 다루지 않는 질문**: "어떤 semantic objective가 사람의 실제
+관심사 조직 방식을 가장 잘 설명하는가?"(RQ10-1의 질문). Ground truth가
+여전히 가상 데이터셋의 수작업 Topic 레이블이라, 이 Probe는 아직 human
+organization을 다루지 않는다. RQ10-1의 첫 실험이 아니라 **RQ10-0을
+닫는 마지막 조각**이다 — Stage A는 "도구마다 다르다"를, Stage B는
+"기하학이 다르다"를, Experiment #53은 "그 차이는 Objective에서
+온다"를, 이 Probe는 "그 Objective가 현재 데이터셋의 Ground Truth와
+어떻게 정렬되는가"를 보여준다.
+
+새 LLM 호출 없음 — Mechanism/Topic/Neutral/Relation 네 캐시 재사용
+(같은 36개 표본, 같은 630개 pair, `experiment_rq10_1_probe0.py`).
+
+| Objective | ROC-AUC | Precision@0.5 | Recall@0.5 | F1@0.5 | Cohen's d |
+|---|---|---|---|---|---|
+| Mechanism | 0.730 | 0.857 | 0.111 | 0.197 | 2.037 |
+| Topic | 0.944 | 0.490 | 0.870 | 0.627 | 3.242 |
+| Neutral | 0.922 | 0.494 | 0.741 | 0.593 | 2.586 |
+| Relation | 0.893 | 0.124 | 1.000 | 0.220 | 1.334 |
+
+**두 층으로 읽는다.**
+
+- **Layer 1 (Ranking, AUC 기준)**: Topic(0.944) ≈ Neutral(0.922) >>
+  Relation(0.893) >> Mechanism(0.730). Topic과 Neutral의 차이(0.022)는
+  36개 표본 수준에서 강하게 구분하기 어렵다 — 사실상 같은 family에
+  가깝다.
+- **Layer 2 (Calibration, Precision/Recall@0.5)**: Mechanism은 매우
+  보수적(Precision 0.857, Recall 0.111), Relation은 매우 관대
+  (Precision 0.124, Recall 1.000), Neutral/Topic은 그 중간. AUC는
+  순위 능력을, Precision/Recall은 채점기의 관대함/보수성을 본다 —
+  둘을 objective 간 서열 매기기에 같이 쓰면 안 된다.
+
+**핵심 발견은 "Topic이 이겼다"가 아니라 "Neutral이 거의 다 했다"는
+것이다.**
+
+> The virtual Topic labels appear to be substantially aligned with
+> general semantic relatedness. Explicit topic prompting provides only
+> a modest improvement over a neutral relatedness judgment.
+
+아무 위계도, 아무 주제 프레이밍도 요구하지 않은 Neutral 프롬프트가
+0.922를 기록했다 — 이 가상 데이터셋의 Ground Truth Topic 레이블이
+"Hierarchy"보다 "General Relatedness"에 훨씬 가까운 정의로 만들어졌을
+가능성을 시사한다.
+
+**Mechanism 최하위에 대한 해석**: Tree geometry 자체가 틀렸다고
+결론짓지 않는다. Mechanism은 Precision은 높고(0.857) Recall만 극단적
+으로 낮다(0.111) — 같은 Topic이지만 다른 Mechanism인 쌍 대부분을
+"다르다"고 채점했다. 이건 Experiment #52/53에서 Mechanism이 가장
+Tree-like했던 것(violation 0.8%)과 일관된다 — 다만 그 Tree의 분기가
+Topic 레이블보다 더 세밀했을 가능성이 높다.
+
+> Tree geometry itself is not rejected. Rather, its induced partition
+> is finer than the evaluation labels.
+
+### RQ10-0 Interim Conclusion (Probe 0 반영)
+
+Stage A는 측정 도구마다 다르다는 것을, Stage B는 그 차이가 기하학
+수준이라는 것을, Experiment #53은 그 기하학을 LLM이 아니라 Prompt
+Objective가 고른다는 것을, Probe 0은 그 Objective가 현재 데이터셋의
+Ground Truth와 어떻게 정렬되는지를 보여줬다. RQ10-0 — "Resolution은
+데이터에 내재하는가, 측정법의 산물인가" — 에 대한 이 데이터셋 범위의
+답은 여기서 일단락한다: 완전히 데이터 내재적도 아니고 완전히 임의적인
+측정 artifact도 아니다. Objective가 Geometry를 만들고, 그 Geometry가
+특정 Ground Truth 정의와 얼마나 잘 정렬되는지는 그 Ground Truth
+자체가 어떤 개념(Hierarchy vs Relatedness)에 더 가깝게 만들어졌는지에
+달려 있다.
+
 ## RQ10-1 (Next Question, 아직 실험 설계 전)
 
 > Which semantic objective best predicts human organizational behavior
@@ -226,7 +296,10 @@ Geometry를 만든다"는 걸 발견했다면, RQ10-1은 그 Objective 자체를
 전제로 퇴행하지 않기 위해, 질문 자체에 도메인/사용자 의존성을
 포함시켰다. "Mechanism이 만든 Tree가 사용자 체감 관심사 구조와
 맞는가"(Experiment #53 직후 처음 떠올렸던 질문)는 이 RQ10-1의 특수
-사례로 흡수된다.
+사례로 흡수된다. Probe 0에서 본 Topic≈Neutral 근접은 RQ10-1이 실제
+사용자 데이터로 검증해야 할 첫 단서다 — 지금 이 가상 데이터셋에서만
+그런 것인지, 실제 사용자 관심사 조직에서도 "위계"보다 "관련성"이
+더 본질적인지는 아직 모른다.
 
 **Candidate Objectives**
 
