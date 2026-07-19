@@ -10,7 +10,8 @@
 > Judgment)도 판단 해상도가 도메인의 semantic density와 맞을 때만
 > 작동했다(Finding #014). **"적정 해상도를 도메인마다 어떻게 자동으로
 > 선택할 것인가"(Adaptive Resolution)는 아직 Open Question이고, 이건
-> Phase 1의 연장이 아니라 Phase 2(RQ10)로 별도 관리한다.**
+> Phase 1의 연장이 아니라 Phase 2(RQ10)로 별도 관리한다 -
+> `research_phase_2_rq10-0.md` 참고.**
 
 > **Research Principle #001** (`experiments/v0_validation.md` 참고): World
 > Engine은 사람이 미리 정의한 카테고리를 재현하는 것이 아니라, 반복적으로

@@ -104,4 +104,5 @@ Phase 1이 답한 건 "판단 해상도가 도메인마다 달라야 한다"는 
 **Phase 2는 더 이상 "Topic Identity를 복원할 수 있는가"를 묻지 않는다.
 "적정한 semantic resolution을 어떻게 자동으로 선택할 것인가"를 묻는다.**
 
-아직 가설도 설계도 없다.
+Phase 2의 첫 연구 질문(RQ10-0: Ontology of Semantic Resolution)은
+`research_phase_2_rq10-0.md`에서 정의한다.
