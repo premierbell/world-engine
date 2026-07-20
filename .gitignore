@@ -5,3 +5,7 @@ __pycache__/
 .env
 logs/
 .idea/
+
+# 실제 개인 스크랩/관심사 데이터 - Public 전환 예정 레포라 로컬에만 둔다
+# (docs/research_phase_2_rq10-0.md RQ10-1 Stage 0)
+experiments/real_user_organization/
