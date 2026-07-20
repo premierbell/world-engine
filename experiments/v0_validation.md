@@ -2594,3 +2594,23 @@ architecture, Neutral objective) → 사용자 확인", 실제 제품에서는
 Round 1.5의 4개 질문이 아니라 자유 입력 1개로 마찰 최소화).
 `docs/anchor_model.md`, `docs/algorithm_limitations.md`의 Phase
 상태 표시를 "Phase 2도 Complete"로 갱신.
+
+## v1_design.md 보강: Content Extraction을 별도 엔지니어링 리스크로 명시
+
+Phase 2 종료 브리핑을 사용자가 ChatGPT 세션과 릴레이하며 검토하는
+과정에서, "Content extraction이 파이프라인의 한 단계로 담백하게
+들어가 있는데 실제로는 AI 추천보다 먼저 풀어야 하는 독립적인
+엔지니어링 문제"라는 지적이 나왔다. Round 1 데이터로 검증
+가능했다(WebFetch 성공 9/25, 검색 스니펫 대체 15/25, 완전 실패
+1/25 - naver blog/namu.wiki 등 국내 플랫폼 다수가 스크래핑 차단) -
+지적을 그대로 받아들이지 않고 이미 있는 실험 데이터로 재확인한 뒤
+반영했다.
+
+`docs/v1_design.md`에 "Open Engineering Risk: Content Extraction"
+절 신설(고려 사항: robots 차단/JS 렌더링/로그인·Paywall/국내
+플랫폼/YouTube/PDF/GitHub·Notion 등 소스별 처리, 추출 라이브러리
+선택과 fallback 전략이 V1 구현 전 결정 필요). Scrap Flow에 Content
+Extraction 단계를 명시적으로 추가. Out of Scope 섹션을 문서 근거
+있는 항목만으로 재정리("Reinforcement Learning"처럼 대화 중 근거
+없이 나온 제안은 반영 안 함 - Island merge/split은 Roadmap V2와
+연결되는 근거 있는 항목이라 추가).
