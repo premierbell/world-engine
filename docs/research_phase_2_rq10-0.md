@@ -574,8 +574,8 @@ Round 1(Finding P2-002)을 거치며 RQ10-1의 질문 자체가 한 단계
 올라갔다.
 
 - 처음: **Which semantic objective explains human organization?**
-- 지금: **What information is required to explain human
-  organization?**
+- 지금: **What information is actually used by humans when
+  organizing personal knowledge?**
 
 Round 1은 "질문(objective)을 바꾸는 축"을 거의 다 시도했고 전부 비슷한
 천장(AUC ~0.90~0.92)에 부딪혔다. 남은 변수는 질문이 아니라 입력
@@ -585,6 +585,36 @@ Round 1은 "질문(objective)을 바꾸는 축"을 거의 다 시도했고 전�
 (예: 진짜 behavioral context - 언제/누구와/어떤 상황에서 다시 볼
 것인지)이다.
 
-이 질문에도 아직 이론 정의도 실험 설계도 없다. 이 문서(`research_phase_2_
-rq10-0.md`)는 RQ10-0·RQ10-1 Round 1 전용으로 남기고, Information
-Discovery가 H1/H2/H3 같은 정식 protocol을 갖추면 별도 파일로 분리한다.
+Phase 1은 Resolution을 찾았고, RQ10-0은 Measurement Family를 찾았고,
+RQ10-1 Round 1은 정보 부족을 발견했다 - 각 단계가 앞 단계의 한계를
+이어받는 구조다. **Round 1.5의 목적은 새 알고리즘이 아니라, 사람의
+조직 방식을 설명하는 행동 정보가 무엇인지 규명하는 것이다.**
+
+### Round 1.5 설계 (실행 전, 데이터 수집 대기 중)
+
+Round 1의 `personal_reason`(예: "도커 공부용")이 안 통했던 이유는
+대부분 content에서 이미 추론 가능한 정보였기 때문이다(Finding
+P2-002). Round 1.5는 content에서 절대 추론 불가능한, 진짜
+behavioral context를 25개 스크랩 각각에 대해 새로 받는다. 질문을
+많이 만들지 않고 4개로 제한한다:
+
+1. **왜 저장했는가?** (purpose)
+2. **언제 다시 볼 것인가?** (time horizon)
+3. **무슨 상황에서 다시 찾을 것인가?** (trigger/reuse scenario) -
+   가장 중요하게 보는 축. 예: 전주 여행 스크랩의 Topic은 "여행"이지만
+   Trigger는 "전주 가기 직전"; 강남 맛집은 "강남 갈 때"; 냉장고는
+   "이사하면". 지금 데이터에는 이 정보가 없다.
+4. **못 찾으면 얼마나 곤란한가?** (importance) - pairwise 비교
+   프롬프트에 자연스럽게 안 들어가는 개별 속성이라, 수집은 하되
+   Stage 1.5에서 pairwise 입력으로 쓸지 별도 분석 축으로 둘지는
+   결과를 보고 나중에 결정한다.
+
+**Stage 1.5 실험**: content_summary만 vs content_summary+behavioral
+context(위 4개, 최소 1~3번)로 Neutral(Round 1에서 검증된 대표
+objective) 채점을 비교, 실제 그룹 복원력(AUC)을 본다. 여기서 의미
+있게 개선되면 **"사람은 semantic similarity보다 behavioral context를
+더 많이 사용해 지식을 조직한다"**는 강한 결론을 낼 수 있다.
+
+아직 데이터 수집 전이다. 이 문서(`research_phase_2_rq10-0.md`)는
+RQ10-0·RQ10-1 Round 1/1.5 전용으로 남기고, Information Discovery가
+H1/H2/H3 같은 정식 protocol을 갖추면 별도 파일로 분리한다.

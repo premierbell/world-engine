@@ -2518,3 +2518,28 @@ Discovery"로** 한 단계 재구성 - "어떤 objective가 맞는가"가 아니
 "사용자 조직을 복원하려면 어떤 정보를 새로 수집해야 하는가". 새
 personal_reason(진짜 behavioral context) 수집은 사실상 Round 1.5
 (새 데이터셋 제작)라 지금 하지 않고 향후 과제로 남김.
+
+## Round 1.5 설계: Behavioral Context Discovery
+
+RQ10-1을 한 단계 더 재구성 - "Which semantic objective explains
+human organization?"에서 **"What information is actually used by
+humans when organizing personal knowledge?"**로. Phase 1(Resolution
+발견) → RQ10-0(Measurement Family 발견) → RQ10-1 Round 1(정보 부족
+발견)로 각 단계가 앞 단계의 한계를 이어받는 구조.
+
+Round 1.5는 새 알고리즘이 아니라 사람의 조직 방식을 설명하는 행동
+정보가 무엇인지 규명하는 게 목적. 질문을 최소화(4개)해서 25개
+스크랩 각각에 새로 받는다: purpose(왜 저장?), time_horizon(언제
+다시 볼?), trigger(무슨 상황에서 다시 찾을? - 가장 중요하게 보는
+축, 예: 전주 여행의 Topic은 "여행"이지만 trigger는 "전주 가기
+직전"), importance(못 찾으면 얼마나 곤란한가 - 개별 속성이라 pairwise
+judge 입력에 자연스럽게 안 들어감, 수집은 하되 사용 방식은 결과 보고
+결정).
+
+`round1.json`에 4개 필드(purpose/time_horizon/trigger/importance)
+빈 값으로 스캐폴드 추가(로컬 전용, 커밋 안 함). `docs/research_phase_2_
+rq10-0.md`에 Round 1.5 설계 절 추가. Stage 1.5 실험 계획: content_
+summary만 vs content_summary+behavioral context로 Neutral(Round 1
+대표 objective) 채점 비교 - 의미 있게 개선되면 "사람은 semantic
+similarity보다 behavioral context를 더 많이 사용해 지식을 조직한다"는
+결론. 아직 데이터 수집 전, 실행 안 함.
