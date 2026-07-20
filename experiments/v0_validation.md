@@ -2331,3 +2331,29 @@ RQ10-0을 🟡 Provisionally Answered → **🟢 Strongly Supported**로
 Families" 절 신설, 상태 표기 체계에 🟢 Strongly Supported 티어 추가
 (✅/🟢/🟡/🔄 네 단계), RQ10-1의 Candidate Objectives를 family 단위로
 재구성.
+
+## RQ10-0 Closed (for now), Research Focus Shifts to RQ10-1
+
+Mechanism family의 Backend 교차검증(1번 옵션, mechanism 주석 신규
+작업 필요) 대신 RQ10-1 착수(2번 옵션)를 선택했다 - "미루는" 게 아니라
+연구 프로그램을 분리하는 결정이다. Mechanism Backend 검증은 여전히
+RQ10-0의 연장 질문이고, 지금 연구 전체의 병목은 더 이상 거기가
+아니다. RQ10-0은 🟢 Strongly Supported로 닫되, `docs/research_phase_2_
+rq10-0.md`에 **Known Limitation**을 명시(Mechanism family has only
+been validated on AI Researcher, cross-domain validation remains
+future work). Mechanism Backend 검증을 지금 안 하는 이유: RQ10-1이
+Ground Truth 자체("Topic 레이블 = 실제 관심사 조직"이라는 가정)를
+재정의할 수 있는데, 그러면 Mechanism을 평가하는 기준도 바뀐다 - 지금
+Topic 레이블 기준으로는 Mechanism의 Recall이 낮았지만(Probe 0), 새
+Ground Truth에서는 오히려 더 나은 objective가 될 수도 있다. 순서를
+뒤집는 게 비용 대비 정보 이득이 크다 - 필요해지면 RQ10-1 도중에
+재방문.
+
+RQ10-1의 프레이밍을 명확히 한다: "어떤 Objective가 맞는가"가 아니라
+**"무엇을 정답으로 삼을 것인가"**가 핵심 전환이다. Phase 1 내내, Phase
+2 전반부(Stage A/B, Experiment #53, Probe 0, #55)까지도 계속 Topic
+레이블을 Ground Truth로 신뢰해왔다 - RQ10-1은 처음으로 **Topic labels
+≠ Human organization**일 수 있다는 가능성 자체를 연구 대상으로 삼는다.
+`docs/research_phase_2_rq10-0.md`에 "Ground Truth Redesign이 RQ10-1의
+첫 하위 과제"라는 절 추가 - 아직 이론도 실험 설계도 없다, 다음 세션의
+출발점.
