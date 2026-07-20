@@ -362,10 +362,17 @@ Recall이 낮았지만(Probe 0), 새 Ground Truth에서는 오히려 Mechanism�
 검증해도 RQ10-1 이후 다시 해야 할 가능성이 있다 — 순서를 뒤집는 게
 비용 대비 정보 이득이 크다. 필요해지면 RQ10-1 도중에 재방문한다.
 
-## RQ10-1 (Next Question, 아직 실험 설계 전)
+## RQ10-1 (Next Question)
 
-> Which semantic objective best predicts human organizational behavior
-> — and does that answer itself vary by domain or user?
+> Which semantic objective best predicts real-world personal
+> organization? — and does that answer itself vary by domain or user?
+
+> **Revision (Experiment #56 Stage 1 Pilot 반영)**: 원래 문구
+> ("...human organizational behavior")에서 "real-world personal
+> organization"으로 좁혔다 — Stage 1 Pilot에서 Ground Truth가 가상
+> 데이터의 Topic 레이블과 실제 개인 스크랩 조직 사이에서 서로 다른
+> objective를 요구한다는 게 드러났기 때문에, 어느 쪽을 말하는지
+> 질문 자체에서 명시할 필요가 있었다.
 
 **RQ10-1의 진짜 전환은 "어떤 Objective가 맞는가"가 아니라 "무엇을
 정답으로 삼을 것인가"다.** Phase 1 내내, 그리고 Phase 2 전반부
@@ -427,17 +434,118 @@ Topic을 찾는 연구"였다면, 여기서부터는 **"무엇을 정답으로 �
 1개는 완전히 실패해 note만 신뢰 가능 - 균일하지 않은 데이터 품질을
 Stage 1 해석 시 감안해야 한다.
 
-**Stage 1** — Mechanism/Topic/Neutral/Relation 네 objective(Measurement
-Families)가 이 실제 Ground Truth를 얼마나 설명하는지 본다. 여기서
-처음으로 "어떤 objective가 실제 사람의 조직 방식을 가장 잘 설명하는가"
-를 말할 수 있게 된다.
+**Stage 1 Pilot 완료(Experiment #56)** — Mechanism/Topic/Neutral/
+Relation 네 objective를 content_summary만으로 채점(personal_reason은
+Ground Truth를 직접 노출하는 leakage 위험이 있어 제외 - "공부용/
+공부용"처럼 저장 이유가 그대로 겹치면 내용이 아니라 이유를 읽고
+맞힐 수 있음), 실제 그룹화(N=24, same-group 19쌍/276쌍) 대비 ROC-AUC:
 
-**Stage 2** — 어떤 objective도 잘 설명하지 못하면, 그때 새로운
-objective(Adaptive Objective, Graph Objective 등)를 고민한다.
+| Objective | ROC-AUC | mean same-group | mean diff-group |
+|---|---|---|---|
+| Mechanism | 0.500 | 0.000 | 0.000 |
+| Topic | 0.723 | 0.239 | 0.012 |
+| Neutral | **0.918** | 0.200 | 0.038 |
+| Relation | 0.903 | 0.413 | 0.182 |
 
-표본이 20~30개로 작다는 것과, 사용자 한 명(N=1)이라는 것은 명확한
-한계로 남긴다 — 그럼에도 지금까지의 모든 결론이 가상 데이터 안에서만
-성립했다는 근본적 한계를 정면으로 다루는 첫 시도라는 점이 값지다.
+**해석**:
+- **Mechanism = 0.500은 실패가 아니라 적용 범위 밖(narrow domain of
+  applicability)이다.** AI Researcher(Transformer/Attention/Flash
+  Attention)처럼 단일 기술 도메인 안에서만 "같은 구체적 메커니즘"이
+  성립한다 - 백엔드/야구/여행/건강/투자/쇼핑이 뒤섞인 이 데이터에는
+  애초에 그런 쌍이 존재하지 않는다. Measurement Family 자체가
+  틀렸다는 뜻이 아니라, Hierarchical Decomposition family가 정의되는
+  전제조건(도메인 내부 밀집도)이 여기서 충족되지 않았다.
+- **Topic(0.723)이 Neutral(0.918)/Relation(0.903)보다 뚜렷이 낮다.**
+  가상 데이터셋(Probe 0, Experiment #55)에서는 Topic≈Neutral≈Relation
+  이었는데(0.89~0.95 범위), 여기서 갈라졌다. 원인 후보: 사용자의 실제
+  그룹("여행, 이동용" = 전주 여행+여수 맛집+아쿠아리움+강남 맛집,
+  "건강용" = 다이어트 음식+거북목 스트레칭+헬스 루틴)은 **같은 Topic
+  이 아니라 같은 task bundle**(나중에 같이 참고할 것)로 묶여 있다 -
+  Topic이 묻는 "같은 상위 주제인가"는 이 조직 원리와 어긋나고,
+  Neutral/Relation이 묻는 "관련 있는가/같이 볼 가치 있는가"가 더
+  가깝다.
+- Relation은 same-group 평균(0.413)이 가장 높지만 diff-group
+  평균(0.182)도 가장 높다 - AUC는 좋지만 threshold 설정이 여전히
+  까다롭다(Experiment #52/#55에서 반복된 calibration 패턴).
+
+**한 줄 요약**: 가상 데이터에서는 Topic-based objective가 충분했지만,
+실제 개인 스크랩에서는 Topic보다 Task/Usage relatedness가 사용자의
+조직 방식을 더 잘 설명했다.
+
+**Stage 2a(Experiment #57) — 질문을 Ground Truth와 정렬**: "사용자가
+나중에 함께 다시 찾아볼 가능성이 높은가"로 재정렬한 새 프롬프트
+(`retrieval` mode, content_summary만 사용)를 Neutral/Relation과
+나란히 비교.
+
+| Objective | ROC-AUC | mean same-group | mean diff-group |
+|---|---|---|---|
+| Neutral | 0.918 | 0.200 | 0.038 |
+| Relation | 0.903 | 0.413 | 0.182 |
+| Retrieval | 0.913 | 0.366 | 0.144 |
+
+세 값이 0.90~0.92에 몰려 있다 - N=19 positive 규모에서는 사실상
+구분 불가. **질문 재정렬 자체는 뚜렷한 개선을 주지 않았다** - Topic처럼
+엄격한 매칭만 아니면(Semantic Relatedness family 안이면) 구체적 문구는
+중요하지 않다는 쪽으로 해석이 좁혀진다.
+
+**Stage 2b(Experiment #58) — personal_reason을 컨텍스트로 추가**:
+Neutral 하나만 대표로 써서(Measurement Family는 이미 충분히 검증됐다고
+보고), content_summary만 vs content_summary+personal_reason 비교.
+
+| Condition | ROC-AUC | mean same-group | mean diff-group |
+|---|---|---|---|
+| content only | 0.918 | 0.200 | 0.038 |
+| content + reason | 0.921 | 0.239 | 0.052 |
+
+AUC 차이는 노이즈 수준. Error analysis(가장 심하게 틀린 pair들의
+before/after)에서도 뚜렷이 고쳐진 사례가 없었다 - 가장 심한 false
+negative(s12-s15, 여수 맛집 vs 롯데월드 아쿠아리움)도 0.10→0.15,
+가장 심한 false positive(s1-s5)는 0.75→0.75로 그대로.
+
+### Finding P2-002: Prompt Engineering Is Not the Bottleneck for Real Organization
+
+> Within the current dataset, neither prompt wording nor coarse
+> personal reasons substantially improve prediction of human
+> organization. The bottleneck appears to be missing behavioral
+> context rather than prompt formulation.
+
+Round 1에서 두 축을 이미 건드렸다 - 질문을 바꿨고(Neutral/Relation/
+Retrieval), 입력을 늘렸다(content+personal_reason). 둘 다 거의 같은
+결과로 수렴했다. "더 좋은 prompt를 찾으면 풀린다"는 가설은 이 지점에서
+꽤 강하게 기각된다.
+
+**왜 personal_reason이 안 통했는가**: 지금 있는 `personal_reason`은
+대부분 content에서 이미 추론 가능한 정보였다 - "도커 입문" 글에
+"공부용"이라고 적어봐야 LLM도 content만 보고 그 정도는 이미 짐작한다.
+진짜 새로운 정보가 되려면 content에서 절대 추론 불가능한 것이어야
+한다 - "이번 프로젝트 끝나고 적용하려고", "여행 갈 때 여자친구랑
+보려고", "이사하면 살 예정" 같은, content 밖에 있는 **행동 맥락
+(behavioral context)**. 지금 personal_reason은 이런 의미의 metadata가
+아니라 content의 요약에 더 가까웠다.
+
+### Round 1 종료 (N=25 Pilot)
+
+**확인된 것**:
+- Mechanism family는 실제 개인 스크랩(여러 인생 영역이 섞인 데이터)에는
+  적용 범위 밖 (Experiment #56)
+- Semantic Relatedness family(Neutral/Relation/Retrieval)는 서로 거의
+  동일하게 작동 (Experiment #57)
+- Prompt wording을 더 정교하게 바꿔도 영향이 거의 없음 (Experiment #57)
+- 현재 수준의 personal_reason도 영향이 거의 없음 (Experiment #58,
+  Finding P2-002)
+
+**확인되지 않은 것**:
+- 사용자의 실제 조직 원리는 아직 복원되지 않았다.
+
+**가장 중요한 산출물**: "LLM이 사용자 조직을 못 맞춘다"가 아니라,
+**"현재 스크랩 데이터(content_summary + 짧은 저장 이유)만으로는 사용자
+조직을 복원할 만큼의 정보가 애초에 없다"**는 것 - 이건 objective를
+더 찾는 문제가 아니라 정보 자체가 부족한 문제다.
+
+새 personal_reason(진짜 behavioral context)을 만들려면 사용자가 25개를
+다시 보면서 "왜/언제/어떤 상황에서 다시 볼지"를 새로 적어야 한다 -
+사실상 Round 1.5(새 데이터셋 제작)이므로, 지금 바로 하지 않고 Round 1은
+여기서 닫는다. 표본이 25개(N=1 사용자)라는 한계도 명확히 남긴다.
 
 **Candidate Objectives**
 
@@ -460,6 +568,23 @@ Speculative candidates (완전 미탐색, 실험 설계도 없음):
   스키마에 없는 행동 로그가 필요 — 실험 설계 이전에 데이터 스키마부터
   다시 설계해야 하는 별도 작업)
 
-RQ10-1은 아직 이론 정의도 실험 설계도 없다. 이 문서(`research_phase_2_
-rq10-0.md`)는 RQ10-0 전용으로 남기고, RQ10-1이 H1/H2/H3 같은 정식
-protocol을 갖추면 RQ10-0처럼 별도 파일로 분리한다.
+### Objective Discovery → Information Discovery
+
+Round 1(Finding P2-002)을 거치며 RQ10-1의 질문 자체가 한 단계
+올라갔다.
+
+- 처음: **Which semantic objective explains human organization?**
+- 지금: **What information is required to explain human
+  organization?**
+
+Round 1은 "질문(objective)을 바꾸는 축"을 거의 다 시도했고 전부 비슷한
+천장(AUC ~0.90~0.92)에 부딪혔다. 남은 변수는 질문이 아니라 입력
+(content_summary + 얕은 personal_reason)이 애초에 사용자의 조직 원리를
+담고 있지 않다는 것 - 그래서 다음 질문은 "어떤 objective가 맞는가"가
+아니라 **"사용자 조직을 복원하려면 어떤 정보를 새로 수집해야 하는가"**
+(예: 진짜 behavioral context - 언제/누구와/어떤 상황에서 다시 볼
+것인지)이다.
+
+이 질문에도 아직 이론 정의도 실험 설계도 없다. 이 문서(`research_phase_2_
+rq10-0.md`)는 RQ10-0·RQ10-1 Round 1 전용으로 남기고, Information
+Discovery가 H1/H2/H3 같은 정식 protocol을 갖추면 별도 파일로 분리한다.
