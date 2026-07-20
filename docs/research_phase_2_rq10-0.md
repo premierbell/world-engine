@@ -344,10 +344,36 @@ Topic/Neutral/Relation을 서로 경쟁하는 objective로 적어온 지금까�
 따로 남긴다 — Backend에서 Mechanism 축을 재현하려면 mechanism
 주석부터 새로 만들어야 한다(아직 하지 않음).
 
+### RQ10-0 Closed (for now) — Known Limitation / Future Work
+
+RQ10-0은 여기서 일단 닫는다. Semantic Relatedness family(Topic/
+Neutral/Relation)의 도메인 간 일반성은 2개 데이터셋에서 확인됐고,
+지금 연구 전체의 병목은 더 이상 여기가 아니다.
+
+> **Known limitation**: Mechanism family has only been validated on
+> AI Researcher. Cross-domain validation remains future work.
+
+Mechanism의 Backend 교차검증을 지금 하지 않는 이유는 단순히 "비용이
+비싸서"가 아니다 — RQ10-1이 Ground Truth 자체("Topic 레이블 = 실제
+관심사 조직"이라는 가정)를 다시 정의할 수도 있는데, 그러면 Mechanism을
+평가하는 기준 자체가 바뀐다. 지금 Topic 레이블 기준으로는 Mechanism의
+Recall이 낮았지만(Probe 0), 새 Ground Truth에서는 오히려 Mechanism이
+더 나은 objective가 될 수도 있다. 즉 지금 Backend에서 Mechanism을
+검증해도 RQ10-1 이후 다시 해야 할 가능성이 있다 — 순서를 뒤집는 게
+비용 대비 정보 이득이 크다. 필요해지면 RQ10-1 도중에 재방문한다.
+
 ## RQ10-1 (Next Question, 아직 실험 설계 전)
 
 > Which semantic objective best predicts human organizational behavior
 > — and does that answer itself vary by domain or user?
+
+**RQ10-1의 진짜 전환은 "어떤 Objective가 맞는가"가 아니라 "무엇을
+정답으로 삼을 것인가"다.** Phase 1 내내, 그리고 Phase 2 전반부
+(Stage A/B, Experiment #53, Probe 0, Experiment #55)까지도 계속 Topic
+레이블을 Ground Truth로 신뢰해왔다. RQ10-1은 처음으로 그 신뢰 자체를
+연구 대상으로 삼는다 — **Topic labels ≠ Human organization**일 수
+있다는 가능성을 직접 다룬다. 이건 지금까지의 "어느 Objective가
+이겼나" 물음과는 철학적으로 다른 질문이다.
 
 RQ10-0이 "Resolution이 데이터에 내재하는가"에 답하려다 "Objective가
 Geometry를 만든다"는 걸 발견했다면, RQ10-1은 그 Objective 자체를 정면
@@ -361,6 +387,13 @@ Relation 근접(2개 도메인 재현)은 RQ10-1이 실제 사용자 데이터�
 검증해야 할 첫 단서다 — 지금 이 가상 데이터셋들에서만 그런 것인지,
 실제 사용자 관심사 조직에서도 "위계"보다 "관련성"이 더 본질적인지는
 아직 모른다.
+
+**Ground Truth Redesign이 RQ10-1의 첫 하위 과제다.** 지금까지 쓴
+"Topic 레이블"은 가상 유저를 만들 때 수작업으로 부여한 것이라, 실제
+사용자의 관심사 조직 방식의 근사치일 뿐이다. 이 근사치를 넘어서는
+새로운 신호가 무엇일 수 있는지(예: persona가 직접 스크랩을 재분류한
+결과, 시간에 따른 재구성, 여러 명이 같은 스크랩 세트를 조직했을 때의
+일치도)는 아직 이론도 실험 설계도 없다 — 여기서부터 시작해야 한다.
 
 **Candidate Objectives**
 
