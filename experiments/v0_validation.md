@@ -2648,3 +2648,66 @@ readability4j)로 먼저 검증하고, 성공률이 부족하면 그때만 Pytho
   범용 스크래퍼 기준이라 이 전략 적용 후 재측정 필요
 - Non-goals: robots 우회/로그인 세션 자동화/CAPTCHA 우회/Paywall
   우회/불법 스크래핑 - 명시적으로 범위 밖.
+
+## V1 첫 구현: Spring 프로젝트 스캐폴딩 + Extraction Foundation
+
+로컬에 있는 다른 Java/Spring 포트폴리오 프로젝트 두 개(notification-
+platform, motipeople-server)를 직접 확인해서 컨벤션을 검증했다 -
+notification-platform은 `backend/`, Gradle Groovy DSL, `com.example`
+(Spring Initializr 기본값이 그대로 남음), 레이어+기능이 섞인 평평한
+패키지 구조였고, motipeople-server(사용자가 "주로 쓰던" 프로젝트)는
+`server/`, Gradle Kotlin DSL, `com.motipeople`(프로젝트명을 그대로
+패키지 루트로 씀), `{feature}/{controller,dto,entity,repository,
+service}` feature-first 구조였다. 두 프로젝트가 서로 다른 컨벤션을
+쓰고 있다는 걸 실제로 열어봐서 확인한 뒤, motipeople 쪽을 기준으로
+채택 - notification-platform은 당시 컨벤션이 섞인 것으로 보고,
+motipeople이 여러 기능을 가진 실제 서비스로 자란 선례이자 World
+Engine이 자랄 모습에 더 가깝다는 판단.
+
+Spring Initializr(`start.spring.io`)로 프로젝트 생성 - 처음
+`bootVersion=4.1.0.RELEASE`를 명시하면 서버 측에서 BOM 해석 에러(500)
+가 발생했는데, bootVersion을 생략하고 서비스 기본값에 맡기니 정상
+생성됨(서비스 쪽 일시적 이슈로 추정). `group=com.worldengine`,
+`type=gradle-project-kotlin`, Java 21 toolchain, 의존성(web/
+validation/data-jpa/postgresql/lombok/actuator/testcontainers/
+docker-compose)으로 생성 후 `world-engine/server/`에 배치.
+
+**Extraction Foundation 구현** - `docs/content_extraction.md`
+설계를 그대로 코드로 옮김:
+- `com.worldengine.extraction.model`: `ExtractionResult`(record) +
+  `ExtractionStatus`/`SourceType`/`FallbackLevel`/`FailureReason`
+- `com.worldengine.extraction.strategy`: `ExtractionStrategy`
+  인터페이스, `ArticleExtractionStrategy`(jsoup 1.21.1 +
+  readability4j 1.0.8 - Mozilla Readability 알고리즘의 Kotlin/Java
+  포트, Maven Central에서 좌표 확인 후 사용) - 본문 추출 실패 시
+  Open Graph 메타태그로 자동 격하
+- `com.worldengine.extraction.service`: `ContentExtractionService`
+  (전략 리스트에서 `supports()`가 true인 첫 전략에 위임하는 라우터)
+- `ArticleExtractionStrategyLiveTest`: `@Tag("live")`로 분리한 실제
+  네트워크 통합 테스트(44bits.io Docker 글, Wikipedia Spring
+  Framework 문서, 네이버 블로그) - `./gradlew liveTest`로 수동 실행,
+  기본 `./gradlew test`에서는 제외(외부 서비스 의존으로 CI 불안정화
+  방지). 3/3 통과 확인 - 일반 기사 두 개는 본문 추출 성공, 네이버
+  블로그는 전용 전략 없이도 정상적으로 실패/fallback 처리됨(Round 1
+  의 실패 패턴과 일관, NaverBlogExtractionStrategy 필요성을 재확인).
+
+**기본 테스트 안정화**: Spring Initializr가 자동 생성한
+`ServerApplicationTests`가 Testcontainers로 실제 Postgres를 띄우려
+해서 Docker 없는 환경에서 실패 - 아직 JPA 엔티티가 없는 시점이라
+Testcontainers가 불필요하다고 보고, H2 인메모리 DB(`testRuntimeOnly`)
+로 전환해서 `./gradlew test`가 Docker 없이도 통과하도록 정리.
+Testcontainers 설정(`TestcontainersConfiguration`)은 삭제하지 않고
+남겨둠 - 실제 JPA 리포지토리가 생기는 시점에 별도 통합 테스트에서
+다시 씀.
+
+`docs/adr/` 신설 - ADR-001(Java over Python: V0는 연구 코드라 Python,
+V1은 제품 코드라 Java/Spring, AI 사용이 API 호출뿐이라 Python
+생태계 이점이 V1엔 크지 않음), ADR-002(Feature-first 패키지 구조:
+motipeople-server 컨벤션을 실제로 비교 확인한 뒤 채택, notification-
+platform의 평평한 구조는 채택 안 함).
+
+첫 PR 범위: Spring 스캐폴딩 + Extraction Foundation(model/strategy/
+service) + live 테스트 + ADR 2개 - 하나의 완결된 마일스톤. 다음은
+`docs/content_extraction.md`를 따라 NaverBlogExtractionStrategy,
+GithubExtractionStrategy, YouTubeExtractionStrategy,
+PdfExtractionStrategy, 검색 스니펫 fallback을 순서대로 구현.
