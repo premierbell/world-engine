@@ -2357,3 +2357,34 @@ RQ10-1의 프레이밍을 명확히 한다: "어떤 Objective가 맞는가"가 �
 `docs/research_phase_2_rq10-0.md`에 "Ground Truth Redesign이 RQ10-1의
 첫 하위 과제"라는 절 추가 - 아직 이론도 실험 설계도 없다, 다음 세션의
 출발점.
+
+## RQ10-1 Ground Truth Redesign: Stage 0/1/2 설계 확정
+
+네 가지 후보(Self-consistency re-labeling, Multi-rater agreement,
+Task-oriented retrieval grouping, 실제 사용자 데이터) 중 실제 사용자
+데이터를 중심에 두고 나머지 셋은 보조 검증으로 쓰기로 결정 - RQ10-1이
+묻는 게 "더 좋은 레이블을 만들 수 있는가"가 아니라 "Human organization
+이 실제로 존재하는 측정 대상인가"이기 때문에, 앞의 셋은 여전히
+시뮬레이션(같은 모델의 자기 일관성, LLM끼리의 공유된 편향)에 갇혀
+있다는 게 이유. 지금까지 "Virtual User → Ground Truth → Evaluation"
+이었던 방향이 "Real User → Organization → Ground Truth"로 뒤집힌다.
+
+새로 열린 질문: 관심사 조직은 taxonomy(분류 체계)가 아니라
+workflow(용도) 기준일 수도 있다(Redis/Kafka/RabbitMQ를 "Message
+Queue"로 묶는 사람도 "Backend Interview 준비"로 묶는 사람도 둘 다
+틀리지 않음) - Phase 1/Phase 2 전반부가 "정확한 Topic을 찾는 연구"
+였다면 여기서부터는 "무엇을 정답으로 볼 것인가를 정의하는 연구"로
+성격이 바뀐다.
+
+Stage 0(Real Human Organization Collection) → Stage 1(Measurement
+Families가 이 실제 Ground Truth를 얼마나 설명하는지 평가) → Stage
+2(아무 objective도 못 설명하면 새 objective 고민)로 설계.
+`experiments/real_user_organization/round1.json` 스캐폴드 생성 -
+scraps는 평소에 발견할 때마다 채우고, 20~30개 모이면 자유롭게
+그룹화(카테고리 사전 지정 없음, 그룹 이름/이유 기록, 중복 소속
+허용). 이 파일은 사용자의 실제 개인 관심사 데이터라 `.gitignore`에
+추가(레포가 나중에 Public 전환 예정) - 로컬에만 존재, 커밋 안 함.
+
+`docs/research_phase_2_rq10-0.md`에 "Ground Truth Redesign 설계" 절
+추가. 데이터 수집은 비동기로 진행 - 다음 세션은 이 수집이 얼마나
+됐는지 확인하는 것부터 시작.

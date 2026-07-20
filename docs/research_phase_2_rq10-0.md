@@ -395,6 +395,43 @@ Relation 근접(2개 도메인 재현)은 RQ10-1이 실제 사용자 데이터�
 결과, 시간에 따른 재구성, 여러 명이 같은 스크랩 세트를 조직했을 때의
 일치도)는 아직 이론도 실험 설계도 없다 — 여기서부터 시작해야 한다.
 
+### Ground Truth Redesign 설계 (실행 전, 데이터 수집 대기 중)
+
+네 가지 후보를 검토했다 — Self-consistency re-labeling(동일 페르소나
+재분류), Multi-rater agreement(여러 페르소나 간 합의도), Task-oriented
+retrieval grouping(검색/회수 목적 기준 그룹화), 실제 사용자 데이터.
+앞의 셋은 여전히 시뮬레이션 안에서 도는 방법이고, 넷째만 시뮬레이션을
+벗어난다 — **실제 사용자 데이터를 중심에 두고, 나머지 셋은 보조
+검증으로 쓴다.** 지금까지 모든 연구가 "Virtual User → Ground Truth →
+Evaluation"이었다면, 여기서 처음으로 "Real User → Organization →
+Ground Truth"로 방향이 뒤집힌다.
+
+**새로 열린 질문**: 지금까지는 "정답 Topic이 무엇인가"를 물었지만,
+실제 사람은 관심사를 taxonomy(분류 체계)가 아니라 workflow(용도) 
+기준으로 조직할 수도 있다 — 예를 들어 Redis/Kafka/RabbitMQ를 "Message
+Queue"로 묶는 사람도 있지만, "Backend Interview 준비"로 묶는 사람도
+있다. 둘 다 틀리지 않았다. Phase 1/Phase 2 전반부는 전부 "정확한
+Topic을 찾는 연구"였다면, 여기서부터는 **"무엇을 정답으로 볼 것인가를
+정의하는 연구"**로 성격이 바뀐다.
+
+**Stage 0 — Real Human Organization Collection** (데이터 수집 대기 중,
+`experiments/real_user_organization/round1.json`): 사용자 본인의 실제
+스크랩 20~30개를 모으고(평소에 발견할 때마다 조금씩), 카테고리를
+미리 정하지 않은 채 자유롭게 그룹화 → 그룹 이름 → 그룹화 이유 한 줄
+→ 중복 소속 허용. 이게 새로운 Ground Truth가 된다.
+
+**Stage 1** — Mechanism/Topic/Neutral/Relation 네 objective(Measurement
+Families)가 이 실제 Ground Truth를 얼마나 설명하는지 본다. 여기서
+처음으로 "어떤 objective가 실제 사람의 조직 방식을 가장 잘 설명하는가"
+를 말할 수 있게 된다.
+
+**Stage 2** — 어떤 objective도 잘 설명하지 못하면, 그때 새로운
+objective(Adaptive Objective, Graph Objective 등)를 고민한다.
+
+표본이 20~30개로 작다는 것과, 사용자 한 명(N=1)이라는 것은 명확한
+한계로 남긴다 — 그럼에도 지금까지의 모든 결론이 가상 데이터 안에서만
+성립했다는 근본적 한계를 정면으로 다루는 첫 시도라는 점이 값지다.
+
 **Candidate Objectives**
 
 이제 Topic/Neutral/Relation을 서로 다른 후보로 나열하지 않는다 —
