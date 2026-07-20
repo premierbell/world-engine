@@ -2614,3 +2614,37 @@ Extraction 단계를 명시적으로 추가. Out of Scope 섹션을 문서 근�
 있는 항목만으로 재정리("Reinforcement Learning"처럼 대화 중 근거
 없이 나온 제안은 반영 안 함 - Island merge/split은 Roadmap V2와
 연결되는 근거 있는 항목이라 추가).
+
+## V1 구현 착수: Content Extraction부터, docs/content_extraction.md 신설
+
+AI 추천 파이프라인(Embedding/Cosine/LLM Rerank)보다 Content
+Extraction을 먼저 구현하기로 결정 - 뒤 단계 전부가 여기서 나오는
+결과물의 품질에 의존하기 때문. AI 추천 쪽은 V0 연구로 설계가 거의
+확정된 반면(Two-stage architecture, Neutral objective), Extraction은
+아직 불확실성이 큰 영역(라이브러리, 플랫폼별 처리, fallback 전략
+전부 미정)이라는 게 근거.
+
+**스택 결정**: Java/Spring - 다른 포트폴리오 프로젝트(NewsMailer,
+BuzzerBidder, Notification Platform, MotiPeople)와 일관된 스토리를
+위함. AI 부분은 Embedding/LLM API 호출이라 언어 생태계에 안 묶여서
+Python을 유지할 이유가 적음. Extraction만 Java 생태계(jsoup+
+readability4j)로 먼저 검증하고, 성공률이 부족하면 그때만 Python
+마이크로서비스로 분리 - 처음부터 다중 언어로 시작 안 함.
+
+`docs/content_extraction.md` 신설:
+- `ExtractionResult`(status/title/content/summaryCandidate/
+  sourceType/fallbackLevel/failureReason) - failureReason은 실패
+  원인(ROBOTS_BLOCKED/NETWORK_ERROR/TIMEOUT/UNSUPPORTED_SOURCE/
+  EMPTY_CONTENT/LOGIN_REQUIRED)을 기록해 운영 지표를 뽑을 수 있게 함
+- FallbackLevel을 0~4 등급으로 명확히 정의(DIRECT_EXTRACTION →
+  OPEN_GRAPH_ONLY → SEARCH_SNIPPET → USER_INPUT → EXTRACTION_FAILED)
+- SourceType 8종(ARTICLE/NAVER_BLOG/NAMUWIKI/GITHUB/YOUTUBE/PDF/
+  NOTION/UNKNOWN) - 티스토리/브런치는 ARTICLE과 전략이 같아서 통합
+- 플랫폼별 처리 전략 표 - 네이버 블로그의 iframe 2단계 요청 패턴,
+  봇 차단과 JS 렌더링을 별개 문제로 구분(Round 1 실패 원인 대부분은
+  전자)해서 Playwright를 기본값으로 두지 않음
+- 품질 지표(KPI): Success Rate, Fallback Distribution, SourceType
+  Success Rate, Average Content Length - Round 1의 36% 성공률은
+  범용 스크래퍼 기준이라 이 전략 적용 후 재측정 필요
+- Non-goals: robots 우회/로그인 세션 자동화/CAPTCHA 우회/Paywall
+  우회/불법 스크래핑 - 명시적으로 범위 밖.
