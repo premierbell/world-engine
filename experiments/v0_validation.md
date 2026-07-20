@@ -2411,3 +2411,110 @@ s1/s2 백엔드 면접, 둘 다 CS 관련)을 목적 기준으로 쪼갬(자격�
 품질 요약(9/15/1) 기록. `round1.json`은 개인 데이터라 로컬에만 존재
 (git에는 포함 안 됨). 다음은 Stage 1(Measurement Families로 이
 Ground Truth 설명력 평가) - 아직 구현 전.
+
+## Experiment #56: RQ10-1 Stage 1 Pilot (summary-only, real Ground Truth)
+
+### Hypothesis
+Round 1(N=25)을 Mechanism/Topic/Neutral/Relation 네 objective로 처음
+평가한다. personal_reason은 의도적으로 뺀다 - "공부용/공부용"처럼
+저장 이유가 그대로 겹치면 내용이 아니라 이유를 읽고 Ground Truth를
+맞히는 leakage 위험이 있다.
+
+### Data
+round1.json 25개 중 content_summary 없는 s8 제외 → 24개, 276쌍
+(same-group 19쌍, diff-group 257쌍 - 사용자가 만든 13개 그룹 중
+하나라도 공유하면 same).
+
+### Result
+| Objective | ROC-AUC | mean same-group | mean diff-group |
+|---|---|---|---|
+| Mechanism | 0.500 | 0.000 | 0.000 |
+| Topic | 0.723 | 0.239 | 0.012 |
+| Neutral | 0.918 | 0.200 | 0.038 |
+| Relation | 0.903 | 0.413 | 0.182 |
+
+### Insight
+Mechanism = 0.500은 실패가 아니라 적용 범위 밖 - 단일 기술 도메인
+(AI Researcher의 Transformer/Attention류) 안에서만 성립하는
+objective였다. Topic(0.723)이 Neutral/Relation(0.90대)보다 뚜렷이
+낮은 게 새로운 발견 - 가상 데이터에서는 Topic≈Neutral≈Relation
+이었는데, 실제 사용자 그룹("여행,이동용" = 전주+여수+아쿠아리움+
+강남맛집, "건강용" = 다이어트+스트레칭+헬스)은 같은 Topic이 아니라
+같은 task bundle(나중에 같이 참고할 것)로 묶여 있어서, "같은
+주제인가"를 묻는 Topic보다 "관련 있는가"를 묻는 Neutral/Relation이
+더 가까웠다.
+
+### Decision
+`docs/research_phase_2_rq10-0.md`에 Stage 1 Pilot 결과 기록. RQ10-1
+질문을 "human organizational behavior"에서 **"real-world personal
+organization"**으로 좁힘(가상 Topic 레이블과 실제 개인 조직이 다른
+objective를 요구한다는 게 드러났으므로). Mechanism 제외, Neutral/
+Relation만 갖고 Stage 2 진행 - 변수 하나씩만 바꾸는 원칙 유지.
+
+## Experiment #57: RQ10-1 Stage 2a (질문을 Ground Truth와 정렬)
+
+### Hypothesis
+"같은 그룹인가"가 아니라 "사용자가 나중에 함께 다시 찾아볼 가능성이
+높은가"로 재정렬한 새 프롬프트(`retrieval` mode)를 추가, content_
+summary만으로(personal_reason 없이) Neutral/Relation과 비교한다.
+
+### Data
+Experiment #56과 동일 24개/276쌍. Neutral/Relation은 캐시 재사용,
+retrieval만 신규 채점(276건).
+
+### Result
+| Objective | ROC-AUC | mean same-group | mean diff-group |
+|---|---|---|---|
+| Neutral | 0.918 | 0.200 | 0.038 |
+| Relation | 0.903 | 0.413 | 0.182 |
+| Retrieval | 0.913 | 0.366 | 0.144 |
+
+### Insight
+세 값이 0.90~0.92에 몰려 N=19 규모에서는 사실상 구분 불가 - 질문
+재정렬 자체는 뚜렷한 개선을 안 줬다. Topic처럼 엄격한 매칭만 아니면
+(Semantic Relatedness family 안이면) 구체적 문구는 안 중요하다는
+쪽으로 해석이 좁혀진다 - Measurement Family 개념이 실제 데이터에서도
+재확인됨.
+
+### Decision
+prompt를 더 안 건드리고 Stage 2b(personal_reason 추가)로 진행,
+Neutral 하나만 대표로 사용(세 objective가 사실상 동등하므로).
+
+## Experiment #58: RQ10-1 Stage 2b (personal_reason을 컨텍스트로 추가)
+
+### Hypothesis
+Neutral 하나로, content_summary만 vs content_summary+personal_reason
+비교. ROC-AUC 자체보다 어떤 pair가 오답→정답으로 바뀌는지(error
+analysis)를 더 비중있게 본다 - N=19라 AUC는 거의 안 움직일 수 있지만
+오류 패턴은 바뀔 수 있다는 가설.
+
+### Data
+동일 24개/276쌍. content+reason 조건만 신규 채점(276건).
+
+### Result
+| Condition | ROC-AUC | mean same-group | mean diff-group |
+|---|---|---|---|
+| content only | 0.918 | 0.200 | 0.038 |
+| content + reason | 0.921 | 0.239 | 0.052 |
+
+가장 심한 false negative(s12-s15, 여수맛집 vs 아쿠아리움) 0.10→0.15,
+가장 심한 false positive(s1-s5) 0.75→0.75 - 둘 다 사실상 안 고쳐짐.
+
+### Insight
+두 축(질문 변경, 입력에 저장 이유 추가)을 다 시도했는데 둘 다 거의
+같은 결과로 수렴 - "더 좋은 prompt를 찾으면 풀린다"는 가설이 꽤
+강하게 기각된다. 지금 personal_reason이 대부분 content에서 이미
+추론 가능한 정보였다("도커 입문"+"공부용" - LLM도 content만 보고
+짐작 가능)는 게 원인으로 보인다. 진짜 새 정보가 되려면 content 밖에
+있는 행동 맥락(언제/누구와/어떤 상황에서 다시 볼지)이어야 한다.
+
+### Decision
+**Finding P2-002**(Prompt Engineering Is Not the Bottleneck for Real
+Organization) 신설. Round 1(N=25 Pilot)을 여기서 종료 - 확인된 것
+(Mechanism 적용범위 밖, Relatedness family 동등, prompt/얕은 reason
+둘 다 무영향)과 확인 안 된 것(사용자의 실제 조직 원리는 아직
+복원 안 됨)을 정리. RQ10-1을 **"Objective Discovery"에서 "Information
+Discovery"로** 한 단계 재구성 - "어떤 objective가 맞는가"가 아니라
+"사용자 조직을 복원하려면 어떤 정보를 새로 수집해야 하는가". 새
+personal_reason(진짜 behavioral context) 수집은 사실상 Round 1.5
+(새 데이터셋 제작)라 지금 하지 않고 향후 과제로 남김.
