@@ -2388,3 +2388,26 @@ scraps는 평소에 발견할 때마다 채우고, 20~30개 모이면 자유롭�
 `docs/research_phase_2_rq10-0.md`에 "Ground Truth Redesign 설계" 절
 추가. 데이터 수집은 비동기로 진행 - 다음 세션은 이 수집이 얼마나
 됐는지 확인하는 것부터 시작.
+
+## Stage 0 완료: 실제 스크랩 25개 수집 + 그룹화
+
+사용자가 `scraps.txt`에 실제 URL 25개 + 저장 이유를 채움(다양한
+도메인 - 백엔드 면접, 프로그래밍, 야구, 여행, 건강, 투자, 쇼핑 등
+섞여 있음). `round1.json`으로 옮기면서 각 URL의 실제 내용을 WebFetch/
+WebSearch로 가져와 150~300자 content_summary로 요약 - personal_reason
+(원래 저장 이유)과는 분리해서 별도 필드로 보존(Stage 1에서 "내용만"
+vs "내용+저장 이유" 비교 실험을 위해). naver blog·namu.wiki 대부분이
+WebFetch를 차단해서: 25개 중 9개 원문 직접 fetch, 15개 검색 스니펫
+대체, 1개(정보처리기사 필기, s8) 완전 실패 - fetch_status로 품질 표시,
+지어내지 않고 note만 남김.
+
+사용자가 직접 25개를 13개 그룹으로 자유롭게 묶음(6개는 단독 항목).
+결과가 흥미로움 - 내용상 관련 있어 보이는 것들(예: s8 정보처리기사와
+s1/s2 백엔드 면접, 둘 다 CS 관련)을 목적 기준으로 쪼갬(자격증 공부 vs
+면접 대비 vs 일반 공부), taxonomy가 아니라 workflow로 조직하는
+사례가 실제로 관측됨.
+
+`docs/research_phase_2_rq10-0.md`의 Stage 0을 "완료"로 갱신, 데이터
+품질 요약(9/15/1) 기록. `round1.json`은 개인 데이터라 로컬에만 존재
+(git에는 포함 안 됨). 다음은 Stage 1(Measurement Families로 이
+Ground Truth 설명력 평가) - 아직 구현 전.

@@ -414,11 +414,18 @@ Queue"로 묶는 사람도 있지만, "Backend Interview 준비"로 묶는 사�
 Topic을 찾는 연구"였다면, 여기서부터는 **"무엇을 정답으로 볼 것인가를
 정의하는 연구"**로 성격이 바뀐다.
 
-**Stage 0 — Real Human Organization Collection** (데이터 수집 대기 중,
-`experiments/real_user_organization/round1.json`): 사용자 본인의 실제
-스크랩 20~30개를 모으고(평소에 발견할 때마다 조금씩), 카테고리를
-미리 정하지 않은 채 자유롭게 그룹화 → 그룹 이름 → 그룹화 이유 한 줄
-→ 중복 소속 허용. 이게 새로운 Ground Truth가 된다.
+**Stage 0 — Real Human Organization Collection: 완료.** 사용자 본인의
+실제 스크랩 25개(`experiments/real_user_organization/round1.json`,
+로컬 전용 - 개인 데이터라 커밋 안 함)를 모으고, 카테고리를 미리
+정하지 않은 채 자유롭게 그룹화(13개 그룹, 그 중 6개는 단독 항목) →
+그룹 이름·이유 → 중복 소속 허용 방식으로 완료. 각 scrap은
+`content_summary`(실제 URL 내용 요약, 150~300자)와 `personal_reason`
+(저장 당시 이유)을 분리해서 기록 - 이후 Stage 1에서 "내용만" vs
+"내용+저장 이유"를 각각 평가에 써서 비교하기 위함. 데이터 품질도
+`fetch_status`로 표시: 25개 중 9개는 원문 직접 fetch, 15개는 원문
+접근이 막혀(naver blog·namu.wiki의 봇 차단) 검색 스니펫으로 대체,
+1개는 완전히 실패해 note만 신뢰 가능 - 균일하지 않은 데이터 품질을
+Stage 1 해석 시 감안해야 한다.
 
 **Stage 1** — Mechanism/Topic/Neutral/Relation 네 objective(Measurement
 Families)가 이 실제 Ground Truth를 얼마나 설명하는지 본다. 여기서
