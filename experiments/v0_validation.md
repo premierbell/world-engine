@@ -2543,3 +2543,54 @@ summary만 vs content_summary+behavioral context로 Neutral(Round 1
 대표 objective) 채점 비교 - 의미 있게 개선되면 "사람은 semantic
 similarity보다 behavioral context를 더 많이 사용해 지식을 조직한다"는
 결론. 아직 데이터 수집 전, 실행 안 함.
+
+## Experiment #59: RQ10-1 Round 1.5 - Behavioral Context
+
+### Hypothesis
+진짜 behavioral context(content에서 추론 불가능한 정보)를 주면
+content-only 대비 실제 그룹 복원력이 개선되는가? Neutral 하나로,
+content_summary만 vs content_summary+purpose+time_horizon+trigger
+비교(importance는 계획대로 제외 - 개별 속성인 데다 실제 값도
+"검색해서 바로 찾을 정도로 낮음"으로 거의 균일해서 추가 정보 없음).
+
+### Data
+사용자가 25개 스크랩 전부에 4개 필드를 채움. content_summary 있는
+24개, 276쌍(same-group 19쌍) - Experiment #56/#58과 동일 표본/GT.
+
+### Result
+| Condition | ROC-AUC | mean same-group | mean diff-group |
+|---|---|---|---|
+| content only | 0.918 | 0.200 | 0.038 |
+| content + behavioral | 0.925 | 0.332 | 0.078 |
+
+AUC는 노이즈 수준(+0.007)이지만, 가장 심하게 틀렸던 same-group 쌍
+10개 중 7개가 +0.05~+0.15 개선(예: s12-s15 0.10→0.20, s15-s23
+0.10→0.25) - Stage 2a/2b(질문 변경, 얕은 이유 추가)에서는 거의 안
+움직였던 것과 다른 패턴. 다만 diff-group의 일부 오답도 같이 상승
+(s17-s9 +0.25, s10-s19 +0.20)해서 선택적 개선이 아니라 전반적 상승과
+섞여 있었고, 절대값도 threshold를 넘길 만큼은 아니었다.
+
+### Insight
+질문(Round 1)도 얕은 저장 이유(Round 1b)도 완전히 무효했는데,
+진짜 behavioral context는 처음으로 방향성 있는 움직임을 만들었다 -
+하지만 자동 분류를 완결할 정도는 아니다. "AI가 사용자 조직을 혼자서
+복원할 수 있는가?"라는 원래 질문의 답은 "아니다"이지만, "행동
+맥락을 조금 받으면 AI 추천 품질은 개선된다"는 답은 얻었다 - 이건
+연구 실패가 아니라 제품 설계 원칙(자동 분류가 아니라 AI 추천+사용자
+확인)으로 직결된다.
+
+### Decision
+**Finding P2-003**(Behavioral Context Improves Semantic Organization,
+But Only Incrementally) 신설. 사용자와 합의한 stopping rule에 따라
+결과와 무관하게 Round 1/1.5, 나아가 **Phase 2 전체를 여기서 종료**한다
+- 더 파고드는 것(behavioral context 표현 방법 최적화, trigger
+vector화 등)은 새 질문이 아니라 이미 답 나온 질문의 성능 개선이라는
+판단. `docs/research_phase_2_rq10-0.md`에 Experiment #59 결과와
+Finding P2-003, "Phase 2: Complete" 기록. `docs/research_phase_2_
+summary.md` 신설(Phase 1 summary와 같은 구조 - 연구 목표/RQ 요약/
+Finding 요약/실패한 접근/최종 결론). `docs/v1_design.md` 신설 - 연구
+결론을 제품 설계로 옮김("스크랩+선택적 맥락 → AI 추천(Two-stage
+architecture, Neutral objective) → 사용자 확인", 실제 제품에서는
+Round 1.5의 4개 질문이 아니라 자유 입력 1개로 마찰 최소화).
+`docs/anchor_model.md`, `docs/algorithm_limitations.md`의 Phase
+상태 표시를 "Phase 2도 Complete"로 갱신.

@@ -611,10 +611,50 @@ behavioral context를 25개 스크랩 각각에 대해 새로 받는다. 질문�
 
 **Stage 1.5 실험**: content_summary만 vs content_summary+behavioral
 context(위 4개, 최소 1~3번)로 Neutral(Round 1에서 검증된 대표
-objective) 채점을 비교, 실제 그룹 복원력(AUC)을 본다. 여기서 의미
-있게 개선되면 **"사람은 semantic similarity보다 behavioral context를
-더 많이 사용해 지식을 조직한다"**는 강한 결론을 낼 수 있다.
+objective) 채점을 비교, 실제 그룹 복원력(AUC)을 본다.
 
-아직 데이터 수집 전이다. 이 문서(`research_phase_2_rq10-0.md`)는
-RQ10-0·RQ10-1 Round 1/1.5 전용으로 남기고, Information Discovery가
-H1/H2/H3 같은 정식 protocol을 갖추면 별도 파일로 분리한다.
+### Experiment #59 결과 (Round 1.5 완료)
+
+사용자가 25개 스크랩 전부에 purpose/time_horizon/trigger/importance를
+채움. importance는 계획대로 pairwise 입력에서 제외(개별 속성인 데다
+실제 값도 "검색해서 바로 찾을 정도로 낮음"으로 거의 균일해서 추가
+정보가 없음). content_summary + purpose + time_horizon + trigger를
+합쳐 Neutral로 채점.
+
+| Condition | ROC-AUC | mean same-group | mean diff-group |
+|---|---|---|---|
+| content only | 0.918 | 0.200 | 0.038 |
+| content + behavioral | 0.925 | 0.332 | 0.078 |
+
+AUC 자체는 0.918→0.925로 노이즈 수준. 그러나 오류 쌍 분석에서 이전
+두 실험(Stage 2a/2b)과 다른 패턴이 나타났다 - 가장 심하게 틀렸던
+same-group 쌍 10개 중 7개가 +0.05~+0.15 개선(예: s12-s15 0.10→0.20,
+s15-s23 0.10→0.25). 다만 diff-group의 일부 오답도 같이 올라가서
+(s17-s9 +0.25, s10-s19 +0.20) 선택적 개선이 아니라 전반적인 점수
+상승과 섞여 있다 - 절대값도 여전히 threshold를 넘길 수준은 아니다.
+
+### Finding P2-003: Behavioral Context Improves Semantic Organization, But Only Incrementally
+
+> Behavioral context contains information absent from content alone,
+> but the improvement is insufficient to recover a user's personal
+> organization automatically.
+
+Round 1(질문 변경)과 Round 1b(얕은 personal_reason)는 둘 다 완전히
+무효했다. Round 1.5(진짜 behavioral context)는 처음으로 방향성 있는
+움직임을 만들었지만, 자동 분류를 완결할 정도는 아니었다. 이 결과가
+Phase 2 전체의 마지막 퍼즐이다.
+
+**질문 자체가 바뀌었다.** Round 1을 시작할 때 물었던 것은 "AI가
+사용자의 조직 방식을 복원할 수 있는가"였다. 지금 답은 "AI 혼자서는
+못 하지만, 사용자의 행동 맥락을 조금 받으면 추천 품질은 개선된다"이다.
+이건 실패가 아니라 **제품 설계 원칙**이다 - 자동 분류(스크랩→분류)가
+아니라 AI 추천 + 사용자 확인(스크랩+행동 맥락→AI 추천→사용자 확인)
+구조로 V1을 설계해야 한다는 근거가 실험으로 도출됐다.
+
+## Phase 2: Complete
+
+여기서 더 파고드는 건("behavioral context를 어떻게 더 잘
+표현할까", "trigger를 vector화할까") 새로운 질문이 아니라 이미 답이
+나온 질문의 성능 개선이다. Phase 2는 여기서 닫는다. 전체 요약은
+`docs/research_phase_2_summary.md`, V1 설계는 `docs/v1_design.md`
+참고.

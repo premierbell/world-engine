@@ -2,8 +2,10 @@
 
 > **Research Phase 1: Complete** (RQ0~RQ9, `research_phase_1_summary.md`
 > 참고). 이 문서의 Research Question #0~#9는 전부 답변/종료됐다.
-> Research Phase 2 연구는 `research_phase_2_rq10-0.md`에서 진행한다 -
-> 아래 내용은 Phase 1의 상세 기록으로 보존한다.
+> **Research Phase 2도 Complete** (RQ10-0/RQ10-1,
+> `research_phase_2_summary.md` 참고) - 아래 내용은 Phase 1의 상세
+> 기록으로 보존한다. V0 연구는 여기서 마무리되고 `v1_design.md`로
+> 이어진다.
 
 Finding #006(Greedy + EMA + Threshold는 계층과 무관하게 같은 방식으로
 실패한다) 이후 Night Batch v0~v3(Merge/Split/Topic Graph/HDBSCAN/
