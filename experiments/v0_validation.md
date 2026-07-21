@@ -2754,3 +2754,26 @@ URL을 구성할 수 있음을 검증(iframe 응답의 실제 src가 정확히 �
 없이 iframe 2단계 요청 같은 가벼운 방법으로 해결 가능하다")이 실제
 데이터로 검증됨 - Round 1의 WebFetch 실패(9/25 직접 성공)가 도구의
 한계였지, 네이버 블로그 자체가 뚫을 수 없는 벽은 아니었다는 근거.
+
+## GithubExtractionStrategy 구현
+
+HTML 파싱 대신 GitHub REST API로 README를 직접 요청 - 구현 전 실제
+curl로 `Accept: application/vnd.github.raw+json` 헤더를 주면 base64
+디코딩 없이 원문을 바로 받을 수 있음을 검증. README 없으면 저장소
+`description` 필드(JSON, `com.fasterxml.jackson`이 아니라 `tools.
+jackson.databind` - Spring Boot 4.1이 Jackson 3.1.4를 쓰면서 패키지가
+바뀜)로 격하. 인증 없는 API는 시간당 60회 제한 확인(운영 단계에서
+personal access token 필요 가능성 기록).
+
+타이핑 과정에서 진짜 버그는 세미콜론 누락 1건뿐이었음 - Jackson
+패키지 임포트(`tools.jackson.databind`)는 오히려 Claude가 구식
+패키지명(`com.fasterxml.jackson`)으로 잘못 알려줬던 것을 사용자가
+올바르게 고쳐 씀(Spring Boot 4.1의 실제 의존성 트리로 확인). 이후
+`json.path("description").asText(null)`이 Jackson 3.x에서
+deprecated라는 컴파일 경고가 나와 `asString(null)`로 교체(클래스
+파일 직접 열어서 API 확인 후 제안).
+
+`GithubExtractionStrategyLiveTest` - spring-boot 저장소 URL 2개
+(루트, `/tree/main` 경로 포함 - owner/repo 파싱이 trailing path가
+있어도 되는지 검증) 2/2 통과. 전체 live 테스트 7/7(기사 2+네이버
+블로그 3+GitHub 2), 기본 test도 Docker 없이 통과 유지.
