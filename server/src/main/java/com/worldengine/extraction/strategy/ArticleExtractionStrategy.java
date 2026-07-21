@@ -9,6 +9,8 @@ import net.dankito.readability4j.extended.Readability4JExtended;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -23,6 +25,8 @@ import java.net.URI;
  * 겸한다 - supports()가 항상 true라 반드시 라우팅 체인의 마지막에 둔다.
  * docs/content_extraction.md 참고.
  */
+
+@Order(Ordered.LOWEST_PRECEDENCE)
 @Component
 public class ArticleExtractionStrategy implements ExtractionStrategy {
 
