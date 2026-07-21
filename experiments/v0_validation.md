@@ -2711,3 +2711,46 @@ service) + live 테스트 + ADR 2개 - 하나의 완결된 마일스톤. 다음�
 `docs/content_extraction.md`를 따라 NaverBlogExtractionStrategy,
 GithubExtractionStrategy, YouTubeExtractionStrategy,
 PdfExtractionStrategy, 검색 스니펫 fallback을 순서대로 구현.
+
+## NaverBlogExtractionStrategy 구현 (Java 코드는 사용자가 직접 타이핑)
+
+PR #50 직후 사용자가 명시적으로 작업 방식을 바꿈 - "앞으로 자바 코드
+같은건 너가 보여주면 내가 따라치는 식으로 가보자." 이후 Java 코드는
+Claude가 Write로 직접 작성하지 않고 채팅에 보여주면 사용자가 타이핑,
+Claude는 리뷰·컴파일·테스트만 담당하는 방식으로 전환.
+
+구현 전 실제 네이버 블로그 페이지를 curl로 직접 확인 - `blog.naver.com/
+{blogId}/{logNo}` 경로에서 blogId/logNo를 바로 파싱해 `PostView.naver`
+URL을 구성할 수 있음을 검증(iframe 응답의 실제 src가 정확히 이 패턴),
+본문이 `div.se-main-container`에 깨끗하게 담겨 있음도 확인.
+
+**타이핑 과정에서 발견된 버그 3개** (전부 `:`/`.` 관련 오타):
+1. `document.selectFirst("div se-main-contained")` - CSS 선택자에
+   `.`이 빠지고 클래스명도 오타(`contained`→`container` 필요) → 절대
+   안 매칭돼서 항상 fallback으로 빠짐
+2. `BLOG_ID_LOG_NO_PATTERN.matcher(uri.toString())` - 정규식은 경로만
+   매칭하게 만들었는데 전체 URL 문자열을 넣어서 항상 매칭 실패 →
+   `uri.getPath()`로 수정
+3. `meta[property=og.title]`/`og.description` - 실제 속성은 콜론인데
+   점으로 오타 → Open Graph fallback도 항상 실패
+
+세 곳 다 수정 후 컴파일 성공. `NaverBlogExtractionStrategy`도
+`ArticleExtractionStrategy`도 `@Component`인데 후자가 `supports()`를
+항상 true로 반환해서, Spring이 주입하는 `List<ExtractionStrategy>`
+순서에 따라 전용 전략이 아예 실행 안 될 위험이 있었음 - `@Order`로
+명시적 우선순위 부여(NaverBlog=1, Article=LOWEST_PRECEDENCE).
+
+### Result
+
+`NaverBlogExtractionStrategyLiveTest` - Round 1에서 WebFetch로 전부
+직접 추출 실패했던 네이버 블로그 URL 3개(`dailytrip_/222858904869`,
+`nimo611/223347108051`, `happy_snubh/223529460665`)로 검증, **3/3
+성공**. `ArticleExtractionStrategyLiveTest`도 2/2 유지, 기본
+`./gradlew test`도 Docker 없이 통과.
+
+### Insight
+
+`content_extraction.md`에서 세운 가설("봇 차단 문제는 무거운 대응
+없이 iframe 2단계 요청 같은 가벼운 방법으로 해결 가능하다")이 실제
+데이터로 검증됨 - Round 1의 WebFetch 실패(9/25 직접 성공)가 도구의
+한계였지, 네이버 블로그 자체가 뚫을 수 없는 벽은 아니었다는 근거.

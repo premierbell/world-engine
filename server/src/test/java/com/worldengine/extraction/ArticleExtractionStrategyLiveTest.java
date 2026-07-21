@@ -4,14 +4,12 @@ import com.worldengine.extraction.model.ExtractionResult;
 import com.worldengine.extraction.model.ExtractionStatus;
 import com.worldengine.extraction.strategy.ArticleExtractionStrategy;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URI;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -42,17 +40,5 @@ class ArticleExtractionStrategyLiveTest {
         );
         assertFalse(result.content() == null || result.content().isBlank());
         assertFalse(result.title() == null || result.title().isBlank());
-    }
-
-    @Test
-    void naverBlogFallsBackOrFailsWithoutDedicatedStrategy() {
-        // 아직 NaverBlogExtractionStrategy가 없으므로 ArticleExtractionStrategy가
-        // 그대로 시도한다 - Round 1에서 확인된 대로 대부분 실패하거나 Open
-        // Graph로 격하될 것으로 예상한다(이걸 근거로 NaverBlogExtractionStrategy가
-        // 필요하다는 걸 재확인).
-        ExtractionResult result = strategy.extract(
-            URI.create("https://blog.naver.com/dailytrip_/222858904869"));
-
-        assertNotNull(result.status());
     }
 }
