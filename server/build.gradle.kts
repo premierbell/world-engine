@@ -25,6 +25,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.jsoup:jsoup:1.21.1")
 	implementation("net.dankito.readability4j:readability4j:1.0.8")
+    implementation("org.apache.pdfbox:pdfbox:3.0.7")
 	compileOnly("org.projectlombok:lombok")
 	developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 	runtimeOnly("org.postgresql:postgresql")

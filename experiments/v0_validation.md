@@ -2799,3 +2799,29 @@ deprecated라는 컴파일 경고가 나와 `asString(null)`로 교체(클래스
 `YouTubeExtractionStrategyLiveTest` - watch URL과 `youtu.be` 단축
 링크 둘 다 2/2 통과, 오타 없이 정확하게 타이핑됨. 전체 live 테스트
 9/9(기사 2+네이버 3+GitHub 2+YouTube 2), 기본 test 유지.
+
+## PdfExtractionStrategy 구현
+
+Apache PDFBox 3.x는 2.x에서 API가 크게 바뀜(`PDDocument.load()` 정적
+메서드 제거, `Loader.loadPDF()`로 이동) - Jackson 3.x 때 실수를
+반복하지 않으려고 이번엔 미리 javadoc(`Loader.loadPDF(byte[])` 등
+오버로드)을 직접 확인한 뒤 코드를 제시. jsoup으로 PDF 바이트를
+받아(`ignoreContentType(true)` + `maxBodySize` 상향) `Loader.loadPDF`
++ `PDFTextStripper`로 텍스트 추출, 스캔본처럼 텍스트 레이어가 없으면
+URL 파일명을 제목/내용으로 대체.
+
+타이핑은 오타 없이 정확했으나, **Claude가 준 live 테스트용 PDF URL
+(W3C 더미 PDF)이 지금 403을 반환**한다는 게 실제 실행에서 드러남(코드
+버그 아님, 테스트 URL 선정 실수) - curl로 재검증 후
+`www.orimi.com/pdf-test.pdf`(실제 1페이지 PDF, 200 확인)로 교체.
+같은 확인 과정에서 arxiv 논문 PDF(`arxiv.org/pdf/{id}`)처럼 `.pdf`
+확장자가 없는 URL은 지금 `supports()`(확장자 검사만 함)로 못 잡는다는
+한계도 발견 - Round 1 실제 데이터엔 `.pdf` 확장자 있는 PDF만 있었고,
+Content-Type 기반 판별은 `supports()`를 I/O 없는 순수 함수에서 벗어나게
+만드는 더 큰 설계 변경이라 지금은 미루기로 결정(Playwright/YouTube
+Data API/자막 파싱을 미룬 것과 같은 "증거 없이는 안 만든다" 원칙).
+
+전체 live 테스트 10/10(기사 2+네이버 3+GitHub 2+YouTube 2+PDF 1),
+기본 test 유지. `docs/content_extraction.md`의 다섯 전략(Article/
+NaverBlog/GitHub/YouTube/PDF)이 전부 구현 완료 - 남은 건 JS 렌더링
+전략(Playwright, 아직 증거 없어 보류)과 검색 스니펫 fallback.
