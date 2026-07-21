@@ -86,7 +86,7 @@ DIRECT_EXTRACTION인가?", "TIMEOUT이 특정 소스에 몰리는가?" 같은
 | 네이버 블로그 | 겉 URL은 iframe(`mainFrame`) 래퍼 - 실제 본문은 내부 `PostView.naver?blogId=...&logNo=...` URL에 있음, 이 URL을 먼저 찾아서 재요청 | jsoup(2단계 요청) | Open Graph → 검색 스니펫 |
 | 나무위키 | 봇 차단이 강함(요청 패턴/User-Agent 기반 추정) | jsoup(User-Agent 조정) 우선 시도 | 실패 시 검색 스니펫으로 바로 전환 |
 | GitHub | README를 API로 직접 요청 - HTML 파싱보다 훨씬 안정적 | `raw.githubusercontent.com` 또는 GitHub REST API `/repos/{owner}/{repo}/readme` | Repository description(API) |
-| YouTube | 자막(timedtext) 또는 영상 설명 | YouTube Data API | 제목만(oEmbed) |
+| YouTube | watch 페이지 HTML에서 `og:title`/`og:description`(영상 설명) 추출 - 일반 기사와 같은 jsoup 패턴 | jsoup | oEmbed(제목만) |
 | PDF | 텍스트 레이어 직접 추출 | Apache PDFBox | 실패 시(스캔본 등) 파일명/제목만 |
 | JS 렌더링 필요(SPA) | 위 방법으로 본문이 비어있을 때만 재시도(비용이 크므로 최후 수단) | Playwright for Java | Open Graph → 검색 스니펫 |
 
@@ -95,6 +95,17 @@ DIRECT_EXTRACTION인가?", "TIMEOUT이 특정 소스에 몰리는가?" 같은
 전자였고, Playwright 같은 무거운 대응이 항상 필요한 게 아니다. 먼저
 User-Agent/헤더 조정 + 2단계 요청(네이버 블로그 iframe 패턴) 같은
 가벼운 방법을 시도하고, 그래도 안 되면 검색 스니펫으로 넘어간다.
+
+**V1에서는 YouTube Data API를 쓰지 않는다.** API 키를 요구하고
+운영 복잡도(키 발급/쿼터 관리)를 늘리기 때문이다. 실제로 확인해보니
+watch 페이지 HTML 자체에 `og:description`으로 영상 설명이 들어있어서,
+다른 HTML 기반 전략과 동일한 패턴(jsoup)으로 처리할 수 있다. 자막
+(timedtext)은 비공식 엔드포인트에 언어 선택·자동생성 여부·페이지 내부
+JSON 구조 변경 리스크까지 겹쳐서 복잡도가 급격히 늘어난다 - 향후
+확장 범위로 미룬다. 지금까지의 V1 원칙과도 일치한다: 완전 자동
+분류 대신 AI 추천+사용자 확인, Playwright 대신 HTML 기반 추출
+우선, Python 마이크로서비스 대신 Java 단일 서비스 우선 - "가장
+단순하면서 충분한 방법을 기본값으로 채택한다."
 
 ## 처리 순서
 

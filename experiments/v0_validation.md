@@ -2777,3 +2777,25 @@ deprecated라는 컴파일 경고가 나와 `asString(null)`로 교체(클래스
 (루트, `/tree/main` 경로 포함 - owner/repo 파싱이 trailing path가
 있어도 되는지 검증) 2/2 통과. 전체 live 테스트 7/7(기사 2+네이버
 블로그 3+GitHub 2), 기본 test도 Docker 없이 통과 유지.
+
+## YouTubeExtractionStrategy 구현 - Data API 대신 메타태그
+
+`content_extraction.md`엔 원래 "YouTube Data API"로 적혀 있었으나,
+실제로 확인해보니 키 없이는 403(Data API), oEmbed는 title/author만
+주고 description이 없었다. 반면 watch 페이지 HTML 자체에
+`og:description`으로 영상 설명이, `youtu.be` 단축링크도 jsoup의
+기본 리다이렉트 추적으로 동일하게 메타태그가 노출되는 걸 curl로
+확인 - API 키 없이, 다른 HTML 기반 전략과 같은 패턴(jsoup)으로
+처리 가능하다는 근거. 자막(timedtext)은 비공식 엔드포인트+언어
+선택+페이지 내부 JSON 구조 변경 리스크가 겹쳐서 향후 확장 범위로
+미룸. `content_extraction.md`의 YouTube 행과 설계 원칙 문단을
+갱신(ADR은 "전략 구현 세부사항"이라 불필요하다고 판단, Data API로
+전환하게 되면 그때 ADR로 남기기로).
+
+같은 페이지 요청에서 이미 `og:title`을 얻으므로, description이
+없을 때의 fallback(문서상 "oEmbed 제목만")도 별도 API 호출 없이
+이미 가진 title로 처리하도록 구현 - 네트워크 호출 하나를 줄임.
+
+`YouTubeExtractionStrategyLiveTest` - watch URL과 `youtu.be` 단축
+링크 둘 다 2/2 통과, 오타 없이 정확하게 타이핑됨. 전체 live 테스트
+9/9(기사 2+네이버 3+GitHub 2+YouTube 2), 기본 test 유지.
