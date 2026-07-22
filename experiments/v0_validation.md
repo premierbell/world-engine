@@ -2825,3 +2825,48 @@ Data API/자막 파싱을 미룬 것과 같은 "증거 없이는 안 만든다" 
 기본 test 유지. `docs/content_extraction.md`의 다섯 전략(Article/
 NaverBlog/GitHub/YouTube/PDF)이 전부 구현 완료 - 남은 건 JS 렌더링
 전략(Playwright, 아직 증거 없어 보류)과 검색 스니펫 fallback.
+
+## Extraction Validation: ContentExtractionService를 Round 1 실제 데이터로 재현
+
+검색 스니펫 fallback을 바로 만들지, 먼저 5개 전략의 실제 성능을
+측정할지 사용자와 논의 - "증거 없이는 안 만든다" 원칙을 검색 API
+도입 여부에도 적용하기로 하고 후자를 선택. `ContentExtractionKpiLiveTest`
+신설 - `ContentExtractionService`(5개 전략 전부 Spring 순서대로 연결)
+를 Round 1의 실제 25개 URL(`round1.json`, gitignore 대상)로 재현.
+
+타이핑 과정에서 Claude가 Jackson 패키지를 또 구버전(`com.fasterxml.
+jackson.databind`)으로 잘못 알려줬고, 이번엔 IDE가 그걸 Testcontainers
+내부용 shaded 복사본(`org.testcontainers.shaded.com.fasterxml.jackson...`)
+으로 자동완성해서 컴파일은 됐지만 잘못된 의존성이었음 - `asText`가
+deprecated 경고 없이 컴파일된 것으로 shaded 복사본이 구버전 Jackson
+이라는 것도 확인, `tools.jackson.databind` + `asString`으로 수정.
+
+### Result
+| 지표 | 값 |
+|---|---|
+| Success Rate (DIRECT+OPEN_GRAPH) | **88.0%** (22/25) - Round 1의 WebFetch 기준 36% 대비 대폭 상승 |
+| NAVER_BLOG | 9/9 (100%) |
+| PDF | 1/1 (100%) |
+| ARTICLE(기타 전부) | 12/14 (86%) |
+| GitHub/YouTube | 0건(Round 1 URL 중 해당 없음) |
+| 평균 본문 길이 | 5,961자(DIRECT_EXTRACTION만) |
+
+실패 3건 중 `UNSUPPORTED_SOURCE` 1건은 **사이트 문제가 아니라 데이터
+결함**으로 확인 - `round1.json`의 namu.wiki URL 하나에 인코딩 안 된
+공백이 그대로 있어서 `new URI(...)` 파싱 자체가 실패(파이썬으로 직접
+확인). 나머지 `ROBOTS_BLOCKED`/`NETWORK_ERROR` 각 1건은 전용 전략이
+없는 namu.wiki 계열로 추정.
+
+### Insight
+검색 스니펫 fallback 없이도 88%가 나왔고, `content_extraction.md`가
+잠정 제시한 목표(70%)를 넘었다. 남은 실패는 외부 검색 API보다 (a)
+URL 인코딩 정규화, (b) namu.wiki 전용 전략 쪽이 더 싸고 정확한
+해결책으로 보인다.
+
+### Decision
+`docs/extraction_validation.md` 신설 - 테스트 데이터/결과/실패 원인
+분석/V1 판단(검색 스니펫 fallback·Playwright·Python 분리 전부 "지금은
+불필요")을 기록. `docs/content_extraction.md`의 KPI 절에 "측정 완료"
+포인터 추가. Extraction 쪽 작업은 여기서 baseline을 확보하고 일단락 -
+다음은 AI 추천 파이프라인(Embedding/Cosine/LLM Rerank)으로 이동
+가능한 상태.
