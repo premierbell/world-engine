@@ -2870,3 +2870,47 @@ URL 인코딩 정규화, (b) namu.wiki 전용 전략 쪽이 더 싸고 정확한
 포인터 추가. Extraction 쪽 작업은 여기서 baseline을 확보하고 일단락 -
 다음은 AI 추천 파이프라인(Embedding/Cosine/LLM Rerank)으로 이동
 가능한 상태.
+
+## AI 추천 파이프라인 착수: OpenAiEmbeddingClient
+
+`docs/v1_design.md` Scrap Flow 4단계(Cosine 후보 추리기)의 입력을
+만드는 첫 조각. OpenAI가 공식 Java SDK를 안 내서(Python/Node/Go/
+Kotlin만 있음) jsoup/PDFBox 때와 같은 이유로 Spring `RestClient`를
+직접 써서 Embeddings API를 호출하기로 결정. 코드 제시 전에 실제
+curl로 응답 스키마(`data[].embedding`, 1536차원)를 미리 검증(OPENAI_
+API_KEY는 `prototype/.env`에 이미 있는 걸 재사용, 절대 값을 출력하지
+않고 셸에서만 source).
+
+API 키 주입 방식(환경변수 vs .env 재사용)과 live 테스트 검증 여부를
+AskUserQuestion으로 확인 - 둘 다 "권장" 옵션(환경변수 주입, live
+테스트 병행)으로 결정.
+
+### 버그 3건 - 전부 Spring 자동설정/클래스패스 관련, 코드 로직 버그 아님
+
+1. `RestClient.Builder`를 생성자에서 Spring 주입받게 짰는데, 이
+   프로젝트 설정에서는 그 빈이 자동 등록 안 됨 - `RestClient.builder()`
+   를 직접 호출하는 방식으로 변경(Spring 빈 의존성 하나 제거).
+2. 그 결과 `OpenAiEmbeddingClientLiveTest`의 생성자 호출부도 인자
+   개수가 바뀌어서 같이 고쳐야 했음(사용자가 먼저 "이러면 테스트
+   쪽에 문제 생기는 거 아니냐"고 스스로 짚어냄).
+3. `server/src/test/resources/application.properties`가 `src/main/
+   resources`의 동일 파일을 **병합이 아니라 완전히 덮어쓴다**는 걸
+   처음에 놓쳐서, `openai.api-key`만 추가하고 `openai.embedding-model`
+   을 빠뜨림 - 기본 `./gradlew test`가 `PlaceholderResolutionException`
+   으로 실패. 두 프로퍼티 다 테스트 리소스에 있어야 한다는 걸
+   확인하고 정정(Claude가 처음엔 "한 줄만 필요하다"고 잘못 안내했다가
+   실패 스택트레이스 보고 정정).
+
+### Result
+
+`OpenAiEmbeddingClientLiveTest` - 실제 텍스트를 embed해서 1536차원
+벡터 반환 확인. 기본 `test`도 가짜 키(`test-key-not-real`)로 전체
+Spring 컨텍스트가 뜨는 것까지 확인(Docker도 실제 API 키도 필요 없는
+상태 유지). 전체 live 테스트 12개 중 11개 통과 - PDF 1건은
+`orimi.com`이 이 시점에 응답 없음(curl로 직접 재확인, 오늘 변경과
+무관한 외부 사이트 일시 장애).
+
+### Decision
+`OpenAiEmbeddingClient`(`com.worldengine.recommendation.client`)
+커밋. 다음은 Island 후보에 대해 Cosine similarity를 계산하는 단계
+(Scrap Flow 4단계 완성) → LLM Pairwise Judge 재정렬(5단계).
