@@ -3030,3 +3030,40 @@ toString())`이 NPE. 영속화 없이 "실제로 저장된 것처럼" id를 채�
 ### Decision
 `com.worldengine.recommendation.service` 패키지 커밋. 다음은 LLM
 Pairwise Judge 재정렬(Scrap Flow 5단계, Neutral objective 기본값).
+
+## LlmPairwiseJudgeClient - Precision 단계 API 클라이언트
+
+Scrap Flow 5단계(LLM pairwise judge로 top-3 재정렬)의 첫 조각. V0
+Python(`prototype/pairwise_judge.py`)은 mechanism/topic/neutral/
+relation/retrieval 5개 objective 프롬프트를 전부 갖고 있었는데(연구
+목적상 비교 실험 필요), V1 제품 설계(`docs/v1_design.md`)는 이미
+"Neutral을 기본값으로 쓴다"고 확정했으므로 나머지 4개는 포팅하지
+않음(YAGNI) - Neutral 프롬프트 하나만 하드코딩.
+
+또 하나 GPT 제안(`score()`가 `PairwiseJudgeResult(score, model)`
+같은 래퍼 레코드를 반환하게 하자)은 기각 - 기존 `OpenAiEmbeddingClient.
+embed()`가 `float[]`를 그대로 반환하는 선례와 불일치하고, model/token
+같은 운영 정보를 실제로 쓰는 소비자가 아직 없어서 "증거 없이는 안
+만든다" 원칙 적용. `double score(String textA, String textB)`로 단순
+유지.
+
+Island를 비교할 때 어떤 텍스트를 쓸지(이름? 대표 스크랩 요약?
+description 필드?)는 아직 결정 안 함 - Scrap Entity/관계 매핑이 없어서
+지금 결정하면 가정 위에 가정을 쌓는 꼴이라 의도적으로 미룸. 이번 PR은
+순수 API 클라이언트만.
+
+이번엔 `openai.pairwise-judge-model` 프로퍼티를 추가하면서 PR #56에서
+겪었던 "test resources가 main resources를 완전 대체" 문제를 미리
+알고 양쪽에 다 추가 - 처음으로 이 버그를 사전에 방지함.
+
+### Result
+`LlmPairwiseJudgeClient`(Neutral 프롬프트, temperature=0, 파싱 실패시
+0.5 반환 - Python `except ValueError: return 0.5` 그대로 포팅) -
+타이핑 오타 없음. 기본 `test`(오프라인) 통과, `liveTest`로 실제
+gpt-4o-mini 호출 - "관련 있는 텍스트" 쌍의 점수가 "무관한 텍스트" 쌍보다
+높게 나옴 확인.
+
+### Decision
+`com.worldengine.recommendation.client` 패키지 커밋. Island를 실제로
+비교하려면 Scrap Entity/관계 매핑, 그리고 Island의 대표 비교 텍스트를
+뭘로 할지부터 설계해야 함 - 다음 단계로 남김.
