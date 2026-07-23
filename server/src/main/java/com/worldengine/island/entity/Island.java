@@ -1,5 +1,6 @@
 package com.worldengine.island.entity;
 
+import com.worldengine.common.jpa.EmbeddingConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
