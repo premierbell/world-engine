@@ -1,4 +1,4 @@
-package com.worldengine.island.entity;
+package com.worldengine.common.jpa;
 
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
