@@ -2914,3 +2914,33 @@ Spring 컨텍스트가 뜨는 것까지 확인(Docker도 실제 API 키도 필�
 `OpenAiEmbeddingClient`(`com.worldengine.recommendation.client`)
 커밋. 다음은 Island 후보에 대해 Cosine similarity를 계산하는 단계
 (Scrap Flow 4단계 완성) → LLM Pairwise Judge 재정렬(5단계).
+
+## CosineSimilarity - 순수 계산 유틸
+
+Island 영속성(JPA 엔티티/Repository)이 아직 전혀 없는 상태에서 Cosine
+유사도 계산을 어디까지 만들지 논의 - V0 Python의 `compute_assignment_
+matrix()`가 DB 없이 입력→계산→출력만 하는 순수 함수였던 것과 같은
+분리 원칙을 V1에도 적용하기로 함. Island Entity/JPA/Repository/
+PostgreSQL/추천 서비스는 명시적으로 이번 범위 밖.
+
+GPT 의견을 사용자가 가져와서 검토 - 인터페이스 설계(`findTopK(query,
+candidates, k)`, `VectorCandidate`/`SimilarityResult` record)와 In/
+Out of Scope 구분은 그대로 반영. 클래스/레코드 이름을 "Island"가 아니라
+일반적인 이름(`VectorCandidate`)으로 짓자는 것도 반영(비용 거의 없고
+재사용성에 도움). **다만 패키지를 `common/vector/`에 두자는 제안은
+반영 안 함** - 지금 실사용처가 recommendation 하나뿐인데 미리
+common으로 옮기는 건 "증거 없이는 안 만든다/확장하지 않는다" 원칙에
+어긋난다고 판단, `recommendation/vector/`에 둠. GPT 의견이라고 전부
+받아들이지 않고 이 프로젝트의 기존 원칙에 맞는지 걸러서 반영.
+
+### Result
+`CosineSimilarity`(정적 메서드, Spring Bean 아님), `VectorCandidate`/
+`SimilarityResult`(record), `CosineSimilarityTest`(빈 리스트/k 초과/
+정렬/직교·동일 벡터 케이스) - 타이핑 오타 없이 5/5 테스트 전부 통과.
+외부 API 호출이 없어서 `@Tag("live")` 아닌 일반 테스트로 기본 `test`
+에 바로 포함.
+
+### Decision
+`com.worldengine.recommendation.vector` 패키지 커밋. Island 영속성이
+생기면 `IslandRepository → List<VectorCandidate>` 변환 어댑터만
+추가하고 이 계산 로직은 그대로 재사용 예정.
