@@ -3067,3 +3067,37 @@ gpt-4o-mini 호출 - "관련 있는 텍스트" 쌍의 점수가 "무관한 텍�
 `com.worldengine.recommendation.client` 패키지 커밋. Island를 실제로
 비교하려면 Scrap Entity/관계 매핑, 그리고 Island의 대표 비교 텍스트를
 뭘로 할지부터 설계해야 함 - 다음 단계로 남김.
+
+## Scrap Entity/Repository + EmbeddingConverter 공용화
+
+Island(PR #58)와 같은 패턴으로 `Scrap` JPA Entity + `ScrapRepository`
+추가. 필드는 `ExtractionResult`(title/content/summaryCandidate→summary/
+sourceType/fallbackLevel)에 embedding·userContext(선택 1줄 맥락,
+`docs/v1_design.md` Scrap Flow 3단계)를 더한 구성 - `sourceType`/
+`fallbackLevel`은 `extraction.model`의 기존 enum을 그대로 재사용
+(`@Enumerated(EnumType.STRING)`).
+
+**이번 PR 범위에서 의도적으로 뺀 것**: `islandId` 같은 Island 연결
+필드. 스크랩은 생성 시점엔 아직 어느 Island에도 안 속하고(추천 확인
+전), 실제 배정은 나중에 만들 User Confirm API 몫 - 지금 넣으면 근거
+없는 가정이 됨.
+
+**EmbeddingConverter를 `island.entity`에서 `common.jpa`로 이동**.
+CosineSimilarity(PR #57) 때 "실사용처가 하나뿐이라 common으로 미리
+안 옮긴다"고 판단했던 것과 정확히 대칭 - 이번엔 Scrap이 두 번째
+실사용처로 생겨서 "증거(두 번째 소비자) 생기면 그때 일반화한다"는
+원칙을 그대로 적용해 이동. 로직 변경 없는 순수 리로케이션이라 Claude가
+git mv로 직접 처리(사용자에게 먼저 확인받음 - 새 로직 없는 기계적
+작업까지 타이핑시킬 필요는 없다고 판단).
+
+### Result
+`Scrap`, `ScrapRepository`, `ScrapRepositoryTest`(정상 케이스 +
+추출 실패로 title/content/embedding이 전부 null인 케이스) - 타이핑
+오타 없이 한 번에 통과. `EmbeddingConverter` 이동 후 `Island`import만
+갱신, 전체 테스트 그린 유지.
+
+### Decision
+`com.worldengine.scrap` 패키지 + `common.jpa.EmbeddingConverter`
+커밋. 다음은 Island 비교용 대표 텍스트를 뭘로 할지 결정하고
+`LlmPairwiseJudgeClient`를 `IslandRecallService`의 top-3 후보에
+연결하는 `RecommendationService`.
