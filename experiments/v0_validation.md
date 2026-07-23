@@ -2997,3 +2997,36 @@ Claude가 처음에 놓쳤는데, 사용자 IDE의 자동완성이 맞았음(직
 `com.worldengine.island` 패키지 커밋. 다음은 `IslandRepository`를
 Cosine 계산과 연결(Repository → `List<VectorCandidate>` 변환) →
 LLM Pairwise Judge 재정렬.
+
+## IslandRecallService - Repository와 Cosine 연결
+
+Island 영속성(PR #58) 완료 후, `IslandRepository`로 전체 조회한 결과를
+`CosineSimilarity`가 쓰는 `VectorCandidate`로 변환하는 얇은 어댑터
+계층을 추가. PR #57에서 미리 세워둔 계획("Island 영속성이 생기면
+Repository → List<VectorCandidate> 변환 어댑터만 추가하고 계산 로직은
+그대로 재사용") 그대로 실행 - `CosineSimilarity`는 손대지 않음.
+
+`IslandRecallService`(`@Service`)가 `IslandRepository.findAll()` →
+`VectorCandidate(id, embedding)` 매핑 → `CosineSimilarity.findTopK()`
+호출까지만 담당. Island id를 String으로 변환해서 넘김(VectorCandidate가
+범용 id 타입을 String으로 잡아둔 PR #57 설계 덕분에 추가 변환 로직
+불필요).
+
+### 버그 1건
+
+테스트에서 `new Island(...)`로 순수 객체를 만들면 `@GeneratedValue`
+필드라 `id`가 `null` - `assertThat(...).isEqualTo(close.getId().
+toString())`이 NPE. 영속화 없이 "실제로 저장된 것처럼" id를 채워야
+하는 문제라 `ReflectionTestUtils.setField()`로 가짜 id(1L, 2L)를
+강제 주입해서 해결 - Mockito 단위 테스트에서 JPA 생성 필드를 다루는
+일반적인 패턴.
+
+### Result
+`IslandRecallService`, `IslandRecallServiceTest`(가장 가까운 Island
+1개 recall하는 케이스) - 오타 1군데 있었으나(첫 버전 assert가
+`getId()` null 상태였음, 근본 원인은 테스트 데이터 문제) 수정 후 통과.
+전체 테스트 그린.
+
+### Decision
+`com.worldengine.recommendation.service` 패키지 커밋. 다음은 LLM
+Pairwise Judge 재정렬(Scrap Flow 5단계, Neutral objective 기본값).
