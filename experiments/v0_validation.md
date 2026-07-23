@@ -2944,3 +2944,56 @@ common으로 옮기는 건 "증거 없이는 안 만든다/확장하지 않는�
 `com.worldengine.recommendation.vector` 패키지 커밋. Island 영속성이
 생기면 `IslandRepository → List<VectorCandidate>` 변환 어댑터만
 추가하고 이 계산 로직은 그대로 재사용 예정.
+
+## Island Entity/Repository - 최소 영속성 레이어
+
+CosineSimilarity(PR #57) 머지 후, GPT 의견을 사용자가 가져와서 검토.
+"LLM Pairwise Judge는 실제 Island 데이터가 있어야 의미 있게 테스트
+가능하다"는 의존관계(Scrap → Extraction → Embedding → Island
+Repository → Cosine Recall → LLM Pairwise Judge → User Confirm)는
+타당하다고 판단해 그대로 반영 - Island 영속성부터 먼저 감.
+
+이번 PR 범위는 GPT 제안대로 좁게: Island Entity + IslandRepository +
+embedding 필드 + 기본 CRUD 테스트만. Scrap Entity/엔티티 관계 매핑/
+추천 서비스는 명시적으로 이번 범위 밖(다음 PR들로 미룸).
+
+embedding 저장 방식(GPT는 "JSON이나 적절한 형태로"라고만 하고 구체화
+안 함)은 직접 결정: pgvector 같은 DB 벡터 확장 도입 안 함. 지금 설계는
+IslandRepository로 전체 조회 후 애플리케이션 메모리에서
+`CosineSimilarity.findTopK()`로 계산하는 구조라 DB 쪽 벡터 검색이
+필요 없고, 개인용 V1 규모에서 Island 개수도 많지 않을 것 - "증거
+없이는 새 인프라 안 들인다" 원칙 그대로 적용. `float[]` ↔ JSON 문자열
+직렬화를 JPA `AttributeConverter`(`EmbeddingConverter`)로 처리해서
+Entity/Repository 쪽에서는 `float[]`로만 다루도록 함.
+
+### 버그 2건
+
+1. `EmbeddingConverter.convertToDatabaseColumn`을 타이핑하다
+   `convertToDataBaseColumn`(B 대문자 오타)으로 씀 - `@Override`라
+   인터페이스 시그니처 불일치로 컴파일 실패. 사용자가 직접 재타이핑해
+   수정(Claude가 Edit 도구로 직접 고쳤다가 "코드는 보여주면 사용자가
+   타이핑" 규칙 위반임을 스스로 인지하고 되돌림).
+2. `src/test/resources/application.properties`의
+   `spring.jpa.hibernate.ddl-auto=none`이 그대로 남아 있어서 테스트용
+   H2에 `island` 테이블이 아예 생성되지 않음(`Table "ISLAND" not
+   found`) - Entity가 없던 시점에 설정된 값이었고, 이번에 처음으로
+   실제 JPA Entity가 생기면서 드러남. `create-drop`으로 변경(아직
+   Flyway/Liquibase 같은 마이그레이션 도구가 없어 테스트 단계에서는
+   Hibernate 자동 스키마 생성이 맞다고 판단, 프로덕션
+   `src/main/resources`는 변경 안 함).
+
+참고로 `@DataJpaTest`의 패키지 경로도 Spring Boot 4.1에서
+`org.springframework.boot.test.autoconfigure.orm.jpa`(3.x)에서
+`org.springframework.boot.data.jpa.test.autoconfigure`로 바뀐 걸
+Claude가 처음에 놓쳤는데, 사용자 IDE의 자동완성이 맞았음(직접 jar
+안의 클래스 경로 확인해서 검증).
+
+### Result
+`Island`(entity), `EmbeddingConverter`(AttributeConverter),
+`IslandRepository`(JpaRepository), `IslandRepositoryTest`(저장/조회,
+삭제 2케이스) - 전부 통과.
+
+### Decision
+`com.worldengine.island` 패키지 커밋. 다음은 `IslandRepository`를
+Cosine 계산과 연결(Repository → `List<VectorCandidate>` 변환) →
+LLM Pairwise Judge 재정렬.
