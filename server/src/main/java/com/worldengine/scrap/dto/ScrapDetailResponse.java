@@ -13,5 +13,7 @@ public record ScrapDetailResponse(
     FallbackLevel fallbackLevel,
     String userContext,
     Long islandId,
+    Long recommendedIslandId,
+    boolean wasCorrected,
     Instant createdAt
 ) {}

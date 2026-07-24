@@ -3258,3 +3258,40 @@ Detail로 분리 - `embedding`/`content`(원문 전체) 같은 큰 필드는
 ### Decision
 `scrap`/`island` 양쪽 조회 API 커밋. 다음은 사용자와 합의한 순서대로
 정정 기록(Correction) 기능.
+
+## 정정(Correction) 기록 - Scrap Flow 7단계
+
+`docs/v1_design.md` Scrap Flow 마지막 원칙("사용자의 정정은 기록만
+해둔다, V1 스코프에서는 재학습에 안 씀") 구현. 정정 여부를 판단하려면
+confirm 시점에 "원래 뭘 추천했었는지"가 필요한데 그 정보가 지금까지
+응답으로만 나가고 저장이 안 됐음 - 스크랩 생성 시점에 추천 1순위
+Island id를 `Scrap.recommendedIslandId`로 같이 저장해두고, confirm된
+`islandId`와 비교해서 판단하는 방식으로 설계. 별도 이력 테이블은 안
+만듦 - 스크랩당 추천 1번·확정 1번의 1:1 관계라 엔티티 필드 하나로
+충분.
+
+`islandId`/`confirmIsland()`(PR #64) 때와 같은 패턴으로 생성자에
+필드를 안 넣고 post-construction 메서드(`recordRecommendedIsland`)로
+처리 - 기존에 `new Scrap(...)`을 호출하는 모든 테스트 파일을 건드리지
+않기 위함. `wasCorrected()`는 Scrap 엔티티에 직접 둔 순수 판단
+로직(추천도 없고 확정도 안 된 경우, 추천과 확정이 같은 경우는 모두
+false).
+
+### 버그 1건 (Claude 실수)
+
+`ScrapSummaryResponse`에 `wasCorrected` 필드를 추가하면서
+`IslandQueryService.toSummary()`(이번 작업 범위에 없던 기존 파일)의
+호출부를 안 고쳐서 컴파일 에러 - 사용자 타이핑 실수가 아니라 Claude가
+영향받는 다른 파일을 놓친 것. 알려주고 사용자가 직접 수정.
+
+### Result
+`ScrapTest`(recordRecommendedIsland+confirmIsland 조합 3케이스) 전부
+통과. 실제 bootRun+curl로 검증: 추천 없이 confirm한 스크랩은
+`wasCorrected: false`, 추천(Island A)과 다른 Island로 confirm한
+스크랩은 `recommendedIslandId: 1, wasCorrected: true`로 정확히
+기록되고 목록/상세 응답 둘 다 반영됨.
+
+### Decision
+`Scrap.recommendedIslandId`/`wasCorrected()`, `ScrapService` 순서
+변경, 조회 API 응답에 정정 정보 노출 커밋. V1 다듬기 다음 방향은
+추후 사용자와 다시 논의.

@@ -53,11 +53,16 @@ public class ScrapService {
             userContext,
             embedding
         );
-        Scrap saved = scrapRepository.save(scrap);
 
         List<IslandRecommendation> recommendations = embedding != null
             ? recommendationService.recommend(truncatedContent, embedding, RECALL_SIZE)
             : List.of();
+
+        if (!recommendations.isEmpty()) {
+            scrap.recordRecommendedIsland(recommendations.get(0).islandId());
+        }
+
+        Scrap saved = scrapRepository.save(scrap);
 
         return new ScrapCreateResponse(saved.getId(), saved.getTitle(), extractionResult.status(), recommendations);
     }

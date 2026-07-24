@@ -36,12 +36,14 @@ public class ScrapQueryService {
             scrap.getFallbackLevel(),
             scrap.getUserContext(),
             scrap.getIslandId(),
+            scrap.getRecommendedIslandId(),
+            scrap.wasCorrected(),
             scrap.getCreatedAt()
         );
     }
 
     private ScrapSummaryResponse toSummary(Scrap scrap) {
         return new ScrapSummaryResponse(
-            scrap.getId(), scrap.getUrl(), scrap.getTitle(), scrap.getIslandId(), scrap.getCreatedAt());
+            scrap.getId(), scrap.getUrl(), scrap.getTitle(), scrap.getIslandId(), scrap.wasCorrected(), scrap.getCreatedAt());
     }
 }

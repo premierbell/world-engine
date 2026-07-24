@@ -50,6 +50,8 @@ public class Scrap {
 
     private Long islandId;
 
+    private Long recommendedIslandId;
+
     protected Scrap() {}
 
     public Scrap(String url, String title, String content, String summary,
@@ -109,4 +111,12 @@ public class Scrap {
     public Long getIslandId() { return islandId; }
 
     public void confirmIsland(Long islandId) { this.islandId = islandId; }
+
+    public Long getRecommendedIslandId() { return recommendedIslandId; }
+
+    public void recordRecommendedIsland(Long islandId) { this.recommendedIslandId = islandId; }
+
+    public boolean wasCorrected() {
+        return recommendedIslandId != null && islandId != null && !islandId.equals(recommendedIslandId);
+    }
 }
