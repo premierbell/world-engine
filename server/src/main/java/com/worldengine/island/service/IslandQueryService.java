@@ -43,6 +43,6 @@ public class IslandQueryService {
 
     private ScrapSummaryResponse toSummary(Scrap scrap) {
         return new ScrapSummaryResponse(scrap.getId(), scrap.getUrl(), scrap.getTitle(),
-            scrap.getIslandId(), scrap.getCreatedAt());
+            scrap.getIslandId(), scrap.wasCorrected(), scrap.getCreatedAt());
     }
 }
