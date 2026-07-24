@@ -48,6 +48,8 @@ public class Scrap {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    private Long islandId;
+
     protected Scrap() {}
 
     public Scrap(String url, String title, String content, String summary,
@@ -103,4 +105,8 @@ public class Scrap {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    public Long getIslandId() { return islandId; }
+
+    public void confirmIsland(Long islandId) { this.islandId = islandId; }
 }

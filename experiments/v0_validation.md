@@ -3177,3 +3177,45 @@ end-to-end 확인, 잘못된 URL도 500 없이 `FAILED` 상태로 정상 응답
 `com.worldengine.scrap.{controller,dto,service}` 패키지 +
 `ArticleExtractionStrategy` 버그 수정 커밋. 다음은
 `POST /scraps/{id}/confirm`(Island 확정, 이때 `Scrap.islandId` 추가).
+
+## POST /scraps/{id}/confirm - Scrap Flow 6~7단계, V1 Genesis 루프 완성
+
+`docs/v1_design.md` Scrap Flow의 마지막 조각. 추천 중 기존 Island를
+선택하거나 새 Island를 만들어서 Scrap을 실제로 배정. `Scrap.islandId`
+필드(관계 매핑 없이 단순 컬럼)를 이번에 처음 추가 - PR #61에서
+의도적으로 미뤄뒀던 부분.
+
+**새 Island의 embedding**: 확정하는 스크랩 자신의 embedding을 그대로
+사용 - 새 섬은 그 첫 스크랩의 위치에서 시작한다는 게 V0의 "새 섬은
+로컬 배치" 철학과 일치. GPT 의견에서도 동의한 부분.
+
+**프로젝트 첫 공통 예외 처리 인프라 도입**: `IllegalArgumentException`
+이 그대로 500이 되는 건 "클라이언트 요청이 잘못됐는데 서버 에러로
+응답"하는 HTTP 의미 오류라, 최소한의 `@RestControllerAdvice`
+(`GlobalExceptionHandler`, `common.web`)를 지금 추가하기로 함 -
+`IllegalArgumentException`(잘못된 요청 조합) → 400,
+`EntityNotFoundException`(존재하지 않는 scrap/island) → 404 두 개만.
+ErrorCode enum/커스텀 BusinessException 계층/i18n/RFC7807은 명시적으로
+제외(GPT 의견 그대로 필터링해서 반영) - 앞으로 생길 다른 엔드포인트도
+이 기반을 재사용.
+
+### 버그 2건 (둘 다 타이핑 누락, 리뷰에서 잡음)
+
+1. `confirmsWithNewIslandUsingScrapEmbedding()` 테스트 메서드 전체가
+   누락 - 가장 중요한 "새 Island 생성" 경로가 검증 안 되고 있던 걸
+   Read로 파일 리뷰하다 발견.
+2. `throwsWhenScrapNotFound()`에 `@Test` 어노테이션이 빠져서 죽은
+   메서드였던 것도 같이 발견.
+
+### Result
+실제 bootRun+curl로 전체 흐름 검증: 스크랩 생성 → 새 Island로 confirm
+→ 두 번째 스크랩 생성 시 방금 만든 Island가 실제로 추천 후보에 잡힘
+(llmScore 0.3) → 기존 Island로 confirm → 잘못된 요청(400)/존재하지
+않는 island·scrap(404) 전부 의도대로 응답. 이 시점에 **V1 Genesis
+핵심 루프(URL 입력 → 추출 → 임베딩 → 추천 → 사용자 확인 → Island
+배정)가 처음으로 실제로 완주됨**.
+
+### Decision
+`Scrap.islandId`, `ScrapConfirmService`, `GlobalExceptionHandler`
+커밋. 사용자와 합의: 이 PR이 머지되면 `develop`을 `main`으로 머지
+(V1 Genesis 마일스톤).
