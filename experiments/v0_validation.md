@@ -3129,3 +3129,51 @@ PR #55 때와 같은 패턴 - 제일 단순한 방법으로 먼저 붙여보고,
 Scrap Flow 4~5단계까지는 전부 연결됨(1~3단계 Content Extraction/
 Scrap 저장, 6~7단계 UI/User Confirm은 아직). 다음은 실제 API
 엔드포인트(스크랩 생성 → 추천 → 확인) 노출.
+
+## POST /scraps - Scrap Flow 1~5단계 실제 API로 노출
+
+`docs/v1_design.md` Scrap Flow를 처음으로 실제 HTTP 엔드포인트로
+연결. `POST /scraps`가 URL(+선택적 userContext)을 받아 Content
+Extraction → content 앞부분 자르기(`ScrapContentPreprocessor`,
+`scrap.max-summary-length` 설정값) → 임베딩 → `Scrap` 저장 →
+`RecommendationService`로 top-3 추천까지 한 번에 처리.
+
+GPT 의견(설정값으로 빼기, 별도 전처리 컴포넌트로 분리) 반영, 다만
+`prepareForEmbedding`/`prepareForComparison`처럼 이름을 나누자는
+제안은 기각 - 지금은 둘 다 완전히 같은 동작(앞 N자 자르기)이라 다른
+이름의 메서드 두 개를 만드는 게 조기 분화. `truncate()` 하나만 유지.
+
+`ExtractionResult.summaryCandidate`는 여전히 null(LLM 요약 단계
+자체를 아직 안 만듦) - `content`를 자른 값을 Scrap.summary/임베딩/
+LLM 비교 입력으로 그대로 씀. 나중에 실제 요약 품질이 부족하다는
+근거가 생기면 그때 별도 요약 단계 추가.
+
+### 버그 2건
+
+1. 테스트: `@InjectMocks`가 `@Mock`이 아닌 일반 필드
+   (`scrapContentPreprocessor`)는 생성자 주입 대상에서 제외한다는 걸
+   몰라서 `ScrapService` 생성자에 null이 들어가 NPE - `@Spy`로 변경해서
+   해결(실제 로직은 그대로 돌면서 `@InjectMocks` 대상에도 포함).
+2. **실제 서버를 띄워 curl로 검증하다가 발견**: `ArticleExtractionStrategy`
+   가 `SocketTimeoutException`/`HttpStatusException`/`IOException`만
+   잡고 있었는데, jsoup은 `http://`/`https://`로 시작 안 하는 URL을
+   `IllegalArgumentException`(unchecked, `MalformedURLException`을
+   감쌈)으로 던져서 catch를 다 통과해 컨트롤러까지 새어나가 500 에러가
+   남. PR #50/51 때부터 있던 기존 버그였는데 실제 HTTP API가 이번에
+   처음 생기면서 드러남 - `catch (IllegalArgumentException e)`를
+   추가해 `FailureReason.UNSUPPORTED_SOURCE`로 우아하게 처리하도록
+   수정. Mock 기반 단위 테스트만으로는 못 잡는 종류의 버그라, H2를
+   임시로 `runtimeOnly`로 바꿔 실제 `bootRun` + curl로 검증한 덕분에
+   발견(확인 후 build.gradle.kts는 원상복구).
+
+### Result
+`ScrapContentPreprocessor`, `ScrapService`, `ScrapController`,
+`ScrapCreateRequest`/`ScrapCreateResponse` - 전체 테스트 통과 +
+실제 GitHub URL로 추출→임베딩→저장→추천(빈 배열, cold start)까지
+end-to-end 확인, 잘못된 URL도 500 없이 `FAILED` 상태로 정상 응답
+확인.
+
+### Decision
+`com.worldengine.scrap.{controller,dto,service}` 패키지 +
+`ArticleExtractionStrategy` 버그 수정 커밋. 다음은
+`POST /scraps/{id}/confirm`(Island 확정, 이때 `Scrap.islandId` 추가).
