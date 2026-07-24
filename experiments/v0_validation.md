@@ -3101,3 +3101,31 @@ git mv로 직접 처리(사용자에게 먼저 확인받음 - 새 로직 없는 
 커밋. 다음은 Island 비교용 대표 텍스트를 뭘로 할지 결정하고
 `LlmPairwiseJudgeClient`를 `IslandRecallService`의 top-3 후보에
 연결하는 `RecommendationService`.
+
+## RecommendationService - Recall+Precision 전체 연결
+
+`docs/v1_design.md` Scrap Flow 4~5단계(Cosine Recall → LLM Pairwise
+Judge Precision)를 처음으로 끝까지 연결. `IslandRecallService`로 top-N
+후보를 좁힌 뒤, 각 후보를 `LlmPairwiseJudgeClient`로 재정렬.
+
+**Island 비교 텍스트 결정**: 지금은 `Scrap`-`Island` 관계가 없어서
+(그 FK는 User Confirm API 몫으로 미룸) "대표 스크랩 요약" 같은 건 못
+씀 - 대신 이미 있는 `Island.name`을 비교 텍스트로 사용. 새 필드나
+관계를 미리 만들지 않고 지금 가진 것으로 감(Extraction Validation,
+PR #55 때와 같은 패턴 - 제일 단순한 방법으로 먼저 붙여보고, 품질
+부족하면 그때 데이터 근거로 description 필드/대표 텍스트 생성 로직을
+추가하기로 함).
+
+### Result
+`RecommendationService`, `IslandRecommendation`(record) - Mockito로
+`IslandRecallService`/`IslandRepository`/`LlmPairwiseJudgeClient`
+전부 목킹한 단위 테스트 1건: Cosine 순서(다이어트 1위)를 LLM 점수가
+실제로 뒤집는 케이스(백엔드가 1위로 재정렬)까지 확인 - Precision
+단계가 Recall 순서를 바꿀 수 있다는 것 자체를 검증. 타이핑 오타 없이
+한 번에 통과.
+
+### Decision
+`com.worldengine.recommendation.service.RecommendationService` 커밋.
+Scrap Flow 4~5단계까지는 전부 연결됨(1~3단계 Content Extraction/
+Scrap 저장, 6~7단계 UI/User Confirm은 아직). 다음은 실제 API
+엔드포인트(스크랩 생성 → 추천 → 확인) 노출.
