@@ -3219,3 +3219,42 @@ ErrorCode enum/커스텀 BusinessException 계층/i18n/RFC7807은 명시적으�
 `Scrap.islandId`, `ScrapConfirmService`, `GlobalExceptionHandler`
 커밋. 사용자와 합의: 이 PR이 머지되면 `develop`을 `main`으로 머지
 (V1 Genesis 마일스톤).
+
+## GET /scraps, /scraps/{id}, /islands, /islands/{id} - 조회 API
+
+V1 Genesis 루프(PR #64) 완주 후 다음 방향을 사용자에게 물어봄 - 정정
+기록/조회 API/새 방향 중 **조회 API**를 먼저 선택. 이유(사용자+GPT
+공통 근거): 핵심 루프는 완성됐지만 지금까지 저장된 게 실제로 뭔지
+확인하려면 DB를 직접 봐야 했음 - 관찰 가능성이 정정 기록보다 먼저
+필요. GPT 의견 필드 목록에서 `selectedIslandId`는 실제 엔티티 필드명
+(`islandId`)과 달라서 그대로 안 쓰고 기존 이름 사용, 목록 응답에
+`title`을 추가(GPT 목록엔 없었지만 관찰 가능성 목적에 필요).
+
+`ScrapRepository`에 `findByIslandId`/`countByIslandId` 파생 쿼리
+추가. `Island` 쪽엔 컨트롤러/서비스가 아예 없어서 새로 만듦
+(`IslandController`, `IslandQueryService`). 응답 DTO는 전용 Summary/
+Detail로 분리 - `embedding`/`content`(원문 전체) 같은 큰 필드는
+응답에서 제외.
+
+### 버그 2건 (타이핑 중 발생, 리뷰에서 잡음)
+
+1. `IslandController.java`가 `island/controller/` 서브패키지가 아니라
+   `island/` 바로 아래에 생성되고 `package com.worldengine.island;`로
+   선언됨 - 다른 모든 컨트롤러(`{feature}.controller`) 컨벤션과
+   불일치. Claude가 git mv + 패키지 선언 수정으로 직접 정리(사용자
+   확인 후, 로직 없는 기계적 수정이라 PR #61의 EmbeddingConverter
+   이동 때와 같은 예외 적용).
+2. `IslandDetailResponse`가 `List<ScrapSummaryResponse>`가 아니라
+   `List<ScrapDetailResponse>`로 타이핑됨 - `IslandQueryService`가
+   실제로 만들어 넘기는 타입과 달라 컴파일 에러. 같은 방식으로 Claude가
+   직접 수정.
+
+### Result
+실제 bootRun+curl로 4개 엔드포인트 전부 검증: 스크랩 생성 → confirm
+→ `GET /scraps`(목록)/`GET /scraps/{id}`(상세, summary 포함)/
+`GET /islands`(scrapCount 포함)/`GET /islands/{id}`(포함된 scrap
+목록) 전부 정상, 존재하지 않는 id는 404로 정상 응답.
+
+### Decision
+`scrap`/`island` 양쪽 조회 API 커밋. 다음은 사용자와 합의한 순서대로
+정정 기록(Correction) 기능.
