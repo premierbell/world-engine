@@ -55,6 +55,8 @@ public class ArticleExtractionStrategy implements ExtractionStrategy {
                 ? FailureReason.ROBOTS_BLOCKED
                 : FailureReason.NETWORK_ERROR;
             return ExtractionResult.failed(SourceType.ARTICLE, reason);
+        } catch (IllegalArgumentException e) {
+            return ExtractionResult.failed(SourceType.ARTICLE, FailureReason.UNSUPPORTED_SOURCE);
         } catch (IOException e) {
             return ExtractionResult.failed(SourceType.ARTICLE, FailureReason.NETWORK_ERROR);
         }
