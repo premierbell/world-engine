@@ -1,3 +1,12 @@
+const FAILURE_MESSAGES = {
+  ROBOTS_BLOCKED: '사이트가 자동 접근을 차단했어요.',
+  NETWORK_ERROR: '연결에 실패했어요.',
+  TIMEOUT: '응답이 너무 늦어 시간 초과됐어요.',
+  UNSUPPORTED_SOURCE: '지원하지 않는 형식의 URL이에요.',
+  EMPTY_CONTENT: '본문을 찾지 못했어요.',
+  LOGIN_REQUIRED: '로그인이 필요한 페이지로 보여요.'
+};
+
 const scrapForm = document.getElementById('scrap-form');
 const urlInput = document.getElementById('url-input');
 const contextInput = document.getElementById('context-input');
@@ -32,7 +41,13 @@ scrapForm.addEventListener('submit', async (event) => {
 
   const data = await response.json();
   currentScrapId = data.scrapId;
-  scrapResult.textContent = `제목: ${data.title ?? '(없음)'}\n상태: ${data.status}`;
+
+  if (data.status === 'FAILED') {
+    const reason = FAILURE_MESSAGES[data.failureReason] || '본문을 가져오지 못했어요.';
+    scrapResult.textContent = `${reason} (URL만 저장됨)`;
+  } else {
+    scrapResult.textContent = `제목: ${data.title ?? '(없음)'}\n상태: ${data.status}`;
+  }
 
   renderRecommendations(data.recommendations);
   recommendSection.hidden = false;
