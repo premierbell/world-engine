@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Engine</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="layout">
+  <main class="main">
+    <h1>World Engine</h1>
+
+    <section class="card">
+      <h2>스크랩</h2>
+      <form id="scrap-form">
+        <input type="url" id="url-input" placeholder="https://..." required>
+        <input type="text" id="context-input" placeholder="왜 저장했나요? (선택)">
+        <button type="submit">스크랩</button>
+      </form>
+      <p id="scrap-result" class="result"></p>
+    </section>
+
+    <section class="card" id="recommend-section" hidden>
+      <h2>추천 Island</h2>
+      <ul id="recommend-list" class="recommend-list"></ul>
+      <div class="new-island">
+        <input type="text" id="new-island-input" placeholder="새 Island 이름">
+        <button id="new-island-confirm">새 Island로 확정</button>
+      </div>
+      <p id="confirm-result" class="result"></p>
+    </section>
+  </main>
+
+  <aside class="sidebar">
+    <section class="card">
+      <h2>Islands <button class="refresh" id="refresh-islands">↻</button></h2>
+      <ul id="island-list" class="entity-list"></ul>
+    </section>
+    <section class="card">
+      <h2>최근 Scraps <button class="refresh" id="refresh-scraps">↻</button></h2>
+      <ul id="scrap-list" class="entity-list"></ul>
+    </section>
+  </aside>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
