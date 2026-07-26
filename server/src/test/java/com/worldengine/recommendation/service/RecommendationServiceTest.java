@@ -7,6 +7,7 @@ import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.recommendation.client.LlmPairwiseJudgeClient;
 import com.worldengine.recommendation.vector.SimilarityResult;
+import com.worldengine.scrap.repository.ScrapRepository;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ class RecommendationServiceTest {
     @Mock
     private LlmPairwiseJudgeClient llmPairwiseJudgeClient;
 
+    @Mock
+    private ScrapRepository scrapRepository;
+
     @InjectMocks
     private RecommendationService recommendationService;
 
@@ -39,6 +43,8 @@ class RecommendationServiceTest {
         ReflectionTestUtils.setField(backend, "id", 2L);
 
         float[] scrapEmbedding = {0.1f, 0.2f};
+        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of());
+        when(scrapRepository.findByIslandId(2L)).thenReturn(List.of());
         when(islandRecallService.recall(scrapEmbedding, 2)).thenReturn(List.of(
             new SimilarityResult("1", 0.9),
             new SimilarityResult("2", 0.8)
