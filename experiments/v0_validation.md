@@ -3295,3 +3295,38 @@ false).
 `Scrap.recommendedIslandId`/`wasCorrected()`, `ScrapService` 순서
 변경, 조회 API 응답에 정정 정보 노출 커밋. V1 다듬기 다음 방향은
 추후 사용자와 다시 논의.
+
+## Minimal UI - V1 UX 실사용 검증
+
+정정 기록(PR #66) 완료 후 다음 방향 논의 - "API는 완성됐지만 AI 추천→
+사용자 확인 경험 자체는 Postman/curl로 검증 불가능하다"는 사용자+GPT
+공통 판단으로 V2보다 UI 연결을 먼저 하기로 함(V0부터 이어온 "가설보다
+실사용 검증" 원칙의 연장).
+
+**스택 결정**: React 등 SPA 프레임워크 대신 순수 HTML+CSS+Vanilla JS
+정적 페이지, `server/src/main/resources/static/`에 배치 - Spring
+Boot가 별도 설정 없이 그대로 서빙(WelcomePageHandlerMapping이
+index.html을 자동 인식), npm/빌드툴/별도 dev server/CORS 설정 전부
+불필요. "지금 필요한 건 프론트엔드 개발이 아니라 V1 UX 검증"이라는
+근거로 GPT 의견도 동일하게 정리 - 나중에 V2에서 World 시각화(배치/
+애니메이션/드래그 등)로 상태 관리가 실제로 중요해지면 그때 React 등
+SPA로 분리하기로 합의(지금 구조를 흔들지 않고 옮길 수 있음).
+
+HTML/JS는 이 프로젝트에서 처음 다루는 언어라 작업 방식(Claude가
+직접 작성 vs 보여주고 타이핑)을 먼저 확인 - Python 때와 같은 이유
+("핵심 학습 대상이 아니라 UX 검증 도구")로 Claude가 직접 Write.
+
+### Result
+`index.html`/`style.css`/`app.js` 3개 파일로 스크랩 입력→추천 Top-3
+표시→기존 Island 선택 또는 새 Island 생성→confirm→Islands/최근
+Scraps 실시간 갱신까지 한 화면에 구현. **claude-in-chrome으로 실제
+브라우저에서 전체 흐름을 클릭해서 검증**(API curl이 아니라 진짜 UI
+클릭 테스트는 이 프로젝트에서 처음) - cold start 케이스(추천 없음
+→ 새 Island 생성), 추천 후보 클릭 케이스(score 0.30 표시된 추천
+버튼 클릭 → 확정) 둘 다 정상 동작, 콘솔 에러 없음, 사이드바 카운트
+실시간 반영 확인.
+
+### Decision
+`server/src/main/resources/static/` 커밋. 다음은 실제로 이 화면을
+써보면서 V1 보완점을 찾거나, V2(Evolution) 설계 착수 - 사용법 그대로
+"써보고 나서 결정"하기로 함.
