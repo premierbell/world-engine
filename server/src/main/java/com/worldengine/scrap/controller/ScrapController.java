@@ -6,6 +6,7 @@ import com.worldengine.scrap.dto.ScrapConfirmResponse;
 import com.worldengine.scrap.dto.ScrapCreateRequest;
 import com.worldengine.scrap.dto.ScrapCreateResponse;
 import com.worldengine.scrap.dto.ScrapDetailResponse;
+import com.worldengine.scrap.dto.ScrapStatsResponse;
 import com.worldengine.scrap.dto.ScrapSummaryResponse;
 import com.worldengine.scrap.service.ScrapConfirmService;
 import com.worldengine.scrap.service.ScrapQueryService;
@@ -51,6 +52,11 @@ public class ScrapController {
     @PostMapping("/{id}/recommendations")
     public List<IslandRecommendation> refreshRecommendations(@PathVariable Long id) {
         return scrapService.refreshRecommendations(id);
+    }
+
+    @GetMapping("/stats")
+    public ScrapStatsResponse getStats() {
+        return scrapQueryService.computeStats();
     }
 
     @GetMapping("/{id}")

@@ -1,6 +1,7 @@
 package com.worldengine.scrap.service;
 
 import com.worldengine.scrap.dto.ScrapDetailResponse;
+import com.worldengine.scrap.dto.ScrapStatsResponse;
 import com.worldengine.scrap.dto.ScrapSummaryResponse;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
@@ -27,6 +28,30 @@ public class ScrapQueryService {
             scraps = scrapRepository.findByIslandIdIsNull();
         }
         return scraps.stream().map(this::toSummary).toList();
+    }
+
+    public ScrapStatsResponse computeStats() {
+        List<Scrap> all = scrapRepository.findAll();
+        long total = all.size();
+        long confirmed = all.stream().filter(s -> s.getIslandId() != null).count();
+        long unconfirmed = total - confirmed;
+
+        List<Scrap> confirmedWithRecommendation = all.stream()
+            .filter(s -> s.getIslandId() != null && s.getRecommendedIslandId() != null)
+            .toList();
+
+        long accepted = confirmedWithRecommendation.stream().filter(s -> !s.wasCorrected()).count();
+        long overridden = confirmedWithRecommendation.stream().filter(Scrap::wasCorrected).count();
+        long coldStart = all.stream()
+            .filter(s -> s.getIslandId() != null && s.getRecommendedIslandId() == null)
+            .count();
+
+        int recommendedTotal = confirmedWithRecommendation.size();
+        Double acceptanceRate = recommendedTotal == 0 ? null : (double) accepted / recommendedTotal;
+        Double overrideRate = recommendedTotal == 0 ? null : (double) overridden / recommendedTotal;
+
+        return new ScrapStatsResponse(
+            total, confirmed, unconfirmed, accepted, overridden, coldStart, acceptanceRate, overrideRate);
     }
 
     public ScrapDetailResponse findById(Long id) {
