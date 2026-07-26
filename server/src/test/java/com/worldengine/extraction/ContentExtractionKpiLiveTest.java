@@ -7,6 +7,7 @@ import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.FallbackLevel;
 import com.worldengine.extraction.model.SourceType;
 import com.worldengine.extraction.service.ContentExtractionService;
+import com.worldengine.extraction.service.ExtractionQualityEvaluator;
 import com.worldengine.extraction.strategy.ArticleExtractionStrategy;
 import com.worldengine.extraction.strategy.GithubExtractionStrategy;
 import com.worldengine.extraction.strategy.NaverBlogExtractionStrategy;
@@ -47,7 +48,7 @@ class ContentExtractionKpiLiveTest {
             new GithubExtractionStrategy(),
             new YouTubeExtractionStrategy(),
             new PdfExtractionStrategy(),
-            new ArticleExtractionStrategy()
+            new ArticleExtractionStrategy(new ExtractionQualityEvaluator(50))
         ));
 
         ObjectMapper mapper = new ObjectMapper();

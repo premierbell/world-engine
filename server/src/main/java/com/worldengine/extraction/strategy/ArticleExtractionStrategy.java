@@ -3,6 +3,7 @@ package com.worldengine.extraction.strategy;
 import com.worldengine.extraction.model.ExtractionResult;
 import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.SourceType;
+import com.worldengine.extraction.service.ExtractionQualityEvaluator;
 import net.dankito.readability4j.Article;
 import net.dankito.readability4j.Readability4J;
 import net.dankito.readability4j.extended.Readability4JExtended;
@@ -35,6 +36,12 @@ public class ArticleExtractionStrategy implements ExtractionStrategy {
             + "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
     private static final int TIMEOUT_MS = 10_000;
 
+    private final ExtractionQualityEvaluator extractionQualityEvaluator;
+
+    public ArticleExtractionStrategy(ExtractionQualityEvaluator extractionQualityEvaluator) {
+        this.extractionQualityEvaluator = extractionQualityEvaluator;
+    }
+
     @Override
     public boolean supports(URI uri) {
         return true;
@@ -62,7 +69,7 @@ public class ArticleExtractionStrategy implements ExtractionStrategy {
         }
 
         String content = extractMainContent(uri, document);
-        if (content != null && !content.isBlank()) {
+        if (extractionQualityEvaluator.isValid(content)) {
             String title = extractTitle(document);
             return ExtractionResult.success(title, content.trim(), SourceType.ARTICLE);
         }

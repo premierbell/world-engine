@@ -3384,3 +3384,46 @@ Postgres로 처음 로컬 실행 시 `relation "island" does not exist` 발견
 ### Decision
 두 수정 모두 커밋. 다음은 계속 써보면서 V1 보완점을 찾거나 V2
 설계 착수.
+
+## Finding: ArticleExtractionStrategy가 SPA 껍데기 HTML을 "성공"으로 오판
+
+Minimal UI로 계속 써보다가 두 번째 발견(같은 세션 내 3번째 실사용
+버그) - `zero-base.co.kr`의 SPA 랜딩페이지를 스크랩했더니 title/
+summary가 둘 다 "국내최초 취업정보회사 - 제로베이스"(19자, 페이지
+제목 그대로)였고, 이 콘텐츠로 추천을 돌리니 모든 Island가 0.05~0.10
+사이로 밋밋하게 나옴.
+
+**Root Cause**: `ArticleExtractionStrategy.extract()`가 readability4j
+결과를 `content != null && !content.isBlank()`로만 검사했음 - jsoup은
+JS를 실행 못해서 SPA 페이지는 초기 HTML 껍데기(제목 정도)만 갖고
+있는데, 이것도 "빈 문자열이 아니다"라는 이유로 DIRECT_EXTRACTION
+성공 판정. `docs/content_extraction.md`가 처음부터 "JS 렌더링 필요
+페이지"를 알려진 한계로 남겨뒀던 부분이 재확인됨.
+
+**GPT 의견 필터링**: "재사용 가능한 `ExtractionQualityEvaluator`
+컴포넌트로 분리 + 설정값으로 임계치 관리 + 실패 시 Open Graph
+fallback으로" 제안은 전부 반영(PR #63의 `ScrapContentPreprocessor`
+패턴과 동일선상, `docs/content_extraction.md`의 기존 fallback 체인과도
+일치). 다만 "나머지 4개 전략에도 재사용하자"는 부분은 반영 안 함 -
+실제로 이 문제가 확인된 건 `ArticleExtractionStrategy` 하나뿐이라
+나머지까지 지금 고치는 건 근거 없는 확장(증거 있는 곳에만 적용).
+
+### 버그 2건 (Claude 실수, 사용자 타이핑 문제 아님)
+
+`ArticleExtractionStrategy` 생성자 시그니처가 바뀌면서 `new
+ArticleExtractionStrategy()`를 직접 호출하던 기존 테스트 2개
+(`ArticleExtractionStrategyLiveTest`, `ContentExtractionKpiLiveTest`)
+를 처음에 안 챙겨서 컴파일 에러 - 둘 다 이번 작업 범위 파악 누락으로
+알려주고 사용자가 직접 수정.
+
+### Result
+`ExtractionQualityEvaluator`(설정값 `extraction.min-content-length=50`)
+- 전체 테스트 통과. 실제 재현: `zero-base.co.kr`이 이제
+`fallbackLevel: OPEN_GRAPH_ONLY`로 정직하게 처리되고 summary도
+실제 og:description 문장으로 바뀜(19자 제목 반복 대신). 정상 기사
+케이스는 회귀 없이 SUCCESS 그대로 유지 확인.
+
+### Decision
+`ExtractionQualityEvaluator` + `ArticleExtractionStrategy` 수정
+커밋. 나머지 전략에 같은 가드레일이 필요한지는 추가 증거가 나오면
+그때 판단.
