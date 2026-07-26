@@ -3471,3 +3471,37 @@ Islands 카운트 증가 + "정리할 스크랩 없음"으로 목록 비워짐 +
 ### Decision
 백엔드/프런트/README 전부 이번 PR에 포함(사용자 요청 - "하는 김에
 리드미까지"). 다음 방향은 계속 써보며 재논의.
+
+## V1 Validation - GET /scraps/stats
+
+"V2 가기 전에 develop→main 동기화 + V1 검증 지표"라는 GPT 순서 제안을
+사용자가 가져옴 - 큰 방향(가설 대신 실사용 데이터로 다음 단계 결정)은
+동의, 다만 구체 수단(PostHog 등 외부 분석 툴 도입)은 기각.
+
+**필터링 근거**: 필요한 지표(추천 수락률/변경률/미확정 비율)가 이미
+DB에 다 있음 - `Scrap.recommendedIslandId`/`islandId`/`wasCorrected()`,
+`GET /scraps?confirmed=false`(PR #70) 재사용으로 계산 가능. 새 이벤트
+트래킹/외부 SaaS 연동은 지금까지 지켜온 "증거 없이는 새 인프라 안
+들인다" 원칙(pgvector/Playwright/Flyway 전부 같은 이유로 보류)과
+충돌. "이전 대화에서 PostHog 관심 표명"이라는 GPT의 근거는 이 프로젝트
+세션·메모리 어디에도 없어 확인 안 된 전제로 판단, 반영 안 함.
+
+`confirmedAt`(평균 Confirm 소요 시간) 필드 추가는 사용자가 명시적으로
+범위 밖으로 결정 - 핵심 질문("추천을 받아들이는가")엔 4개 지표로 충분.
+
+**먼저 `develop`→`main` fast-forward 머지**(V1 Polish 완료 시점,
+PR #65~70) 완료.
+
+### Result
+`GET /scraps/stats` - totalScraps/confirmedScraps/unconfirmedScraps/
+recommendationAcceptedCount/recommendationOverriddenCount/
+coldStartConfirmedCount/acceptanceRate/overrideRate. 순수 산술
+로직이라 단위 테스트 대신 실제 데이터로 4가지 시나리오(cold start/
+수락/변경/미확정) 전부 만들어서 curl로 직접 검증 - 집계 정확함 확인.
+`/scraps/stats`가 `/scraps/{id}`(Long 파싱)에 안 먹히고 정확히
+라우팅되는 것도 확인(Spring의 정적 경로 우선 매칭).
+
+### Decision
+`ScrapStatsResponse`/`ScrapQueryService.computeStats()`/
+`GET /scraps/stats` 커밋. 며칠 실사용 후 이 지표로 V2 설계 방향
+판단 예정.
