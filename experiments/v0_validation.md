@@ -3427,3 +3427,47 @@ ArticleExtractionStrategy()`를 직접 호출하던 기존 테스트 2개
 `ExtractionQualityEvaluator` + `ArticleExtractionStrategy` 수정
 커밋. 나머지 전략에 같은 가드레일이 필요한지는 추가 증거가 나오면
 그때 판단.
+
+## 미확정 스크랩 재방문 흐름 + README
+
+Extraction KPI 재측정(88%, 변화 없음, Playwright 도입 근거 없음으로
+결론)까지 마친 뒤 다음 다듬기 후보를 논의 - "스크랩만 해두고 나중에
+정리" 패턴이 지금 흐름(생성 직후에만 confirm 가능)에서 빠져있다는
+GPT 의견에 사용자 동의, 최우선으로 채택.
+
+**설계 결정**: GPT는 `GET /scraps/{id}`에 추천을 얹거나 별도 API를
+두는 두 안을 제시했는데, 전자는 기각 - 이미 "그냥 조회"용으로 쓰이는
+엔드포인트에 매번 LLM 호출을 얹으면 비용/의미 둘 다 애매해짐. 대신
+`POST /scraps/{id}/recommendations`를 신설해 명시적 액션으로 분리,
+기존 `RecommendationService`/`confirm` API 그대로 재사용.
+
+**안전장치(GPT가 언급 안 한 부분)**: 이미 확정된 스크랩에 추천
+재계산을 허용하면, 나중에 Island 구성이 바뀌었을 때
+`recommendedIslandId`가 조용히 갱신되면서 `wasCorrected`가
+`true→false`로 뒤바뀔 수 있어 정정 기록(PR #66)의 신뢰성이 깨짐 -
+이미 확정된 스크랩엔 400으로 막음(`IllegalArgumentException`).
+
+`GET /scraps?confirmed=false`로 미확정만 조회하는 필터도 같이 추가
+(UI의 "정리할 스크랩" 목록에 필요, 기존 조회 API를 확장하는 수준이라
+범위 크지 않음).
+
+### Result
+백엔드: `ScrapRepository`(findByIslandIdIsNull/NotNull),
+`ScrapQueryService.findAll(Boolean confirmed)`,
+`ScrapService.refreshRecommendations()`, 컨트롤러 2곳 - 전체 테스트
+통과, 타이핑 오타 없음. 프런트: "정리할 스크랩" 카드 신설(Claude가
+직접 작성) - 클릭하면 추천 재계산 → 기존 confirm 흐름 그대로 재사용.
+
+실제 브라우저(claude-in-chrome)로 전체 흐름 검증: 미확정 스크랩이
+"정리할 스크랩"에 뜸 → 클릭 시 추천 재계산(0.90) → 확정 클릭 →
+Islands 카운트 증가 + "정리할 스크랩 없음"으로 목록 비워짐 + 추천
+섹션 자동 숨김. 이미 확정된 스크랩에 재계산 시도 시 400 확인.
+
+**README 전면 개정**: V0 시절 체크리스트 그대로 방치돼 있던 루트
+`README.md`를 V1 완료 상태로 갱신, `backend/` → `server/` 경로
+수정, 로컬 실행 방법(Docker Postgres, OPENAI_API_KEY, ddl-auto=update
+설명, test vs liveTest) 추가.
+
+### Decision
+백엔드/프런트/README 전부 이번 PR에 포함(사용자 요청 - "하는 김에
+리드미까지"). 다음 방향은 계속 써보며 재논의.

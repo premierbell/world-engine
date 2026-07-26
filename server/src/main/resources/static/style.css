@@ -132,6 +132,22 @@ button.refresh:hover {
   border-radius: 6px;
 }
 
+.pending-list li {
+  padding: 0;
+  background: none;
+}
+
+.pending-list button {
+  width: 100%;
+  text-align: left;
+  background: #fdf3e0;
+  color: #1a1a1a;
+}
+
+.pending-list button:hover {
+  background: #f9e6bf;
+}
+
 @media (max-width: 720px) {
   .layout {
     grid-template-columns: 1fr;

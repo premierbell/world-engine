@@ -17,10 +17,16 @@ public class ScrapQueryService {
         this.scrapRepository = scrapRepository;
     }
 
-    public List<ScrapSummaryResponse> findAll() {
-        return scrapRepository.findAll().stream()
-            .map(this::toSummary)
-            .toList();
+    public List<ScrapSummaryResponse> findAll(Boolean confirmed) {
+        List<Scrap> scraps;
+        if (confirmed == null) {
+            scraps = scrapRepository.findAll();
+        } else if (confirmed) {
+            scraps = scrapRepository.findByIslandIdIsNotNull();
+        } else {
+            scraps = scrapRepository.findByIslandIdIsNull();
+        }
+        return scraps.stream().map(this::toSummary).toList();
     }
 
     public ScrapDetailResponse findById(Long id) {

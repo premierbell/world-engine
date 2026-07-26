@@ -9,4 +9,8 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
     List<Scrap> findByIslandId(Long islandId);
 
     long countByIslandId(Long islandId);
+
+    List<Scrap> findByIslandIdIsNull();
+
+    List<Scrap> findByIslandIdIsNotNull();
 }

@@ -1,5 +1,6 @@
 package com.worldengine.scrap.controller;
 
+import com.worldengine.recommendation.service.IslandRecommendation;
 import com.worldengine.scrap.dto.ScrapConfirmRequest;
 import com.worldengine.scrap.dto.ScrapConfirmResponse;
 import com.worldengine.scrap.dto.ScrapCreateRequest;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -42,8 +44,13 @@ public class ScrapController {
     }
 
     @GetMapping
-    public List<ScrapSummaryResponse> listScraps() {
-        return scrapQueryService.findAll();
+    public List<ScrapSummaryResponse> listScraps(@RequestParam(required = false) Boolean confirmed) {
+        return scrapQueryService.findAll(confirmed);
+    }
+
+    @PostMapping("/{id}/recommendations")
+    public List<IslandRecommendation> refreshRecommendations(@PathVariable Long id) {
+        return scrapService.refreshRecommendations(id);
     }
 
     @GetMapping("/{id}")
