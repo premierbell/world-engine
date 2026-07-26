@@ -9,6 +9,7 @@ const newIslandConfirmBtn = document.getElementById('new-island-confirm');
 const confirmResult = document.getElementById('confirm-result');
 const islandList = document.getElementById('island-list');
 const scrapList = document.getElementById('scrap-list');
+const pendingList = document.getElementById('pending-list');
 
 let currentScrapId = null;
 
@@ -36,6 +37,7 @@ scrapForm.addEventListener('submit', async (event) => {
   renderRecommendations(data.recommendations);
   recommendSection.hidden = false;
   loadScraps();
+  loadPendingScraps();
 });
 
 function renderRecommendations(recommendations) {
@@ -87,8 +89,48 @@ async function confirmScrap(body) {
   const data = await response.json();
   confirmResult.textContent = `"${data.islandName}"(으)로 확정됨`;
   newIslandInput.value = '';
+  recommendSection.hidden = true;
   loadIslands();
   loadScraps();
+  loadPendingScraps();
+}
+
+async function openPendingScrap(scrap) {
+  currentScrapId = scrap.id;
+  scrapResult.textContent = `다시 확인 중: ${scrap.title ?? scrap.url}`;
+  confirmResult.textContent = '';
+
+  const response = await fetch(`/scraps/${scrap.id}/recommendations`, { method: 'POST' });
+
+  if (!response.ok) {
+    const error = await response.json();
+    scrapResult.textContent = `추천 재계산 실패: ${error.message}`;
+    return;
+  }
+
+  const recommendations = await response.json();
+  renderRecommendations(recommendations);
+  recommendSection.hidden = false;
+}
+
+async function loadPendingScraps() {
+  const response = await fetch('/scraps?confirmed=false');
+  const scraps = await response.json();
+
+  pendingList.innerHTML = '';
+  if (scraps.length === 0) {
+    pendingList.innerHTML = '<li>정리할 스크랩 없음</li>';
+    return;
+  }
+
+  scraps.slice().reverse().forEach((scrap) => {
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    button.textContent = scrap.title ?? scrap.url;
+    button.addEventListener('click', () => openPendingScrap(scrap));
+    li.appendChild(button);
+    pendingList.appendChild(li);
+  });
 }
 
 async function loadIslands() {
@@ -128,6 +170,8 @@ async function loadScraps() {
 
 document.getElementById('refresh-islands').addEventListener('click', loadIslands);
 document.getElementById('refresh-scraps').addEventListener('click', loadScraps);
+document.getElementById('refresh-pending').addEventListener('click', loadPendingScraps);
 
 loadIslands();
 loadScraps();
+loadPendingScraps();

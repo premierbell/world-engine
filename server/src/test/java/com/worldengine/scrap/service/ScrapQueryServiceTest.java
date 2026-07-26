@@ -34,7 +34,7 @@ class ScrapQueryServiceTest {
         ReflectionTestUtils.setField(scrap, "id", 1L);
         when(scrapRepository.findAll()).thenReturn(List.of(scrap));
 
-        List<ScrapSummaryResponse> result = scrapQueryService.findAll();
+        List<ScrapSummaryResponse> result = scrapQueryService.findAll(null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).title()).isEqualTo("제목");
@@ -58,5 +58,28 @@ class ScrapQueryServiceTest {
 
         assertThatThrownBy(() -> scrapQueryService.findById(99L))
             .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void listsOnlyUnconfirmedScraps() {
+        Scrap unconfirmed = new Scrap("https://example.com/a", "제목A", "본문", "요약",
+            null, null, null, new float[]{0.1f});
+        when(scrapRepository.findByIslandIdIsNull()).thenReturn(List.of(unconfirmed));
+
+        List<ScrapSummaryResponse> result = scrapQueryService.findAll(false);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void listsOnlyConfirmedScraps() {
+        Scrap confirmed = new Scrap("https://example.com/b", "제목B", "본문", "요약",
+            null, null, null, new float[]{0.1f});
+        confirmed.confirmIsland(1L);
+        when(scrapRepository.findByIslandIdIsNotNull()).thenReturn(List.of(confirmed));
+
+        List<ScrapSummaryResponse> result = scrapQueryService.findAll(true);
+
+        assertThat(result).hasSize(1);
     }
 }

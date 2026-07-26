@@ -8,6 +8,7 @@ import com.worldengine.recommendation.service.RecommendationService;
 import com.worldengine.scrap.dto.ScrapCreateResponse;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -67,4 +68,26 @@ public class ScrapService {
         return new ScrapCreateResponse(saved.getId(), saved.getTitle(), extractionResult.status(), recommendations);
     }
 
+    public List<IslandRecommendation> refreshRecommendations(Long scrapId) {
+        Scrap scrap = scrapRepository.findById(scrapId)
+            .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 스크랩: " + scrapId));
+
+        if (scrap.getIslandId() != null) {
+            throw new IllegalArgumentException("이미 확정된 스크랩은 추천을 다시 계산할 수 없음: " + scrapId);
+        }
+
+        if (scrap.getEmbedding() == null) {
+            return List.of();
+        }
+
+        List<IslandRecommendation> recommendations =
+            recommendationService.recommend(scrap.getSummary(), scrap.getEmbedding(), RECALL_SIZE);
+
+        if (!recommendations.isEmpty()) {
+            scrap.recordRecommendedIsland(recommendations.get(0).islandId());
+            scrapRepository.save(scrap);
+        }
+
+        return recommendations;
+    }
 }
