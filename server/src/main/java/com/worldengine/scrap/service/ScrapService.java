@@ -54,6 +54,7 @@ public class ScrapService {
             userContext,
             embedding
         );
+        scrap.recordFailureReason(extractionResult.failureReason());
 
         List<IslandRecommendation> recommendations = embedding != null
             ? recommendationService.recommend(truncatedContent, embedding, RECALL_SIZE)
@@ -65,7 +66,8 @@ public class ScrapService {
 
         Scrap saved = scrapRepository.save(scrap);
 
-        return new ScrapCreateResponse(saved.getId(), saved.getTitle(), extractionResult.status(), recommendations);
+        return new ScrapCreateResponse(saved.getId(), saved.getTitle(),
+            extractionResult.status(), saved.getFailureReason(), recommendations);
     }
 
     public List<IslandRecommendation> refreshRecommendations(Long scrapId) {

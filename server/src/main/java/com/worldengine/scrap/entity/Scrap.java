@@ -1,6 +1,7 @@
 package com.worldengine.scrap.entity;
 
 import com.worldengine.common.jpa.EmbeddingConverter;
+import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.FallbackLevel;
 import com.worldengine.extraction.model.SourceType;
 import jakarta.persistence.Column;
@@ -20,9 +21,10 @@ public class Scrap {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String url;
 
+    @Column(columnDefinition = "TEXT")
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -51,6 +53,8 @@ public class Scrap {
     private Long islandId;
 
     private Long recommendedIslandId;
+
+    private FailureReason failureReason;
 
     protected Scrap() {}
 
@@ -114,9 +118,13 @@ public class Scrap {
 
     public Long getRecommendedIslandId() { return recommendedIslandId; }
 
+    public FailureReason getFailureReason() { return failureReason; }
+
     public void recordRecommendedIsland(Long islandId) { this.recommendedIslandId = islandId; }
 
     public boolean wasCorrected() {
         return recommendedIslandId != null && islandId != null && !islandId.equals(recommendedIslandId);
     }
+
+    public void recordFailureReason(FailureReason failureReason) { this.failureReason = failureReason; }
 }

@@ -3505,3 +3505,101 @@ coldStartConfirmedCount/acceptanceRate/overrideRate. 순수 산술
 `ScrapStatsResponse`/`ScrapQueryService.computeStats()`/
 `GET /scraps/stats` 커밋. 며칠 실사용 후 이 지표로 V2 설계 방향
 판단 예정.
+
+## Finding: readability4j가 이커머스 페이지의 "공통 안내 영역"을 본문으로 오판(2건, 보류)
+
+실사용 중 발견, 서로 다른 두 쇼핑몰에서 독립적으로 같은 실패 패턴
+재현됨:
+- `ktwizstore.co.kr`(KT 위즈 굿즈샵) 상품 페이지 - title도 빈 문자열,
+  summary가 "교환 및 반품 주소 - ..."로 시작하는 반품 정책 문구
+- `twinslockerdium.co.kr`(LG 트윈스 굿즈샵) 상품 페이지 - 마찬가지로
+  summary가 "교환 및 반품 주소 - ..."로 시작
+
+**Evidence(실제 OpenAI 호출로 재현)**: 두 번째 사례(LG트윈스)가 추천에서
+야구 0.75로 꽤 높게 나와서 확인해보니, 실제 야구 콘텐츠와의 관련성이
+아니라 **먼저 야구 Island에 들어가 있던 첫 번째 사례(KT위즈)의 반품
+문구와 서로 비슷해서** 높게 나온 것으로 확인됨:
+- LG트윈스 반품문구 vs KT위즈 반품문구 → 0.75
+- LG트윈스 반품문구 vs 실제 야구 기사(스크랩 1) → 0.05
+
+즉 잘못 추출된 스크랩이 Island에 한 번 들어가면, 이후 비슷하게
+잘못 추출된 스크랩이 오히려 "잘 맞는 것처럼" 보이면서 추천 품질을
+조용히 오염시키는 연쇄 효과가 실증됨.
+
+**Root Cause(가설, 미확정)**: `ExtractionQualityEvaluator`(PR #69)의
+길이 체크는 통과하지만(반품 정책 문구도 800~1300자로 충분히 김),
+readability4j가 실제 상품 설명이 아니라 페이지의 반복적인 공통 안내
+영역(교환/반품/배송 정책)을 "본문"으로 선택하는 게 근본 원인으로
+추정됨 - 아직 왜 그 블록을 고르는지(텍스트 밀도 기준 등 readability
+알고리즘 내부 동작)까지는 분석 안 함.
+
+**GPT 의견을 사용자가 가져옴 - "교환 및 반품" 같은 특정 문구를 막는
+키워드 휴리스틱은 반영 안 하기로 결정.** 이유: 이런 상투구는
+배송안내/이용약관/개인정보처리방침 등으로 계속 바뀔 수 있어서, 문구
+하나씩 막는 건 이 프로젝트가 계속 피해온 "사례별 패치"에 해당함.
+진짜 필요한 건 "본문이 아니라 공통 안내 영역인가"를 판별하는 더
+일반적인 신호(운영 키워드 밀도, 주소/전화번호 비율, 문장 구조 등)인데,
+2건만으로는 그 일반적 특징을 설계하기엔 근거가 부족함.
+
+### Decision
+**지금은 코드 수정 안 함** - 이 Finding만 기록. 같은 유형(공통
+안내/약관 영역이 본문으로 오판되는 케이스)이 3~5건 정도 더 쌓이면
+공통 특징을 분석해서 `ExtractionQualityEvaluator`를 일반화하는 방향
+으로 재검토.
+
+## 긴 쇼핑몰 URL/제목 500 에러 + failureReason 영속화 + 대형 오픈마켓 봇 차단 기록
+
+실사용 중 쇼핑몰 URL(네이버 스마트스토어, 쿠팡) 스크랩 시 500 에러
+발견. 원인: `Scrap.url`/`title`이 길이 지정 없어 Hibernate 기본값인
+`VARCHAR(255)`로 생성됐는데, 추적 파라미터가 잔뜩 붙은 쇼핑몰 URL은
+500자를 넘기 일쑤라 DB insert에서 `value too long` 에러로 크래시.
+
+**Claude의 잘못된 안내 정정**: 처음에 "`ddl-auto=update`면 재시작
+시 자동으로 컬럼 타입이 넓혀진다"고 안내했으나 틀림 - Hibernate의
+`update` 모드는 새 테이블/컬럼 추가는 해줘도 **기존 컬럼의 타입
+변경(ALTER COLUMN)은 안 해준다.** 실제 Postgres 컨테이너에 `\d scrap`
+으로 직접 확인해서 여전히 VARCHAR(255)임을 확인 후, `ALTER TABLE
+scrap ALTER COLUMN url/title TYPE TEXT`를 Claude가 직접 실행해서
+해결(로컬 개발 DB, TEXT가 VARCHAR(255)의 상위호환이라 안전한 변경).
+Java 엔티티도 `columnDefinition = "TEXT"`로 수정.
+
+**다나와 사례로 봇 차단 진단 방법 확립**: 같은 URL이 curl은 200,
+jsoup은 403 - 단순 User-Agent 문제가 아니라 요청 패턴(TLS/HTTP
+클라이언트 핑거프린팅) 기반 차단으로 추정. IntelliJ 콘솔 로그에
+직접 접근 못하는 상황에서, 임시 진단용 라이브 테스트를 만들어
+`./gradlew liveTest`로 실행해서 정확한 `FailureReason`을 확인하는
+방법을 확립(테스트 완료 후 파일 삭제) - `ExtractionResult`가 API
+DTO에 안 노출되던 시절엔 이런 임시 테스트가 유일한 확인 수단이었음.
+
+**GPT 의견 필터링**: 대형 오픈마켓(쿠팡/지마켓/네이버 스마트스토어/
+다나와) 봇 차단 우회는 시도하지 않고 `docs/content_extraction.md`에
+Known Limitation으로 기록 - 이미 있는 "robots.txt 우회 안 함" Non-goal
+원칙과 일치, 사이트별 예외 처리가 계속 늘어나는 걸 피함. UI에 실패
+사유 안내 메시지 추가하자는 제안은 반영하되, "필요하면 한 줄 설명을
+입력해주세요"라는 문구는 뺌 - 실제로 스크랩 생성 후 userContext를
+나중에 추가/수정하는 API가 없어서 안 되는 걸 된다고 안내하는 부정확한
+문구였음.
+
+**FailureReason이 애초에 Scrap 엔티티에 저장이 안 되고 있던 것도
+이번에 발견** - `ExtractionResult.failureReason()`은 계산되지만
+어디에도 영속화되지 않아서, 실패 원인을 사후에 API로 확인할 방법이
+없었음(이번 다나와 진단 때 임시 테스트를 만들어야 했던 이유). PR #64
+(`recommendedIslandId`)와 같은 패턴으로 생성자 대신
+`recordFailureReason()` 메서드로 추가 - 기존 `new Scrap(...)` 호출부를
+안 건드림.
+
+### 버그 1건 (타이핑 누락)
+`ScrapService.createScrap()`에서 `scrap.recordFailureReason(...)`
+호출이 처음에 빠져서 `failureReason`이 계속 null로 나감 - 알려주고
+사용자가 직접 추가.
+
+### Result
+`Scrap.url`/`title` TEXT로 확장(Java+DB 둘 다), `failureReason`
+저장 및 `ScrapCreateResponse`/`ScrapDetailResponse`에 노출, UI에
+실패 사유별 한국어 안내 메시지. 실제 봇 차단 URL(지마켓)로 재현해서
+`failureReason: "ROBOTS_BLOCKED"`가 생성/조회 응답 둘 다에 정확히
+나옴을 확인, 사용자도 실제 화면에서 메시지 확인.
+
+### Decision
+전부 커밋. Scrap Flow의 "실패도 정직하게 보여준다"는 원칙이 API
+전반에 걸쳐 한 단계 더 완성됨.
