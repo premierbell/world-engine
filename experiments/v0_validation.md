@@ -3603,3 +3603,29 @@ Known Limitation으로 기록 - 이미 있는 "robots.txt 우회 안 함" Non-go
 ### Decision
 전부 커밋. Scrap Flow의 "실패도 정직하게 보여준다"는 원칙이 API
 전반에 걸쳐 한 단계 더 완성됨.
+
+## PDF NUL 바이트로 인한 Postgres insert 500 에러 수정
+
+바이오/PDF 카테고리로 실사용 테스트하다가 `common.health.kr`의 PDF
+스크랩에서 500 에러 발견. curl로는 정상(200, 유효한 PDF)이고
+`PdfExtractionStrategy` 단독 테스트도 성공(7423자 추출)이라 H2로는
+재현이 안 됐음 - 실제 문제는 **추출된 텍스트에 NUL 바이트(유니코드
+U+0000) 104개가 섞여 있었던 것**. PDFBox가 표/양식 구조의 빈 셀
+등을 NUL로 추출하는 경우가 있는데, Postgres는 TEXT/VARCHAR 컬럼에
+NUL 바이트가 들어오면 "invalid byte sequence" 에러로 insert 자체를
+거부함(H2는 이 제약이 없어서 로컬 검증 때는 안 걸림).
+
+**진단 방법**: 임시 라이브 테스트로 실제 추출된 텍스트에서 NUL
+바이트 개수와 위치를 직접 세어서 확인. 이후 H2가 아니라 실제 Postgres
+컨테이너(docker ps로 포트 확인)에 별도 포트(8081)로 붙여서 재현 -
+사용자의 실제 데이터베이스에 직접 연결해서 검증한 첫 사례(같은 DB지만
+다른 포트의 임시 인스턴스라 사용자 세션과 충돌 없음).
+
+### Result
+`PdfExtractionStrategy.extract()`에서 텍스트 추출 직후 NUL 바이트를
+제거하는 한 줄 추가. 전체 테스트 통과, 실제 Postgres DB에 같은 URL로
+재현 - 500 없이 정상 저장되고 바이오 Island 0.9로 정확히 추천됨.
+
+### Decision
+`PdfExtractionStrategy` 수정 커밋. NUL 바이트는 지금까지 PDF에서만
+확인됐고 다른 전략에서는 증거 없음 - PDF 전략에만 좁게 적용.
