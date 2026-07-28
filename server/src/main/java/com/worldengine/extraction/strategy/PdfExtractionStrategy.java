@@ -65,6 +65,12 @@ public class PdfExtractionStrategy implements ExtractionStrategy{
             text = null;
         }
 
+        if (text != null) {
+            // PDFBox가 표/양식 구조의 빈 셀 등을 NUL 문자로 추출하는 경우가 있는데,
+            // Postgres는 TEXT/VARCHAR 컬럼에 NUL 바이트가 들어오면 저장 자체를 거부한다.
+            text = text.replace("\u0000", "");
+        }
+
         if (text != null && !text.isBlank()) {
             return ExtractionResult.success(fileNameOf(uri), text.trim(), SourceType.PDF);
         }
