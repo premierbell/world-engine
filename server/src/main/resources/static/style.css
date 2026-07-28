@@ -195,6 +195,19 @@ button.refresh:hover {
   color: #888;
 }
 
+.topic-candidate-card {
+  border: 1px solid #e0e0dc;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.topic-candidate-heading {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
 @media (max-width: 720px) {
   .layout {
     grid-template-columns: 1fr;

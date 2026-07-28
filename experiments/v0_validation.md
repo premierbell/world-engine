@@ -3772,3 +3772,44 @@ Topic 생성 → AI 그룹 제안" 3단계에서 "Mechanism Pairwise Judge로
 단순화(수동 Topic 생성을 독립 기능으로 만들 필요성이 약하다는 게
 이번 논의에서 드러남 - AI 개입 없이 전부 수동이면 애초에 추천 기능이
 필요한 이유가 없음).
+
+## Mechanism Pairwise Topic 후보 생성 - 신호는 검증됨, Grouping은 아직 (2026-07-28)
+
+`docs/v2_design.md` 로드맵의 첫 조각으로 `POST /islands/{id}/topic-candidates`
+구현 - Island 내부 스크랩 쌍 전부를 Mechanism Pairwise Judge로 채점하고,
+threshold(0.6) 이상인 쌍끼리 Connected Components로 묶어 후보 그룹을
+반환한다. Topic 엔티티/저장/승인은 의도적으로 범위 밖 - 순수하게
+"후보가 실제로 말이 되는가"만 확인하는 슬라이스.
+
+**Setup**: 대상 "여행" Island(24개 스크랩) / pairwise 276쌍 / Mechanism
+objective / threshold 0.6 + Connected Components.
+
+### Result
+- 실행 시간 4분 4초(쌍당 평균 0.88초) - 사전에 GPT가 추측한 20~90초보다
+  훨씬 길었다. 실제로 재보기 전엔 알 수 없었다는 게 다시 확인됨.
+- 부산 관련 스크랩 9개가 하나의 후보로 묶임(평균 0.34, 최소 0.00).
+- 한라산 등산+제주 나무위키 관광지 2개는 평균/최소 모두 0.90인
+  매우 응집된 후보.
+- 제주 맛집/일정/관광지 4개짜리 후보(평균 0.52, 최소 0.20).
+- 공식 사이트류(아쿠아리움, 교량소개, 해동용궁사 등)는 대부분 미분류로
+  남음 - 히트맵 실험에서 봤던 "장르가 다르면 안 묶인다" 패턴과 일치.
+
+### Observation
+Connected Components의 체이닝(Finding #010)이 실제 데이터에서도
+그대로 나타났다 - 부산 9개짜리 후보가 그 증거다. 그룹 크기만 봤으면
+"부산 Topic 완성"처럼 보였겠지만, 평균/최소 점수를 같이 계산해서
+보여주자는 결정(이전 라운드 GPT 제안 반영분) 덕분에 체이닝 여부가
+숫자로 바로 드러났다 - 최소 0.00은 그 안에 서로 무관한 쌍이 최소
+하나는 섞여 있다는 뜻. Mechanism Judge 자체(개별 쌍 점수)는 여전히
+강한 신호를 유지했다 - 문제는 신호가 아니라 그 신호를 그룹으로
+바꾸는 방식(Connected Components의 transitive closure)이다.
+
+### Decision
+Mechanism Pairwise는 Topic 후보 생성의 기반 신호로 채택 유지. **Connected
+Components는 후보 생성 첫 구현으로는 충분하지만 최종 Grouping 알고리즘
+으로 채택하기엔 체이닝 문제가 남아있다** - 이후 개선 방향은 Pairwise
+Judge를 바꾸는 게 아니라 Grouping 전략(예: 평균 연결 강도 기반 clustering,
+최소 점수 하한 조건 추가 등)을 개선하는 쪽. 병렬화도 이번엔 넣지 않음 -
+"먼저 재고 나서 결정한다"는 이 프로젝트 원칙대로, 이번 PR은 측정과
+검증이 목적이고 그 목적은 달성됐다. 새 Grouping 알고리즘과 병렬화는
+다음 PR로 분리.

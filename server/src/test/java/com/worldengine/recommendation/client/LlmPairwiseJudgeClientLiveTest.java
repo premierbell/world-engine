@@ -26,4 +26,18 @@ class LlmPairwiseJudgeClientLiveTest {
 
         assertTrue(related > unrelated);
     }
+
+    @Test
+    void mechanismScoresSameConcreteTopicHigherThanDifferentTopic() {
+        double sameTopic = client.scoreMechanism(
+            "제주도 한라산 등산 코스 총정리, 성판악 코스와 관음사 코스 비교",
+            "한라산 등반 준비물과 최적 등산 시기 안내"
+        );
+        double differentTopic = client.scoreMechanism(
+            "제주도 한라산 등산 코스 총정리, 성판악 코스와 관음사 코스 비교",
+            "부산 해운대 해수욕장 근처 맛집과 야경 명소 추천"
+        );
+
+        assertTrue(sameTopic > differentTopic);
+    }
 }
