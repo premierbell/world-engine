@@ -46,7 +46,7 @@ class ContentExtractionKpiLiveTest {
         ContentExtractionService service = new ContentExtractionService(List.of(
             new NaverBlogExtractionStrategy(),
             new GithubExtractionStrategy(),
-            new YouTubeExtractionStrategy(),
+            new YouTubeExtractionStrategy(new ExtractionQualityEvaluator(50)),
             new PdfExtractionStrategy(),
             new ArticleExtractionStrategy(new ExtractionQualityEvaluator(50))
         ));
