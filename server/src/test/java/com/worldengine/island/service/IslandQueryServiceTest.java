@@ -2,6 +2,7 @@ package com.worldengine.island.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.when;
 
 import com.worldengine.island.dto.IslandDetailResponse;
@@ -68,5 +69,79 @@ class IslandQueryServiceTest {
 
         assertThatThrownBy(() -> islandQueryService.findById(99L))
             .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void computesCosineVarianceAcrossScrapsInIsland() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+
+        Scrap a = new Scrap("https://a.com", "a", "본문", "요약", null, null, null, new float[]{1f, 0f});
+        Scrap b = new Scrap("https://b.com", "b", "본문", "요약", null, null, null, new float[]{1f, 0f});
+        Scrap c = new Scrap("https://c.com", "c", "본문", "요약", null, null, null, new float[]{0f, 1f});
+
+        when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
+        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(a, b, c));
+
+        IslandDetailResponse result = islandQueryService.findById(1L);
+
+        assertThat(result.cosineVariance()).isCloseTo(0.222, within(0.01));
+    }
+
+    @Test
+    void returnsNullCosineVarianceWhenFewerThanTwoScraps() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+        Scrap a = new Scrap("https://a.com", "a", "본문", "요약", null, null, null, new float[]{1f, 0f});
+
+        when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
+        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(a));
+
+        IslandDetailResponse result = islandQueryService.findById(1L);
+
+        assertThat(result.cosineVariance()).isNull();
+    }
+
+    @Test
+    void computesOverrideRateFromRecommendationHistory() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+
+        Scrap accepted = new Scrap("https://a.com", "a", "본문", "요약", null, null, null,
+            new float[]{1f, 0f});
+        accepted.confirmIsland(1L);
+        accepted.recordRecommendedIsland(1L);
+
+        Scrap overridden = new Scrap("https://b.com", "b", "본문", "요약", null, null, null,
+            new float[]{1f, 0f});
+        overridden.confirmIsland(1L);
+        overridden.recordRecommendedIsland(2L);
+
+        Scrap coldStart = new Scrap("https://c.com", "c", "본문", "요약", null, null, null,
+            new float[]{1f, 0f});
+        coldStart.confirmIsland(1L);
+
+        when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
+        when(scrapRepository.findByIslandId(1L)).thenReturn(
+            List.of(accepted, overridden, coldStart));
+
+        IslandDetailResponse result = islandQueryService.findById(1L);
+
+        assertThat(result.overrideRate()).isEqualTo(0.5);
+    }
+
+    @Test
+    void returnsNullOverrideRateWhenNoRecommendationHistory() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+        Scrap coldStart = new Scrap("https://a.com", "a", "본문", "요약", null, null, null, new float[]{1f, 0f});
+        coldStart.confirmIsland(1L);
+
+        when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
+        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(coldStart));
+
+        IslandDetailResponse result = islandQueryService.findById(1L);
+
+        assertThat(result.overrideRate()).isNull();
     }
 }

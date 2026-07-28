@@ -19,6 +19,11 @@ const confirmResult = document.getElementById('confirm-result');
 const islandList = document.getElementById('island-list');
 const scrapList = document.getElementById('scrap-list');
 const pendingList = document.getElementById('pending-list');
+const islandDetailSection = document.getElementById('island-detail-section');
+const islandDetailTitle = document.getElementById('island-detail-title');
+const islandDetailVariance = document.getElementById('island-detail-variance');
+const islandDetailOverride = document.getElementById('island-detail-override');
+const islandDetailScraps = document.getElementById('island-detail-scraps');
 
 let currentScrapId = null;
 
@@ -160,9 +165,35 @@ async function loadIslands() {
 
   islands.forEach((island) => {
     const li = document.createElement('li');
-    li.textContent = `${island.name} (${island.scrapCount})`;
+    const button = document.createElement('button');
+    button.textContent = `${island.name} (${island.scrapCount})`;
+    button.addEventListener('click', () => openIslandDetail(island.id));
+    li.appendChild(button);
     islandList.appendChild(li);
   });
+}
+
+async function openIslandDetail(islandId) {
+  const response = await fetch(`/islands/${islandId}`);
+  const island = await response.json();
+
+  islandDetailTitle.textContent = island.name;
+  islandDetailVariance.textContent = island.cosineVariance == null
+    ? '스크랩 2개 미만'
+    : island.cosineVariance.toFixed(3);
+  islandDetailOverride.textContent = island.overrideRate == null
+    ? '추천 이력 없음'
+    : `${Math.round(island.overrideRate * 100)}%`;
+
+  islandDetailScraps.innerHTML = '';
+  island.scraps.slice().reverse().forEach((scrap) => {
+    const li = document.createElement('li');
+    const correctedMark = scrap.wasCorrected ? ' ⚠️정정됨' : '';
+    li.textContent = `${scrap.title ?? scrap.url}${correctedMark}`;
+    islandDetailScraps.appendChild(li);
+  });
+
+  islandDetailSection.hidden = false;
 }
 
 async function loadScraps() {

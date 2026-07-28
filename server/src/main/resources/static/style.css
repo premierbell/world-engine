@@ -148,6 +148,53 @@ button.refresh:hover {
   background: #f9e6bf;
 }
 
+#island-list li {
+  padding: 0;
+  background: none;
+}
+
+#island-list button {
+  width: 100%;
+  text-align: left;
+  background: #f7f7f5;
+  color: #1a1a1a;
+}
+
+#island-list button:hover {
+  background: #ececea;
+}
+
+.island-signals {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.signal {
+  flex: 1;
+  background: #f7f7f5;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.signal-label {
+  display: block;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+.signal-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.signal-note {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #888;
+}
+
 @media (max-width: 720px) {
   .layout {
     grid-template-columns: 1fr;
