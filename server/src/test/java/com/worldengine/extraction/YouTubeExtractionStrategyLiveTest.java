@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.worldengine.extraction.model.ExtractionResult;
 import com.worldengine.extraction.model.ExtractionStatus;
+import com.worldengine.extraction.service.ExtractionQualityEvaluator;
 import com.worldengine.extraction.strategy.YouTubeExtractionStrategy;
 import java.net.URI;
 import org.junit.jupiter.api.Tag;
@@ -17,7 +18,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @Tag("live")
 class YouTubeExtractionStrategyLiveTest {
 
-    private final YouTubeExtractionStrategy strategy = new YouTubeExtractionStrategy();
+    private final YouTubeExtractionStrategy strategy = new YouTubeExtractionStrategy(new ExtractionQualityEvaluator(50));
 
     @ParameterizedTest
     @ValueSource(strings = {
