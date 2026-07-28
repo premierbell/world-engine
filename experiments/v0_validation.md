@@ -3629,3 +3629,43 @@ NUL 바이트가 들어오면 "invalid byte sequence" 에러로 insert 자체를
 ### Decision
 `PdfExtractionStrategy` 수정 커밋. NUL 바이트는 지금까지 PDF에서만
 확인됐고 다른 전략에서는 증거 없음 - PDF 전략에만 좁게 적용.
+
+## YouTube 추출 품질 가드레일 - 짧은 설명 + YouTube 기본 문구 필터링
+
+GitHub는 실제 추천까지 정상 확인(개발 CS 0.85/0.65). YouTube 쪽은
+`ExtractionQualityEvaluator`(PR #69)가 `ArticleExtractionStrategy`
+에만 적용돼 있고 YouTube엔 없다는 걸 코드 리뷰로 먼저 발견 -
+`ogDescription.isBlank()`만 체크해서 설명이 1~2글자만 있어도
+"성공" 처리되는 구조였음. 이번엔 실제 실패 사례를 먼저 찾지 않고
+바로 고침 - 이미 검증된 `ExtractionQualityEvaluator`를 두 번째
+자리에 재사용하는 거라 새 인프라가 아니고, 원인/해법이 이미 확실한
+케이스였기 때문(이커머스 안내문구 건과는 다른 성격).
+
+**부가 발견**: 실제 설명 없는 영상을 찾아보다가(WebSearch +
+YouTube shorts 피드 직접 크롤링) 더 흔한 실제 케이스를 확인 - 설명을
+아예 안 쓴 영상엔 YouTube가 자동으로 홍보용 기본 문구("YouTube에서
+마음에 드는 동영상과 음악을 감상하고...", 87자)를 채워넣는데, 이게
+50자 가드레일을 그냥 통과해버림. 이건 사이트마다 문구가 제각각인
+이커머스 case와 달리 **YouTube 한 회사의 고정 문구 하나**라 예외
+처리가 안전하다고 판단, 한국어/영어 버전 둘 다 정확히 매치해서
+필터링하도록 추가.
+
+GPT와 "영상을 실제로 보고 이해하는(멀티모달) 단계까지 갈 필요가
+있는가"를 논의 - 3단계(설명란 → 자막 Transcript → 멀티모달)로
+구분하는 프레임에 동의, 지금은 설명란 단계로 충분하고 자막/멀티모달은
+"설명란만으로 부족한 실제 사례가 쌓이면" 재검토하기로 함(자막은
+이미 PR #53 때 비공식 엔드포인트 리스크로 범위 밖 판단했던 것과
+일관).
+
+### Result
+`YouTubeExtractionStrategy`에 `ExtractionQualityEvaluator` 재사용 +
+YouTube 기본 문구(한/영) 매치 시 title 기반 fallback으로 전환. 전체
+테스트 통과, 실제 설명 없는 영상(`dCO8fj_DQQo`, "the elephant
+shrew!")으로 재현 - 이전엔 무의미한 기본 문구로 SUCCESS 처리되던 게
+이제 `PARTIAL`/`OPEN_GRAPH_ONLY`로 정직하게 처리되고 영상 제목으로
+대체됨 확인. 정상 설명 있는 영상은 회귀 없음.
+
+### Decision
+`YouTubeExtractionStrategy` 수정 커밋. 자막/멀티모달은 여전히 범위
+밖 - 설명란 부실로 인한 실제 추천 품질 저하 사례가 쌓이면 그때
+재검토.
