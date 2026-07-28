@@ -24,8 +24,12 @@ const islandDetailTitle = document.getElementById('island-detail-title');
 const islandDetailVariance = document.getElementById('island-detail-variance');
 const islandDetailOverride = document.getElementById('island-detail-override');
 const islandDetailScraps = document.getElementById('island-detail-scraps');
+const topicCandidatesButton = document.getElementById('topic-candidates-button');
+const topicCandidatesStatus = document.getElementById('topic-candidates-status');
+const topicCandidatesResult = document.getElementById('topic-candidates-result');
 
 let currentScrapId = null;
+let currentIslandId = null;
 
 scrapForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -174,6 +178,7 @@ async function loadIslands() {
 }
 
 async function openIslandDetail(islandId) {
+  currentIslandId = islandId;
   const response = await fetch(`/islands/${islandId}`);
   const island = await response.json();
 
@@ -193,7 +198,81 @@ async function openIslandDetail(islandId) {
     islandDetailScraps.appendChild(li);
   });
 
+  topicCandidatesStatus.textContent = '';
+  topicCandidatesResult.innerHTML = '';
   islandDetailSection.hidden = false;
+}
+
+topicCandidatesButton.addEventListener('click', async () => {
+  if (!currentIslandId) {
+    return;
+  }
+
+  topicCandidatesButton.disabled = true;
+  topicCandidatesStatus.textContent = '분석 중... (스크랩이 많으면 1~2분 걸릴 수 있어요)';
+  topicCandidatesResult.innerHTML = '';
+
+  try {
+    const response = await fetch(`/islands/${currentIslandId}/topic-candidates`, { method: 'POST' });
+
+    if (!response.ok) {
+      const error = await response.json();
+      topicCandidatesStatus.textContent = `실패: ${error.message}`;
+      return;
+    }
+
+    const data = await response.json();
+    renderTopicCandidates(data);
+    topicCandidatesStatus.textContent = '';
+  } finally {
+    topicCandidatesButton.disabled = false;
+  }
+});
+
+function renderTopicCandidates(data) {
+  topicCandidatesResult.innerHTML = '';
+
+  if (data.groups.length === 0 && data.ungrouped.length === 0) {
+    topicCandidatesResult.innerHTML = '<p class="result">스크랩이 없어요.</p>';
+    return;
+  }
+
+  data.groups.forEach((group, index) => {
+    const card = document.createElement('div');
+    card.className = 'topic-candidate-card';
+
+    const heading = document.createElement('div');
+    heading.className = 'topic-candidate-heading';
+    heading.textContent = `후보 ${index + 1} (평균 ${group.averageScore.toFixed(2)} / 최소 ${group.minimumScore.toFixed(2)})`;
+    card.appendChild(heading);
+
+    const list = document.createElement('ul');
+    list.className = 'entity-list';
+    group.scraps.forEach((scrap) => {
+      const li = document.createElement('li');
+      li.textContent = scrap.title ?? scrap.url;
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+
+    topicCandidatesResult.appendChild(card);
+  });
+
+  if (data.ungrouped.length > 0) {
+    const heading = document.createElement('div');
+    heading.className = 'topic-candidate-heading';
+    heading.textContent = `미분류 (${data.ungrouped.length})`;
+    topicCandidatesResult.appendChild(heading);
+
+    const list = document.createElement('ul');
+    list.className = 'entity-list';
+    data.ungrouped.forEach((scrap) => {
+      const li = document.createElement('li');
+      li.textContent = scrap.title ?? scrap.url;
+      list.appendChild(li);
+    });
+    topicCandidatesResult.appendChild(list);
+  }
 }
 
 async function loadScraps() {
