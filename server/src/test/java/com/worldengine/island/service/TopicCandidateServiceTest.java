@@ -12,6 +12,8 @@ import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.recommendation.client.LlmPairwiseJudgeClient;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
+import com.worldengine.topic.entity.Topic;
+import com.worldengine.topic.repository.TopicRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +31,9 @@ class TopicCandidateServiceTest {
 
     @Mock
     private ScrapRepository scrapRepository;
+
+    @Mock
+    private TopicRepository topicRepository;
 
     @Mock
     private LlmPairwiseJudgeClient llmPairwiseJudgeClient;
@@ -55,7 +60,8 @@ class TopicCandidateServiceTest {
         when(llmPairwiseJudgeClient.scoreMechanism("B", "C")).thenReturn(0.9);
 
         TopicCandidateService service = new TopicCandidateService(
-            islandRepository, scrapRepository, llmPairwiseJudgeClient, new ConnectedComponentsGrouping());
+            islandRepository, scrapRepository, topicRepository, llmPairwiseJudgeClient,
+            new ConnectedComponentsGrouping());
 
         TopicCandidateResponse result = service.generateCandidates(1L);
 
@@ -82,7 +88,8 @@ class TopicCandidateServiceTest {
         when(llmPairwiseJudgeClient.scoreMechanism("B", "C")).thenReturn(0.9);
 
         TopicCandidateService service = new TopicCandidateService(
-            islandRepository, scrapRepository, llmPairwiseJudgeClient, new CliqueSafeGrouping());
+            islandRepository, scrapRepository, topicRepository, llmPairwiseJudgeClient,
+            new CliqueSafeGrouping());
 
         TopicCandidateResponse result = service.generateCandidates(1L);
 
@@ -106,7 +113,8 @@ class TopicCandidateServiceTest {
         when(llmPairwiseJudgeClient.scoreMechanism("A", "B")).thenReturn(0.3);
 
         TopicCandidateService service = new TopicCandidateService(
-            islandRepository, scrapRepository, llmPairwiseJudgeClient, new CliqueSafeGrouping());
+            islandRepository, scrapRepository, topicRepository, llmPairwiseJudgeClient,
+            new CliqueSafeGrouping());
 
         TopicCandidateResponse result = service.generateCandidates(1L);
 
@@ -126,7 +134,8 @@ class TopicCandidateServiceTest {
         when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(a, b));
 
         TopicCandidateService service = new TopicCandidateService(
-            islandRepository, scrapRepository, llmPairwiseJudgeClient, new CliqueSafeGrouping());
+            islandRepository, scrapRepository, topicRepository, llmPairwiseJudgeClient,
+            new CliqueSafeGrouping());
 
         TopicCandidateResponse result = service.generateCandidates(1L);
 
@@ -136,11 +145,46 @@ class TopicCandidateServiceTest {
     }
 
     @Test
+    void matchesUnassignedScrapToExistingTopicAndExcludesFromNewGroups() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+
+        Topic topic = new Topic("서울 관광", 1L);
+        ReflectionTestUtils.setField(topic, "id", 50L);
+
+        Scrap member = scrap(1L, "MEMBER");
+        member.assignTopic(50L);
+
+        Scrap newScrap = scrap(2L, "NEW");
+
+        when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
+        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(member, newScrap));
+        when(topicRepository.findByIslandId(1L)).thenReturn(List.of(topic));
+        when(llmPairwiseJudgeClient.scoreMechanism("NEW", "MEMBER")).thenReturn(0.7);
+
+        TopicCandidateService service = new TopicCandidateService(
+            islandRepository, scrapRepository, topicRepository, llmPairwiseJudgeClient,
+            new CliqueSafeGrouping());
+
+        TopicCandidateResponse result = service.generateCandidates(1L);
+
+        assertThat(result.existingTopicMatches()).hasSize(1);
+        assertThat(result.existingTopicMatches().get(0).scrap().id()).isEqualTo(2L);
+        assertThat(result.existingTopicMatches().get(0).topicId()).isEqualTo(50L);
+        assertThat(result.existingTopicMatches().get(0).topicName()).isEqualTo("서울 관광");
+        assertThat(result.existingTopicMatches().get(0).score()).isEqualTo(0.7);
+        assertThat(result.existingTopicMatches().get(0).matchedAgainst().id()).isEqualTo(1L);
+        assertThat(result.groups()).isEmpty();
+        assertThat(result.ungrouped()).isEmpty();
+    }
+
+    @Test
     void throwsWhenIslandNotFound() {
         when(islandRepository.findById(99L)).thenReturn(Optional.empty());
 
         TopicCandidateService service = new TopicCandidateService(
-            islandRepository, scrapRepository, llmPairwiseJudgeClient, new CliqueSafeGrouping());
+            islandRepository, scrapRepository, topicRepository, llmPairwiseJudgeClient,
+            new CliqueSafeGrouping());
 
         assertThatThrownBy(() -> service.generateCandidates(99L))
             .isInstanceOf(EntityNotFoundException.class);
