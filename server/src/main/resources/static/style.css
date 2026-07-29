@@ -195,6 +195,22 @@ button.refresh:hover {
   color: #888;
 }
 
+#island-detail-scraps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topic-create-form {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+
+.topic-create-form input {
+  flex: 1;
+}
+
 .topic-candidate-card {
   border: 1px solid #e0e0dc;
   border-radius: 6px;

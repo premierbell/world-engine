@@ -27,6 +27,10 @@ const islandDetailScraps = document.getElementById('island-detail-scraps');
 const topicCandidatesButton = document.getElementById('topic-candidates-button');
 const topicCandidatesStatus = document.getElementById('topic-candidates-status');
 const topicCandidatesResult = document.getElementById('topic-candidates-result');
+const islandTopics = document.getElementById('island-topics');
+const topicNameInput = document.getElementById('topic-name-input');
+const createTopicButton = document.getElementById('create-topic-button');
+const topicCreateResult = document.getElementById('topic-create-result');
 
 let currentScrapId = null;
 let currentIslandId = null;
@@ -190,18 +194,91 @@ async function openIslandDetail(islandId) {
     ? '추천 이력 없음'
     : `${Math.round(island.overrideRate * 100)}%`;
 
+  renderTopics(island.topics);
+
   islandDetailScraps.innerHTML = '';
   island.scraps.slice().reverse().forEach((scrap) => {
     const li = document.createElement('li');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'scrap-select';
+    checkbox.dataset.scrapId = scrap.id;
+    const label = document.createElement('label');
     const correctedMark = scrap.wasCorrected ? ' ⚠️정정됨' : '';
-    li.textContent = `${scrap.title ?? scrap.url}${correctedMark}`;
+    label.textContent = `${scrap.title ?? scrap.url}${correctedMark}`;
+    li.appendChild(checkbox);
+    li.appendChild(label);
     islandDetailScraps.appendChild(li);
   });
 
   topicCandidatesStatus.textContent = '';
   topicCandidatesResult.innerHTML = '';
+  topicCreateResult.textContent = '';
+  topicNameInput.value = '';
   islandDetailSection.hidden = false;
 }
+
+function renderTopics(topics) {
+  islandTopics.innerHTML = '';
+  if (!topics || topics.length === 0) {
+    return;
+  }
+
+  topics.forEach((topic) => {
+    const card = document.createElement('div');
+    card.className = 'topic-candidate-card';
+
+    const heading = document.createElement('div');
+    heading.className = 'topic-candidate-heading';
+    heading.textContent = `📍 ${topic.name} (${topic.scraps.length})`;
+    card.appendChild(heading);
+
+    const list = document.createElement('ul');
+    list.className = 'entity-list';
+    topic.scraps.forEach((scrap) => {
+      const li = document.createElement('li');
+      li.textContent = scrap.title ?? scrap.url;
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+
+    islandTopics.appendChild(card);
+  });
+}
+
+createTopicButton.addEventListener('click', async () => {
+  if (!currentIslandId) {
+    return;
+  }
+
+  const name = topicNameInput.value.trim();
+  if (!name) {
+    topicCreateResult.textContent = 'Topic 이름을 입력해주세요.';
+    return;
+  }
+
+  const scrapIds = Array.from(document.querySelectorAll('.scrap-select:checked'))
+    .map((el) => Number(el.dataset.scrapId));
+  if (scrapIds.length === 0) {
+    topicCreateResult.textContent = '스크랩을 하나 이상 선택해주세요.';
+    return;
+  }
+
+  const response = await fetch('/topics', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ islandId: currentIslandId, name, scrapIds })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    topicCreateResult.textContent = `실패: ${error.message}`;
+    return;
+  }
+
+  topicCreateResult.textContent = `"${name}" Topic 생성됨`;
+  openIslandDetail(currentIslandId);
+});
 
 topicCandidatesButton.addEventListener('click', async () => {
   if (!currentIslandId) {
