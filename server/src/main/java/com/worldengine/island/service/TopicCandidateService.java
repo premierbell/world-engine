@@ -44,6 +44,7 @@ public class TopicCandidateService {
 
         List<Scrap> scraps = scrapRepository.findByIslandId(islandId).stream()
             .filter(s -> s.getSummary() != null && !s.getSummary().isBlank())
+            .filter(s -> s.getTopicId() == null)
             .toList();
 
         int n = scraps.size();

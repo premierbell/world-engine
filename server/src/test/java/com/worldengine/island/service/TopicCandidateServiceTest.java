@@ -115,6 +115,27 @@ class TopicCandidateServiceTest {
     }
 
     @Test
+    void excludesScrapsAlreadyAssignedToATopic() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+        Scrap a = scrap(1L, "A");
+        Scrap b = scrap(2L, "B");
+        b.assignTopic(99L);
+
+        when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
+        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(a, b));
+
+        TopicCandidateService service = new TopicCandidateService(
+            islandRepository, scrapRepository, llmPairwiseJudgeClient, new CliqueSafeGrouping());
+
+        TopicCandidateResponse result = service.generateCandidates(1L);
+
+        assertThat(result.groups()).isEmpty();
+        assertThat(result.ungrouped()).hasSize(1);
+        assertThat(result.ungrouped().get(0).id()).isEqualTo(1L);
+    }
+
+    @Test
     void throwsWhenIslandNotFound() {
         when(islandRepository.findById(99L)).thenReturn(Optional.empty());
 

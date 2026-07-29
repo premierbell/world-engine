@@ -196,20 +196,28 @@ async function openIslandDetail(islandId) {
 
   renderTopics(island.topics);
 
+  const assignedScrapIds = new Set(
+    island.topics.flatMap((topic) => topic.scraps.map((scrap) => scrap.id))
+  );
+
   islandDetailScraps.innerHTML = '';
-  island.scraps.slice().reverse().forEach((scrap) => {
-    const li = document.createElement('li');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'scrap-select';
-    checkbox.dataset.scrapId = scrap.id;
-    const label = document.createElement('label');
-    const correctedMark = scrap.wasCorrected ? ' ⚠️정정됨' : '';
-    label.textContent = `${scrap.title ?? scrap.url}${correctedMark}`;
-    li.appendChild(checkbox);
-    li.appendChild(label);
-    islandDetailScraps.appendChild(li);
-  });
+  island.scraps
+    .filter((scrap) => !assignedScrapIds.has(scrap.id))
+    .slice()
+    .reverse()
+    .forEach((scrap) => {
+      const li = document.createElement('li');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'scrap-select';
+      checkbox.dataset.scrapId = scrap.id;
+      const label = document.createElement('label');
+      const correctedMark = scrap.wasCorrected ? ' ⚠️정정됨' : '';
+      label.textContent = `${scrap.title ?? scrap.url}${correctedMark}`;
+      li.appendChild(checkbox);
+      li.appendChild(label);
+      islandDetailScraps.appendChild(li);
+    });
 
   topicCandidatesStatus.textContent = '';
   topicCandidatesResult.innerHTML = '';
