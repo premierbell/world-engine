@@ -3813,3 +3813,55 @@ Judge를 바꾸는 게 아니라 Grouping 전략(예: 평균 연결 강도 기�
 "먼저 재고 나서 결정한다"는 이 프로젝트 원칙대로, 이번 PR은 측정과
 검증이 목적이고 그 목적은 달성됐다. 새 Grouping 알고리즘과 병렬화는
 다음 PR로 분리.
+
+## Grouping 전략 비교 - Connected Components vs Clique-safe vs Average-linkage (2026-07-28)
+
+PR #80의 Connected Components가 체이닝을 만든다는 걸 실사용으로
+확인한 뒤, 같은 pairwise matrix를 재사용해서(추가 LLM 비용 없이)
+여러 Grouping 알고리즘을 순수 오프라인으로 비교했다. "여행" Island
+(24개, 276쌍) 전체를 다시 Python으로 캡처(gpt-4o-mini, Mechanism
+prompt 그대로) - Java 서비스는 matrix를 메모리에서만 쓰고 버리기
+때문에 비교하려면 한 번은 다시 실제로 캡처해야 했다.
+
+### Setup
+대상 "여행" Island(24개, 276쌍) / threshold 0.6 / 같은 matrix에
+Connected Components, Clique-safe(신규 멤버가 기존 그룹 전원과
+threshold 이상이어야 편입), Average-linkage(군집 간 평균 점수로
+병합) 세 가지 적용.
+
+### Result
+| 전략 | 2+ 그룹 수 | 최소 점수 분포 | 미분류 |
+|---|---|---|---|
+| Connected Components | 4 | 0.00 포함(체이닝) | 9 |
+| Clique-safe | 5 | 0.60~0.95, 0.00 없음 | 13 |
+| Average-linkage | 4 | 0.30 포함(부분 체이닝) | 14 |
+
+Clique-safe에서 Connected Components의 5개짜리 체이닝 그룹("부산
+여행 코스"+"부산 관광 명소"가 섞임)이 3개짜리(평균 0.80, 부산 여행
+코스 추천류)와 2개짜리(평균 0.70, 부산 관광/명소류)로 정확히
+쪼개졌다.
+
+### Observation
+1. **Clique-safe가 체이닝을 구조적으로 막는다** - 모든 그룹의 최소
+   점수가 threshold 이상(0.00이 하나도 없음). Average-linkage는
+   군집 평균으로 병합 여부를 결정해서 부분적으로 체이닝이 남는다
+   (min 0.30). 대신 Clique-safe는 미분류가 더 많다(13 vs 9) - "더
+   엄격하고 신뢰할 수 있는 후보만 보여준다"는 목적엔 맞는
+   트레이드오프.
+2. **재현성 문제 발견(예상 밖)** - temperature=0인데도 이번에 새로
+   캡처한 matrix가 PR #80 실행 때(부산 9개짜리 체이닝)와 다른 그룹
+   구성(이번엔 5개짜리)을 만들었다. LLM pairwise judge 점수가
+   완전히 결정론적이지 않다는 뜻 - 앞으로 Grouping 알고리즘을
+   평가할 때는 **품질(사람이 보기 좋은가)**과 **안정성(같은 Island를
+   다시 돌려도 비슷한 결과가 나오는가)**을 별개로 봐야 한다. 이번엔
+   품질만 비교했고, 안정성은 아직 측정 안 함 - 다음 연구 과제로 남김.
+
+### Decision
+`TopicGroupingStrategy` 인터페이스로 분리 - `ConnectedComponentsGrouping`/
+`CliqueSafeGrouping` 둘 다 구현체로 유지(비교 가능성 보존, Spring
+`@Primary`로 Clique-safe를 기본값으로). Connected Components를
+지우거나 대체하지 않은 이유: 재현성 문제 때문에 "입력(matrix) 문제인지
+알고리즘 문제인지" 계속 구분해야 하고, 앞으로 Complete Linkage/
+Community Detection 등을 더 붙여볼 가능성이 커서 나란히 비교 가능한
+구조가 낫다고 판단. Average-linkage는 부분 체이닝이 남아 이번엔
+전략으로 승격 안 함 - 근거 쌓이면 재검토.
