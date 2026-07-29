@@ -11,6 +11,8 @@ import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
+import com.worldengine.topic.entity.Topic;
+import com.worldengine.topic.repository.TopicRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +31,9 @@ class IslandQueryServiceTest {
 
     @Mock
     private ScrapRepository scrapRepository;
+
+    @Mock
+    private TopicRepository topicRepository;
 
     @InjectMocks
     private IslandQueryService islandQueryService;
@@ -61,6 +66,31 @@ class IslandQueryServiceTest {
 
         assertThat(result.scraps()).hasSize(1);
         assertThat(result.scraps().get(0).id()).isEqualTo(5L);
+        assertThat(result.topics()).isEmpty();
+    }
+
+    @Test
+    void includesTopicsWithMemberScrapsInIslandDetail() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+        Scrap scrap = new Scrap("https://example.com", "제목", "본문", "요약",
+            null, null, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(scrap, "id", 5L);
+        scrap.assignTopic(50L);
+
+        Topic topic = new Topic("부산 여행", 1L);
+        ReflectionTestUtils.setField(topic, "id", 50L);
+
+        when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
+        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(scrap));
+        when(topicRepository.findByIslandId(1L)).thenReturn(List.of(topic));
+
+        IslandDetailResponse result = islandQueryService.findById(1L);
+
+        assertThat(result.topics()).hasSize(1);
+        assertThat(result.topics().get(0).name()).isEqualTo("부산 여행");
+        assertThat(result.topics().get(0).scraps()).hasSize(1);
+        assertThat(result.topics().get(0).scraps().get(0).id()).isEqualTo(5L);
     }
 
     @Test

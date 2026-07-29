@@ -1,6 +1,7 @@
 package com.worldengine.island.dto;
 
 import com.worldengine.scrap.dto.ScrapSummaryResponse;
+import com.worldengine.topic.dto.TopicSummaryResponse;
 import java.util.List;
 
 public record IslandDetailResponse(
@@ -8,5 +9,6 @@ public record IslandDetailResponse(
     String name,
     List<ScrapSummaryResponse> scraps,
     Double cosineVariance,
-    Double overrideRate
+    Double overrideRate,
+    List<TopicSummaryResponse> topics
 ) {}

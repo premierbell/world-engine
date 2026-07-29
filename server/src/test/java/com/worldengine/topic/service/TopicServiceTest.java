@@ -1,0 +1,75 @@
+package com.worldengine.topic.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import com.worldengine.island.entity.Island;
+import com.worldengine.island.repository.IslandRepository;
+import com.worldengine.scrap.entity.Scrap;
+import com.worldengine.scrap.repository.ScrapRepository;
+import com.worldengine.topic.dto.TopicCreateRequest;
+import com.worldengine.topic.dto.TopicCreateResponse;
+import com.worldengine.topic.entity.Topic;
+import com.worldengine.topic.repository.TopicRepository;
+import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+class TopicServiceTest {
+
+    @Mock
+    private TopicRepository topicRepository;
+
+    @Mock
+    private IslandRepository islandRepository;
+
+    @Mock
+    private ScrapRepository scrapRepository;
+
+    @InjectMocks
+    private TopicService topicService;
+
+    @Test
+    void createsTopicAndAssignsScrapsToIt() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+        when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
+
+        Scrap a = new Scrap("https://a.com", "a", "본문", "요약", null, null, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(a, "id", 10L);
+        Scrap b = new Scrap("https://b.com", "b", "본문", "요약", null, null, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(b, "id", 11L);
+        when(scrapRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(a, b));
+
+        when(topicRepository.save(any(Topic.class))).thenAnswer(invocation -> {
+            Topic topic = invocation.getArgument(0);
+            ReflectionTestUtils.setField(topic, "id", 100L);
+            return topic;
+        });
+
+        TopicCreateResponse result = topicService.create(new TopicCreateRequest(1L, "부산 여행", List.of(10L, 11L)));
+
+        assertThat(result.id()).isEqualTo(100L);
+        assertThat(result.name()).isEqualTo("부산 여행");
+        assertThat(result.scrapCount()).isEqualTo(2);
+        assertThat(a.getTopicId()).isEqualTo(100L);
+        assertThat(b.getTopicId()).isEqualTo(100L);
+    }
+
+    @Test
+    void throwsWhenIslandNotFound() {
+        when(islandRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> topicService.create(new TopicCreateRequest(99L, "이름", List.of(1L))))
+            .isInstanceOf(EntityNotFoundException.class);
+    }
+}

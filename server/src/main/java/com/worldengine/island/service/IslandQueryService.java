@@ -8,6 +8,8 @@ import com.worldengine.recommendation.vector.CosineSimilarity;
 import com.worldengine.scrap.dto.ScrapSummaryResponse;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
+import com.worldengine.topic.dto.TopicSummaryResponse;
+import com.worldengine.topic.repository.TopicRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +21,12 @@ public class IslandQueryService {
 
     private final IslandRepository islandRepository;
     private final ScrapRepository scrapRepository;
+    private final TopicRepository topicRepository;
 
-    public IslandQueryService(IslandRepository islandRepository, ScrapRepository scrapRepository) {
+    public IslandQueryService(IslandRepository islandRepository, ScrapRepository scrapRepository, TopicRepository topicRepository) {
         this.islandRepository = islandRepository;
         this.scrapRepository = scrapRepository;
+        this.topicRepository = topicRepository;
     }
 
     public List<IslandSummaryResponse> findAll() {
@@ -41,12 +45,23 @@ public class IslandQueryService {
             .map(this::toSummary)
             .toList();
 
+        List<TopicSummaryResponse> topics = topicRepository.findByIslandId(islandId).stream()
+            .map(topic -> new TopicSummaryResponse(
+                topic.getId(),
+                topic.getName(),
+                islandScraps.stream()
+                    .filter(s -> topic.getId().equals(s.getTopicId()))
+                    .map(this::toSummary)
+                    .toList()))
+            .toList();
+
         return new IslandDetailResponse(
             island.getId(),
             island.getName(),
             scraps,
             computeCosineVariance(islandScraps),
-            computeOverrideRate(islandScraps)
+            computeOverrideRate(islandScraps),
+            topics
         );
     }
 

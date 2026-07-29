@@ -127,4 +127,10 @@ public class Scrap {
     }
 
     public void recordFailureReason(FailureReason failureReason) { this.failureReason = failureReason; }
+
+    private Long topicId;
+
+    public Long getTopicId() { return topicId; }
+
+    public void assignTopic(Long topicId) { this.topicId = topicId; }
 }
