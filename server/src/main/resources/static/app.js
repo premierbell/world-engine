@@ -317,9 +317,27 @@ topicCandidatesButton.addEventListener('click', async () => {
 function renderTopicCandidates(data) {
   topicCandidatesResult.innerHTML = '';
 
-  if (data.groups.length === 0 && data.ungrouped.length === 0) {
+  if (data.existingTopicMatches.length === 0 && data.groups.length === 0 && data.ungrouped.length === 0) {
     topicCandidatesResult.innerHTML = '<p class="result">스크랩이 없어요.</p>';
     return;
+  }
+
+  if (data.existingTopicMatches.length > 0) {
+    const heading = document.createElement('div');
+    heading.className = 'topic-candidate-heading';
+    heading.textContent = `기존 Topic 제안 (${data.existingTopicMatches.length})`;
+    topicCandidatesResult.appendChild(heading);
+
+    const list = document.createElement('ul');
+    list.className = 'entity-list';
+    data.existingTopicMatches.forEach((match) => {
+      const li = document.createElement('li');
+      const scrapTitle = match.scrap.title ?? match.scrap.url;
+      const matchedTitle = match.matchedAgainst.title ?? match.matchedAgainst.url;
+      li.textContent = `${scrapTitle} → 📍${match.topicName} (${match.score.toFixed(2)}, 근거: ${matchedTitle})`;
+      list.appendChild(li);
+    });
+    topicCandidatesResult.appendChild(list);
   }
 
   data.groups.forEach((group, index) => {
