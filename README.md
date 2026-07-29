@@ -9,7 +9,7 @@ AI는 이해하고, 알고리즘은 결정한다.
 
 - [x] V0 — Validation (Python, `prototype/`) — 임베딩/Cosine 유사도/threshold 분류/Label 생성/Growth Point 전부 검증 완료. 결론(Finding P2-002/P2-003): 완전 자동 분류는 현재 기술로 불가능, "AI 추천 + 사용자 확인" 구조로 V1 설계.
 - [x] V1 — Genesis (Java/Spring Boot, `server/`) — Scrap Flow(추출 → 임베딩 → 추천 → 사용자 확인) 전체 루프 완주. 조회 API, 정정 기록, 최소 UI까지 완료. 회고는 `docs/v1_retrospective.md`.
-- [ ] V2 — Evolution (성장 지표, 시각적 티어, Topic 분화)
+- [ ] V2 — Evolution (성장 지표, 시각적 티어, Topic 분화) - Topic 후보 생성(AI)→생성 폼 연결까지 완료(PR #80~83), 성장 지표/시각적 티어/Topic 이름 AI 제안은 아직. 상세는 `docs/v2_design.md` 참고
 
 각 Phase의 상세 근거는 `docs/research_phase_1_summary.md`, `docs/research_phase_2_summary.md`, `docs/v1_design.md`, `docs/v1_retrospective.md` 참고. PR 단위 작업 기록은 `experiments/v0_validation.md`에 누적.
 
