@@ -211,6 +211,18 @@ button.refresh:hover {
   flex: 1;
 }
 
+.fill-candidate-button {
+  margin-top: 8px;
+  background: #edf2fa;
+  color: #1a1a1a;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.fill-candidate-button:hover {
+  background: #dbe6f7;
+}
+
 .topic-candidate-card {
   border: 1px solid #e0e0dc;
   border-radius: 6px;

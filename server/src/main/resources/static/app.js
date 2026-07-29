@@ -332,6 +332,13 @@ function renderTopicCandidates(data) {
     });
     card.appendChild(list);
 
+    const fillButton = document.createElement('button');
+    fillButton.type = 'button';
+    fillButton.className = 'fill-candidate-button';
+    fillButton.textContent = '이 후보로 채우기';
+    fillButton.addEventListener('click', () => fillTopicForm(group.scraps.map((scrap) => scrap.id)));
+    card.appendChild(fillButton);
+
     topicCandidatesResult.appendChild(card);
   });
 
@@ -350,6 +357,15 @@ function renderTopicCandidates(data) {
     });
     topicCandidatesResult.appendChild(list);
   }
+}
+
+function fillTopicForm(scrapIds) {
+  document.querySelectorAll('.scrap-select').forEach((checkbox) => {
+    checkbox.checked = scrapIds.includes(Number(checkbox.dataset.scrapId));
+  });
+  topicNameInput.value = '';
+  topicNameInput.focus();
+  topicNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function loadScraps() {
