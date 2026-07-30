@@ -110,7 +110,8 @@ button.refresh:hover {
   gap: 8px;
 }
 
-.new-island input {
+.new-island input,
+.new-island select {
   flex: 1;
 }
 
