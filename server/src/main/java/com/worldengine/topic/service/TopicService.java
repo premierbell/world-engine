@@ -3,6 +3,7 @@ package com.worldengine.topic.service;
 import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
+import com.worldengine.topic.dto.TopicAddScrapsRequest;
 import com.worldengine.topic.dto.TopicCreateRequest;
 import com.worldengine.topic.dto.TopicCreateResponse;
 import com.worldengine.topic.entity.Topic;
@@ -42,4 +43,16 @@ public class TopicService {
         return new TopicCreateResponse(topic.getId(), topic.getName(), topic.getIslandId(), scraps.size());
     }
 
+    public TopicCreateResponse addScraps(Long topicId, TopicAddScrapsRequest request) {
+        Topic topic = topicRepository.findById(topicId)
+            .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 Topic: " + topicId));
+
+        List<Scrap> scraps = scrapRepository.findAllById(request.scrapIds());
+        for (Scrap scrap : scraps) {
+            scrap.assignTopic(topic.getId());
+        }
+        scrapRepository.saveAll(scraps);
+
+        return new TopicCreateResponse(topic.getId(), topic.getName(), topic.getIslandId(), scraps.size());
+    }
 }
