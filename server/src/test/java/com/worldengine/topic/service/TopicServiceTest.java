@@ -9,6 +9,7 @@ import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
+import com.worldengine.topic.dto.TopicAddScrapsRequest;
 import com.worldengine.topic.dto.TopicCreateRequest;
 import com.worldengine.topic.dto.TopicCreateResponse;
 import com.worldengine.topic.entity.Topic;
@@ -63,6 +64,32 @@ class TopicServiceTest {
         assertThat(result.scrapCount()).isEqualTo(2);
         assertThat(a.getTopicId()).isEqualTo(100L);
         assertThat(b.getTopicId()).isEqualTo(100L);
+    }
+
+    @Test
+    void addsScrapsToExistingTopic() {
+        Topic topic = new Topic("부산 해변", 1L);
+        ReflectionTestUtils.setField(topic, "id", 5L);
+        when(topicRepository.findById(5L)).thenReturn(Optional.of(topic));
+
+        Scrap a = new Scrap("https://a.com", "a", "본문", "요약", null, null, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(a, "id", 10L);
+        when(scrapRepository.findAllById(List.of(10L))).thenReturn(List.of(a));
+
+        TopicCreateResponse result = topicService.addScraps(5L, new TopicAddScrapsRequest(List.of(10L)));
+
+        assertThat(result.id()).isEqualTo(5L);
+        assertThat(result.name()).isEqualTo("부산 해변");
+        assertThat(result.scrapCount()).isEqualTo(1);
+        assertThat(a.getTopicId()).isEqualTo(5L);
+    }
+
+    @Test
+    void throwsWhenAddingScrapsToNonExistentTopic() {
+        when(topicRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> topicService.addScraps(99L, new TopicAddScrapsRequest(List.of(1L))))
+            .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test

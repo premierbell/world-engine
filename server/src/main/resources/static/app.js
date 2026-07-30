@@ -323,21 +323,44 @@ function renderTopicCandidates(data) {
   }
 
   if (data.existingTopicMatches.length > 0) {
-    const heading = document.createElement('div');
-    heading.className = 'topic-candidate-heading';
-    heading.textContent = `기존 Topic 제안 (${data.existingTopicMatches.length})`;
-    topicCandidatesResult.appendChild(heading);
-
-    const list = document.createElement('ul');
-    list.className = 'entity-list';
+    const matchesByTopic = new Map();
     data.existingTopicMatches.forEach((match) => {
-      const li = document.createElement('li');
-      const scrapTitle = match.scrap.title ?? match.scrap.url;
-      const matchedTitle = match.matchedAgainst.title ?? match.matchedAgainst.url;
-      li.textContent = `${scrapTitle} → 📍${match.topicName} (${match.score.toFixed(2)}, 근거: ${matchedTitle})`;
-      list.appendChild(li);
+      if (!matchesByTopic.has(match.topicId)) {
+        matchesByTopic.set(match.topicId, { topicName: match.topicName, matches: [] });
+      }
+      matchesByTopic.get(match.topicId).matches.push(match);
     });
-    topicCandidatesResult.appendChild(list);
+
+    matchesByTopic.forEach(({ topicName, matches }, topicId) => {
+      const card = document.createElement('div');
+      card.className = 'topic-candidate-card';
+
+      const bestScore = Math.max(...matches.map((m) => m.score));
+      const heading = document.createElement('div');
+      heading.className = 'topic-candidate-heading';
+      heading.textContent = `📍 ${topicName} 에 추가 제안 (최고 점수 ${bestScore.toFixed(2)})`;
+      card.appendChild(heading);
+
+      const list = document.createElement('ul');
+      list.className = 'entity-list';
+      matches.forEach((match) => {
+        const li = document.createElement('li');
+        const scrapTitle = match.scrap.title ?? match.scrap.url;
+        const matchedTitle = match.matchedAgainst.title ?? match.matchedAgainst.url;
+        li.textContent = `${scrapTitle} (${match.score.toFixed(2)}, 근거: ${matchedTitle})`;
+        list.appendChild(li);
+      });
+      card.appendChild(list);
+
+      const addButton = document.createElement('button');
+      addButton.type = 'button';
+      addButton.className = 'fill-candidate-button';
+      addButton.textContent = '이 Topic에 추가';
+      addButton.addEventListener('click', () => addScrapsToTopic(topicId, matches.map((m) => m.scrap.id), addButton));
+      card.appendChild(addButton);
+
+      topicCandidatesResult.appendChild(card);
+    });
   }
 
   data.groups.forEach((group, index) => {
@@ -383,6 +406,27 @@ function renderTopicCandidates(data) {
     });
     topicCandidatesResult.appendChild(list);
   }
+}
+
+async function addScrapsToTopic(topicId, scrapIds, button) {
+  button.disabled = true;
+
+  const response = await fetch(`/topics/${topicId}/scraps`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scrapIds })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    topicCandidatesStatus.textContent = `실패: ${error.message}`;
+    button.disabled = false;
+    return;
+  }
+
+  const data = await response.json();
+  topicCandidatesStatus.textContent = `"${data.name}"에 ${scrapIds.length}개 추가됨`;
+  openIslandDetail(currentIslandId);
 }
 
 function fillTopicForm(scrapIds) {
