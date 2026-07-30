@@ -15,6 +15,8 @@ const recommendSection = document.getElementById('recommend-section');
 const recommendList = document.getElementById('recommend-list');
 const newIslandInput = document.getElementById('new-island-input');
 const newIslandConfirmBtn = document.getElementById('new-island-confirm');
+const otherIslandSelect = document.getElementById('other-island-select');
+const otherIslandConfirmBtn = document.getElementById('other-island-confirm');
 const confirmResult = document.getElementById('confirm-result');
 const islandList = document.getElementById('island-list');
 const scrapList = document.getElementById('scrap-list');
@@ -63,6 +65,7 @@ scrapForm.addEventListener('submit', async (event) => {
   }
 
   renderRecommendations(data.recommendations);
+  populateOtherIslandSelect();
   recommendSection.hidden = false;
   loadScraps();
   loadPendingScraps();
@@ -95,6 +98,28 @@ newIslandConfirmBtn.addEventListener('click', () => {
     return;
   }
   confirmScrap({ newIslandName: name });
+});
+
+async function populateOtherIslandSelect() {
+  const response = await fetch('/islands');
+  const islands = await response.json();
+
+  otherIslandSelect.innerHTML = '<option value="">다른 Island 선택...</option>';
+  islands.forEach((island) => {
+    const option = document.createElement('option');
+    option.value = island.id;
+    option.textContent = `${island.name} (${island.scrapCount})`;
+    otherIslandSelect.appendChild(option);
+  });
+}
+
+otherIslandConfirmBtn.addEventListener('click', () => {
+  const islandId = Number(otherIslandSelect.value);
+  if (!islandId) {
+    confirmResult.textContent = '추천 목록에 없는 Island를 선택해주세요.';
+    return;
+  }
+  confirmScrap({ islandId });
 });
 
 async function confirmScrap(body) {
@@ -138,6 +163,7 @@ async function openPendingScrap(scrap) {
 
   const recommendations = await response.json();
   renderRecommendations(recommendations);
+  populateOtherIslandSelect();
   recommendSection.hidden = false;
 }
 
@@ -183,7 +209,22 @@ async function loadIslands() {
 
 async function openIslandDetail(islandId) {
   currentIslandId = islandId;
-  const response = await fetch(`/islands/${islandId}`);
+  await refreshIslandDetail();
+
+  topicCandidatesStatus.textContent = '';
+  topicCandidatesResult.innerHTML = '';
+  topicCreateResult.textContent = '';
+  topicNameInput.value = '';
+  islandDetailSection.hidden = false;
+}
+
+/**
+ * Topic 생성/편입 직후에 쓴다 - openIslandDetail과 달리 topic-candidates-result를
+ * 안 건드린다. 후보 카드가 남아있어야 사용자가 나머지 후보도 이어서 처리할 수
+ * 있다(매번 "Topic 후보 찾기"를 다시 눌러 비용 드는 LLM 호출을 반복 안 해도 됨).
+ */
+async function refreshIslandDetail() {
+  const response = await fetch(`/islands/${currentIslandId}`);
   const island = await response.json();
 
   islandDetailTitle.textContent = island.name;
@@ -218,12 +259,6 @@ async function openIslandDetail(islandId) {
       li.appendChild(label);
       islandDetailScraps.appendChild(li);
     });
-
-  topicCandidatesStatus.textContent = '';
-  topicCandidatesResult.innerHTML = '';
-  topicCreateResult.textContent = '';
-  topicNameInput.value = '';
-  islandDetailSection.hidden = false;
 }
 
 function renderTopics(topics) {
@@ -285,7 +320,8 @@ createTopicButton.addEventListener('click', async () => {
   }
 
   topicCreateResult.textContent = `"${name}" Topic 생성됨`;
-  openIslandDetail(currentIslandId);
+  topicNameInput.value = '';
+  await refreshIslandDetail();
 });
 
 topicCandidatesButton.addEventListener('click', async () => {
@@ -426,7 +462,7 @@ async function addScrapsToTopic(topicId, scrapIds, button) {
 
   const data = await response.json();
   topicCandidatesStatus.textContent = `"${data.name}"에 ${scrapIds.length}개 추가됨`;
-  openIslandDetail(currentIslandId);
+  await refreshIslandDetail();
 }
 
 function fillTopicForm(scrapIds) {
