@@ -384,7 +384,7 @@ function renderTopicCandidates(data) {
     const fillButton = document.createElement('button');
     fillButton.type = 'button';
     fillButton.className = 'fill-candidate-button';
-    fillButton.textContent = '이 후보로 채우기';
+    fillButton.textContent = '이 후보 추가';
     fillButton.addEventListener('click', () => fillTopicForm(group.scraps.map((scrap) => scrap.id)));
     card.appendChild(fillButton);
 
@@ -430,10 +430,12 @@ async function addScrapsToTopic(topicId, scrapIds, button) {
 }
 
 function fillTopicForm(scrapIds) {
+  // 덮어쓰지 않고 추가만 한다 - 후보 여러 개를 눌러서 하나로 합칠 수 있게.
   document.querySelectorAll('.scrap-select').forEach((checkbox) => {
-    checkbox.checked = scrapIds.includes(Number(checkbox.dataset.scrapId));
+    if (scrapIds.includes(Number(checkbox.dataset.scrapId))) {
+      checkbox.checked = true;
+    }
   });
-  topicNameInput.value = '';
   topicNameInput.focus();
   topicNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
