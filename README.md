@@ -5,6 +5,8 @@
 사용자는 콘텐츠를 수집하는 것이 아니라, 자신의 세계를 성장시킨다.
 AI는 이해하고, 알고리즘은 결정한다.
 
+전체 비전(세계 구조, 성장 지표, 제품 원칙)은 `docs/vision.md` 참고.
+
 ## Roadmap
 
 - [x] V0 — Validation (Python, `prototype/`) — 임베딩/Cosine 유사도/threshold 분류/Label 생성/Growth Point 전부 검증 완료. 결론(Finding P2-002/P2-003): 완전 자동 분류는 현재 기술로 불가능, "AI 추천 + 사용자 확인" 구조로 V1 설계.
@@ -16,7 +18,7 @@ AI는 이해하고, 알고리즘은 결정한다.
 ## Structure
 
 ```
-docs/             설계 문서 (vision, principles, world_rules, growth_rules, ai_rules, v1_design, content_extraction 등)
+docs/             설계 문서 (vision, v1_design, v2_design, v2_architecture_review, content_extraction 등)
 experiments/      작업 로그 (V0 연구 + V1 구현, PR 단위로 누적)
 golden_dataset/   회귀 테스트용 라벨링 데이터
 prototype/        V0, Python (알고리즘 검증 전용, DB/UI 없음)
