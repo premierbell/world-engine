@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### React build output (client/가 소스, 여기는 빌드 산출물만 - README 참고) ###
+src/main/resources/static/*

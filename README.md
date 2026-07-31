@@ -11,7 +11,7 @@ AI는 이해하고, 알고리즘은 결정한다.
 
 - [x] V0 — Validation (Python, `prototype/`) — 임베딩/Cosine 유사도/threshold 분류/Label 생성/Growth Point 전부 검증 완료. 결론(Finding P2-002/P2-003): 완전 자동 분류는 현재 기술로 불가능, "AI 추천 + 사용자 확인" 구조로 V1 설계.
 - [x] V1 — Genesis (Java/Spring Boot, `server/`) — Scrap Flow(추출 → 임베딩 → 추천 → 사용자 확인) 전체 루프 완주. 조회 API, 정정 기록, 최소 UI까지 완료. 회고는 `docs/v1_retrospective.md`.
-- [ ] V2 — Evolution (성장 지표, 시각적 티어, Topic 분화) - Topic 핵심 루프(후보 생성 → 기존 Topic 매칭 → 승인 → 편입 → 병렬화) 완료(PR #80~90), 지금은 "구조 안정화 관찰" 단계(PR #91~92). 성장 지표/시각적 티어/Topic 이름 AI 제안은 아직. 설계 근거는 `docs/v2_design.md`, 현재 구조의 강점/병목/미해결은 `docs/v2_architecture_review.md` 참고
+- [ ] V2 — Evolution (성장 지표, 시각적 티어, Topic 분화) - Topic 핵심 루프(후보 생성 → 기존 Topic 매칭 → 승인 → 편입 → 병렬화) 완료(PR #80~90), 지금은 "구조 안정화 관찰" 단계(PR #91~92). 설계 근거는 `docs/v2_design.md`, 현재 구조의 강점/병목/미해결은 `docs/v2_architecture_review.md` 참고. 프런트를 vanilla JS에서 React(`client/`)로 이전 완료 - 지금은 기존 기능을 그대로 옮긴 1차 버전이고, `docs/vision.md`가 그리는 바다/섬/도시 시각화는 아직 구현 안 됨(다음 단계).
 
 각 Phase의 상세 근거는 `docs/research_phase_1_summary.md`, `docs/research_phase_2_summary.md`, `docs/v1_design.md`, `docs/v1_retrospective.md`, `docs/v2_design.md`, `docs/v2_architecture_review.md` 참고. PR 단위 작업 기록은 `experiments/v0_validation.md`에 누적.
 
@@ -22,7 +22,8 @@ docs/             설계 문서 (vision, v1_design, v2_design, v2_architecture_r
 experiments/      작업 로그 (V0 연구 + V1 구현, PR 단위로 누적)
 golden_dataset/   회귀 테스트용 라벨링 데이터
 prototype/        V0, Python (알고리즘 검증 전용, DB/UI 없음)
-server/           V1부터, Spring Boot(Java 21) + 최소 정적 UI
+server/           V1부터, Spring Boot(Java 21) API(`/api/**`) + client 빌드 산출물 서빙
+client/           V2부터, React(Vite) + TypeScript - 프런트엔드 소스, `server/src/main/resources/static/`은 빌드 결과물이라 커밋 안 함
 ```
 
 ## Prototype (V0, Python)
@@ -43,15 +44,25 @@ uv run run.py
 
 ### 실행
 
+React 빌드 산출물이 `server/src/main/resources/static/`에 있어야 `http://localhost:8080`에서 화면이 뜬다 (이 폴더는 `.gitignore` 대상 - 클론 직후엔 비어있으니 먼저 빌드해야 함).
+
 ```bash
-cd server
+# 1. 프런트엔드 빌드 (client/ → server/src/main/resources/static/)
+cd client
+npm install
+npm run build
+
+# 2. 백엔드 실행
+cd ../server
 set -a && source ../prototype/.env && set +a   # OPENAI_API_KEY를 환경변수로
 ./gradlew bootRun
 ```
 
 Docker가 떠 있으면 `compose.yaml`의 Postgres 컨테이너를 Spring Boot가 자동으로 시작한다. `spring.jpa.hibernate.ddl-auto=update`라 스키마는 Entity 기준으로 자동 반영되고, 기존 데이터는 보존된다(Flyway/Liquibase 같은 정식 마이그레이션은 아직 안 씀 — 스키마 이력 관리가 필요해지면 그때 도입 검토).
 
-떠 있는 상태에서 `http://localhost:8080`으로 들어가면 스크랩 → AI 추천 → Island 확정까지 실제로 클릭해볼 수 있는 최소 UI(`server/src/main/resources/static/`)가 뜬다.
+떠 있는 상태에서 `http://localhost:8080`으로 들어가면 스크랩 → AI 추천 → Island 확정 → Topic 생성까지 실제로 클릭해볼 수 있다. API는 `/api/**`, 나머지 경로는 React SPA(`client/`)가 처리한다.
+
+프런트엔드만 따로 개발할 때는 `cd client && npm run dev`(백엔드는 8080에서 별도 실행 중이어야 함, Vite가 `/api`를 프록시한다).
 
 ### 테스트
 

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/scraps")
+@RequestMapping("/api/scraps")
 public class ScrapController {
 
     private final ScrapService scrapService;
