@@ -34,6 +34,10 @@ h1 {
   margin: 0 auto 20px;
 }
 
+.map-view-topics {
+  max-width: 320px;
+}
+
 .map-island {
   cursor: pointer;
 }
