@@ -37,6 +37,12 @@ export function MapView({ islands }: MapViewProps) {
             onClick={() => navigate(`/islands/${island.id}`)}
           >
             <circle r={r} />
+            {Array.from({ length: island.topicCount }).map((_, topicIndex) => {
+              const dotAngle = (2 * Math.PI * topicIndex) / island.topicCount;
+              const dotX = (r - 6) * Math.cos(dotAngle);
+              const dotY = (r - 6) * Math.sin(dotAngle);
+              return <circle key={topicIndex} cx={dotX} cy={dotY} r={2.5} className="map-island-topic-dot" />;
+            })}
             <text y={r + 16} textAnchor="middle">
               {island.name} ({island.scrapCount})
             </text>
