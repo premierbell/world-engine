@@ -8,6 +8,7 @@ import { LoadingCard } from '../components/LoadingCard';
 import { ScrapList } from '../components/ScrapList';
 import { TopicCandidates } from '../components/TopicCandidates';
 import { TopicList } from '../components/TopicList';
+import { TopicMapView } from '../components/TopicMapView';
 import { useAddScrapsToTopic } from '../hooks/useAddScrapsToTopic';
 import { useCreateTopic } from '../hooks/useCreateTopic';
 import { useGenerateTopicCandidates } from '../hooks/useGenerateTopicCandidates';
@@ -156,6 +157,7 @@ export function IslandDetailPage() {
         onAddToExistingTopic={handleAddToExistingTopic}
       />
 
+      <TopicMapView topics={island.topics} />
       <TopicList topics={island.topics} />
 
       <div className="topic-create-form">

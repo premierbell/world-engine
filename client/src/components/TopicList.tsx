@@ -12,7 +12,7 @@ export function TopicList({ topics }: TopicListProps) {
   return (
     <div id="island-topics">
       {topics.map((topic) => (
-        <div key={topic.id} className="topic-candidate-card">
+        <div key={topic.id} id={`topic-${topic.id}`} className="topic-candidate-card">
           <div className="topic-candidate-heading">
             📍 {topic.name} ({topic.scraps.length})
           </div>
