@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { ApiError } from '../api/client';
 import { IslandList } from '../components/IslandList';
+import { MapView } from '../components/MapView';
 import { PendingList } from '../components/PendingList';
 import { RecentScraps } from '../components/RecentScraps';
 import { RecommendPanel } from '../components/RecommendPanel';
 import { ScrapForm } from '../components/ScrapForm';
 import { useConfirmScrap } from '../hooks/useConfirmScrap';
 import { useCreateScrap } from '../hooks/useCreateScrap';
+import { useIslands } from '../hooks/useIslands';
 import { useRefreshRecommendations } from '../hooks/useRefreshRecommendations';
 import type { IslandRecommendation, ScrapSummary } from '../types/scrap';
 
@@ -20,6 +22,7 @@ const FAILURE_MESSAGES: Record<string, string> = {
 };
 
 export function HomePage() {
+  const { data: islands } = useIslands();
   const [currentScrapId, setCurrentScrapId] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<IslandRecommendation[] | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -94,6 +97,8 @@ export function HomePage() {
     <div className="layout">
       <main className="main">
         <h1>World Engine</h1>
+
+        <MapView islands={islands ?? []} />
 
         <section className="card">
           <h2>스크랩</h2>

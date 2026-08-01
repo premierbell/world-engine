@@ -26,6 +26,32 @@ h1 {
   text-decoration: underline;
 }
 
+.map-view {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  display: block;
+  margin: 0 auto 20px;
+}
+
+.map-island {
+  cursor: pointer;
+}
+
+.map-island circle {
+  fill: #2b6cb0;
+}
+
+.map-island:hover circle {
+  fill: #1e4e80;
+}
+
+.map-island text {
+  font-size: 12px;
+  fill: #1a1a1a;
+  pointer-events: none;
+}
+
 h2 {
   margin: 0 0 12px;
   font-size: 15px;
