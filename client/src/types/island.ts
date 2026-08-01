@@ -5,6 +5,7 @@ export interface IslandSummary {
   id: number;
   name: string;
   scrapCount: number;
+  topicCount: number;
 }
 
 export interface IslandDetail {

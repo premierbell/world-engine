@@ -32,7 +32,10 @@ public class IslandQueryService {
     public List<IslandSummaryResponse> findAll() {
         return islandRepository.findAll().stream()
             .map(island -> new IslandSummaryResponse(
-                island.getId(), island.getName(), scrapRepository.countByIslandId(island.getId())))
+                island.getId(),
+                island.getName(),
+                scrapRepository.countByIslandId(island.getId()),
+                topicRepository.countByIslandId(island.getId())))
             .toList();
     }
 

@@ -46,6 +46,10 @@ h1 {
   fill: #2b6cb0;
 }
 
+.map-island circle.map-island-topic-dot {
+  fill: #f4f4f2;
+}
+
 .map-island:hover circle {
   fill: #1e4e80;
 }
