@@ -12,6 +12,7 @@ import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.SourceType;
 import com.worldengine.extraction.service.ExtractionQualityEvaluator;
 import java.net.URI;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import net.dankito.readability4j.Article;
 import net.dankito.readability4j.Readability4J;
@@ -33,6 +34,13 @@ import org.springframework.stereotype.Component;
 public class PlaywrightExtractionStrategy implements ExtractionStrategy {
 
     private static final int TIMEOUT_MS = 15_000;
+
+    private static final List<String> BOT_BLOCK_SIGNATURES = List.of(
+        "Why have I been blocked",
+        "Enable JavaScript and cookies to continue",
+        "Checking your browser before accessing",
+        "Attention Required! | Cloudflare"
+    );
 
     private final ExtractionQualityEvaluator extractionQualityEvaluator;
 
@@ -65,6 +73,12 @@ public class PlaywrightExtractionStrategy implements ExtractionStrategy {
         }
 
         Document document = Jsoup.parse(renderedHtml, uri.toString());
+
+        if (looksLikeBotBlock(document)) {
+            log.warn("Playwright render appears bot-blocked - url={}", uri);
+            return ExtractionResult.failed(SourceType.ARTICLE, FailureReason.ROBOTS_BLOCKED);
+        }
+
         String content = extractMainContent(uri, document);
 
         if (extractionQualityEvaluator.looksLikeLegalBoilerplate(content)) {
@@ -88,4 +102,8 @@ public class PlaywrightExtractionStrategy implements ExtractionStrategy {
         }
     }
 
+    private boolean looksLikeBotBlock(Document document) {
+        String pageText = document.text();
+        return BOT_BLOCK_SIGNATURES.stream().anyMatch(pageText::contains);
+    }
 }
