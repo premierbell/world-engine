@@ -4,6 +4,7 @@ import com.worldengine.extraction.model.ExtractionResult;
 import com.worldengine.extraction.model.ExtractionStatus;
 import com.worldengine.extraction.service.ExtractionQualityEvaluator;
 import com.worldengine.extraction.strategy.ArticleExtractionStrategy;
+import com.worldengine.extraction.strategy.PlaywrightExtractionStrategy;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -25,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("live")
 class ArticleExtractionStrategyLiveTest {
 
-    private final ArticleExtractionStrategy strategy = new ArticleExtractionStrategy(new ExtractionQualityEvaluator(50));
+    private final ArticleExtractionStrategy strategy = new ArticleExtractionStrategy(
+        new ExtractionQualityEvaluator(50), new PlaywrightExtractionStrategy(new ExtractionQualityEvaluator(50)));
 
     @ParameterizedTest
     @ValueSource(strings = {
