@@ -22,6 +22,22 @@ public class ExtractionQualityEvaluator {
     private static final int COMMERCE_KEYWORD_THRESHOLD = 3;
     private static final int COMMERCE_CHECK_WINDOW = 500;
 
+    /**
+     * 본문 대신 사이트 공통 요소(주소/사업자정보/저작권/약관 안내)만
+     * 잡힌 경우를 감지한다 - 실사용 중 발견(docs/content_extraction.md
+     * "Extraction Failure Taxonomy" 참고). 이커머스 어휘와 달리 이런
+     * 문구는 페이지당 한 번씩만 등장하는 경향이 있어(링크 텍스트) threshold를
+     * 1로 둔다. "쿠키"를 단독 키워드로 넣었더니 "세쿠키누맙" 같은
+     * 무관한 단어의 부분 문자열에 매치되는 오탐이 나와서 "쿠키를"/"쿠키
+     * 수집"처럼 구체적인 구문만 쓴다.
+     */
+    private static final List<String> LEGAL_BOILERPLATE_KEYWORDS = List.of(
+        "개인정보처리방침", "약관", "저작권", "All rights reserved", "사업자등록번호",
+        "통신판매업", "통신판매중개자", "Copyright", "쿠키를", "쿠키 수집", "개인정보 처리방침"
+    );
+    private static final int LEGAL_KEYWORD_THRESHOLD = 1;
+    private static final int LEGAL_CHECK_WINDOW = 500;
+
     private final int minContentLength;
 
     public ExtractionQualityEvaluator(@Value("${extraction.min-content-length}") int minContentLength) {
@@ -33,6 +49,17 @@ public class ExtractionQualityEvaluator {
             return false;
         }
         return !looksLikeCommerceBoilerplate(content);
+    }
+
+    public boolean looksLikeLegalBoilerplate(String content) {
+        if (content == null) {
+            return false;
+        }
+        String window = content.length() > LEGAL_CHECK_WINDOW
+            ? content.substring(0, LEGAL_CHECK_WINDOW)
+            : content;
+        long matchCount = LEGAL_BOILERPLATE_KEYWORDS.stream().filter(window::contains).count();
+        return matchCount >= LEGAL_KEYWORD_THRESHOLD;
     }
 
     private boolean looksLikeCommerceBoilerplate(String content) {

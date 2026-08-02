@@ -25,6 +25,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.jsoup:jsoup:1.21.1")
 	implementation("net.dankito.readability4j:readability4j:1.0.8")
+    implementation("com.microsoft.playwright:playwright:1.61.0")
     implementation("org.apache.pdfbox:pdfbox:3.0.7")
 	compileOnly("org.projectlombok:lombok")
 	developmentOnly("org.springframework.boot:spring-boot-docker-compose")
@@ -63,4 +64,12 @@ tasks.register<Test>("liveTest") {
 	testClassesDirs = sourceSets["test"].output.classesDirs
 	classpath = sourceSets["test"].runtimeClasspath
 	shouldRunAfter(tasks.test)
+}
+
+tasks.register<JavaExec>("installPlaywright") {
+    description = "Playwright가 쓸 브라우저 바이너리(Chromium)를 로컬에 설치한다. 최초  Playwright 버전이 바뀔 때 실행."
+    group = "verification"
+    mainClass.set("com.microsoft.playwright.CLI")
+    classpath = sourceSets["main"].runtimeClasspath
+    args = listOf("install", "chromium")
 }

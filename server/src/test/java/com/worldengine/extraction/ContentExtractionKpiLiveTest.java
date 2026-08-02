@@ -12,6 +12,7 @@ import com.worldengine.extraction.strategy.ArticleExtractionStrategy;
 import com.worldengine.extraction.strategy.GithubExtractionStrategy;
 import com.worldengine.extraction.strategy.NaverBlogExtractionStrategy;
 import com.worldengine.extraction.strategy.PdfExtractionStrategy;
+import com.worldengine.extraction.strategy.PlaywrightExtractionStrategy;
 import com.worldengine.extraction.strategy.YouTubeExtractionStrategy;
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +49,8 @@ class ContentExtractionKpiLiveTest {
             new GithubExtractionStrategy(),
             new YouTubeExtractionStrategy(new ExtractionQualityEvaluator(50)),
             new PdfExtractionStrategy(),
-            new ArticleExtractionStrategy(new ExtractionQualityEvaluator(50))
+            new ArticleExtractionStrategy(
+                new ExtractionQualityEvaluator(50), new PlaywrightExtractionStrategy(new ExtractionQualityEvaluator(50)))
         ));
 
         ObjectMapper mapper = new ObjectMapper();
