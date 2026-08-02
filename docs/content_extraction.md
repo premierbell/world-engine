@@ -215,7 +215,8 @@ V2 실사용 중 "경제, 재테크" Island에서 Topic 후보가 하나도 안 
 | A. 정적 골격만 있고 실제 콘텐츠는 JS로만 렌더링 | jsoup이 본문에 아예 도달 못 함 | Playwright | 8건 |
 | B. 본문이 짧아 Open Graph로 정상 폴백 | 이미 해결됨(`ExtractionQualityEvaluator`) | 유지 | 1건 |
 | C. 본문은 실제로 잡혔지만 구분자 손실로 파편화 | readability4j `getTextContent()`의 블록 경계 처리 방식(추정) | Playwright와 무관, 별도 조사 | 1건 |
-| D. 렌더링은 성공했지만 readability4j가 랜딩페이지 구조에서 본문을 잘못 고름 | Playwright 문제 아님 - Article Extractor(readability4j)의 알고리즘 전제(기사/블로그형 문단)가 랜딩페이지(카드/배너형)와 안 맞음 | 표본 부족, 우선 로그로 관찰만(구현 완료 2026-08-02) | 1건(63빌딩, A에서 재분류) |
+| D. 렌더링(정적이든 Playwright든)과 무관하게 readability4j가 "decoy 블록"을 본문으로 고름 | Playwright 문제 아님 - 법적고지/반품안내/리뷰위젯 placeholder/쿠키동의 배너처럼 실콘텐츠보다 짧고 문장처럼 생긴 UI 블록에 낚임. **페이지 카테고리(랜딩/쇼핑/기사)와는 무관함**(아래 Boundary Study 참고) | 표본 부족, 우선 로그로 관찰만(구현 완료 2026-08-02) | 확인 3건(63빌딩/KT위즈샵/나이키) |
+| E. Playwright가 원래 jsoup 결과보다 더 나쁜 걸 돌려줄 위험(Fallback Regression) | 봇 차단 페이지/로그인 페이지/빈 SPA shell 등을 "성공"으로 오판할 수 있음 | 봇 차단 시그니처 감지로 예방 조치(구현 완료 2026-08-02, `PlaywrightExtractionStrategy.looksLikeBotBlock()`) | 실사용 재현은 아직 없음(나무위키 조사 중 가능성만 확인, 아래 참고) |
 
 **A(8/11) 검증**: `claude-in-chrome`으로 63빌딩(`63building.co.kr`)과
 뱅크샐러드 적금 차트를 실제 렌더링해서 jsoup 추출 결과와 직접 비교 -
@@ -363,6 +364,78 @@ readability4j still picked boilerplate`)를 남긴다. 앞으로 Playwright가
 트리거될 때마다 이 로그가 얼마나 자주 뜨는지 관찰해서, 표본이
 쌓이면(예: 20건 중 다수가 유형 D면) 그때 readability4j를 대체/보완할지
 결정한다 - 지금은 근거 없이 전략을 늘리지 않는다.
+
+### Boundary Study - readability4j는 실제로 어디까지 괜찮은가 (2026-08-02)
+
+실사용 중 KT위즈샵/나이키에서도 유형 D를 추가로 발견(둘 다 jsoup
+시점부터 이미 실콘텐츠에 접근 가능했는데 readability4j가 반품안내/
+리뷰위젯 placeholder를 골랐음 - Playwright 렌더링 여부와 무관하게
+readability4j의 선택이 정적/렌더링 양쪽에서 동일했다는 것까지 확인).
+이 3건만 보고 "readability4j를 교체해야 한다"로 일반화하기 전에,
+**이 3건 자체가 이미 "의심돼서 조사한" 편향된 표본**이라는 문제를
+먼저 인식하고, "성공할 것 같은" 카테고리(블로그/기사/기술문서 10건)와
+"실패할 것 같은" 카테고리(랜딩/포털/쇼핑 8건)를 실제 DB의 real
+scrap URL로 뽑아 Playwright 렌더링 후 `body.innerText()`와
+readability4j 결과를 나란히 비교했다.
+
+**결과**: "카테고리가 성공/실패를 가른다"는 가설은 기각됨.
+- 성공 예상군(유효 9건): 8건 성공(velog/tistory/GoogleCloud/naver블로그
+  2건/더바이오/약업신문/tistory), 1건 실패(**AWS 공식 문서** - 실콘텐츠
+  대신 쿠키 동의 배너 문구를 골랐음, 새로운 decoy 유형)
+- 실패 예상군(유효 6건): 3건 성공(**롯데월드타워/무신사/K-NIBRT** - 랜딩·쇼핑
+  페이지인데도 readability4j가 실콘텐츠를 제대로 골랐음), 1건 부분성공
+  (프로그래머스 - 리스트형 진짜 콘텐츠), 2건 실패(KBO 홈페이지, 한국바이오인력개발센터)
+
+**결론**: readability4j는 생각보다 훨씬 넓은 범위에서 잘 작동한다.
+문제는 "페이지 카테고리"가 아니라 **"실콘텐츠보다 짧고 문장처럼
+생긴 decoy 블록(법적고지/반품안내/리뷰위젯 placeholder/쿠키동의
+배너 등)이 있는가"** - 카테고리와 상관없이 발생할 수 있고, 반대로
+카테고리가 위험해 보여도(랜딩페이지, 쇼핑몰) decoy만 없으면 잘 된다.
+**readability4j를 교체할 근거는 없다** - 오히려 유지할 근거가 쌓였고,
+문제 범위가 "extractor 전체 교체"에서 "decoy 실패 감지와 안전한
+폴백"으로 좁혀졌다.
+
+### 나무위키 봇 차단 조사 - 정정 (2026-08-02)
+
+위 Boundary Study 중 나무위키 URL을 Playwright(헤드리스 Chromium)로
+렌더링했을 때 실제로 Cloudflare류 봇 차단 페이지("Why have I been
+blocked?")가 반환되는 걸 확인했다. 이미 유형 A로 분류된 26번(제주신화월드)
+스크랩이 실제로 법적 키워드("저작권")에 걸려 있어, **프로덕션에서
+Playwright 폴백이 트리거되면 기존 jsoup 결과보다 더 나쁜 결과(봇
+차단 페이지)를 저장할 위험**을 확인 - 처음엔 이걸 "실제 발생한
+회귀"로 기록하려 했다.
+
+**재검증 결과 정정**: 같은 URL로 실제 스크랩 API를 다시 호출해서
+확인하려 했으나, jsoup의 최초 정적 요청 자체가 이미 403으로 막혀
+있어서(같은 세션에서 이 URL을 반복 요청한 영향으로 추정) Playwright
+폴백 단계까지 도달하는 E2E 재현에는 실패했다. 즉:
+- ❌ "새 방어 코드가 실패했다"는 증거 없음
+- ❌ "Playwright fallback까지 실제로 도달했다"는 증거 없음(이번 재검증에서는)
+- ✅ namu.wiki가 헤드리스 브라우저를 차단한다는 사실 자체는 확인됨(최초 발견 시점)
+- ✅ 방어 로직(`PlaywrightExtractionStrategy.looksLikeBotBlock()` -
+  봇 차단 시그니처 문자열 감지 시 `ROBOTS_BLOCKED`로 실패 처리,
+  `ArticleExtractionStrategy`가 자동으로 jsoup 결과 유지)은 코드
+  리뷰 + 컴파일 확인 수준으로 반영 완료
+
+**정확한 표현**: "나무위키 Playwright fallback 회귀가 실제 발생했다"가
+아니라, **"Playwright 환경에서 봇 차단 페이지가 반환될 수 있음을
+확인했고, 이에 대한 예방적 방어 로직을 추가했다"**가 맞다. E2E
+회귀 재현은 못 했지만, 방어 로직 자체는 실제 관찰(봇 차단 페이지
+텍스트)에 근거한 것이라 유지한다 - namu.wiki를 더 붙잡고 재검증을
+기다리지는 않기로 함.
+
+**설계 원칙 정리**: 이번 조사로 얻은 가장 큰 결론은 **"Playwright는
+무조건적인 upgrade가 아니라, jsoup과 별개인 또 하나의 추출 소스"**라는
+점이다. 봇 차단 페이지 외에도 로그인 요구 페이지, 빈 SPA shell,
+광고/쿠키 오버레이 등 Playwright 쪽이 오히려 더 나쁠 수 있는 경우가
+앞으로도 나올 수 있다 - 그래서 `ArticleExtractionStrategy`는
+"Playwright 결과가 명확히 SUCCESS일 때만 채택, 그 외엔 무조건 기존
+jsoup 결과 유지"라는 보수적 기본값을 계속 지킨다(품질 점수를 매겨
+"더 나은 쪽 선택"하는 정교한 비교 로직은 아직 근거 부족 - 지금은
+`ExtractionResult`에 소스/차단여부 메타데이터를 추가하는 것도
+보류: 이미 있는 WARN 로그 2줄(decoy 탐지, 봇 차단 탐지)만으로도
+Playwright 성공률/폴백 빈도를 관찰하는 목적은 충분히 달성됨 -
+다운스트림 계약을 건드리는 새 데이터 클래스는 근거 없이 안 만든다).
 
 ## Non-goals
 
