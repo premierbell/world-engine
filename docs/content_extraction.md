@@ -437,6 +437,44 @@ jsoup 결과 유지"라는 보수적 기본값을 계속 지킨다(품질 점수
 Playwright 성공률/폴백 빈도를 관찰하는 목적은 충분히 달성됨 -
 다운스트림 계약을 건드리는 새 데이터 클래스는 근거 없이 안 만든다).
 
+### 유형 D의 첫 프로덕션 재현 - 삼성바이오로직스 (2026-08-03)
+
+PR #100 머지 후 실사용(야구/가구/패션/바이오 등에 스크랩 다수 추가)
+중 삼성바이오로직스(`samsungbiologics.com/kr`)가 실제 운영 로그에서
+유형 D를 재현했다:
+
+```
+INFO  Playwright fallback triggered - url=https://samsungbiologics.com/kr, reason=boilerplate_keyword
+WARN  Playwright rendered successfully but readability4j still picked boilerplate - url=..., contentLength=1270
+```
+
+저장된 content는 회사 소개가 아니라 **쿠키 정책 설명문**("쿠키가
+무엇인가요? ... Google Analytics ... 쿠키 설정, 확인 및 거부 방법")
+전체였다. 이건 **어제(2026-08-02) 진단 테스트로만 확인했던 유형 D가
+처음으로 실제 프로덕션에서, 새로 추가한 WARN 로그를 통해 그대로
+재현·관측된 사례**다.
+
+**확정된 사실이 바뀐 지점**: "Playwright를 붙이면 해결될 수도 있다"
+(가설) → **"Playwright는 렌더링에 성공해도 readability4j가 decoy를
+고르는 경우가 실제 운영에서도 발생한다"**(운영 데이터로 확정). 또한
+쿠키 동의/정책 문구가 decoy로 뽑힌 사례가 어제 AWS 공식문서에 이어
+**두 번째(삼성바이오로직스)** 나와서, "쿠키 정책이 readability를
+속인다"는 하위 패턴 자체는 어느 정도 신뢰할 수 있게 됐다. 다만
+63빌딩(법적고지)/KT위즈샵(반품안내)/나이키(리뷰위젯)/삼성바이오(쿠키정책)
+네 사례의 공통점이 "실콘텐츠보다 짧고 문장처럼 생김" 정도로만
+설명되고, readability4j가 **왜** 특정 블록을 고르는지 알고리즘
+차원의 설명은 아직 없다 - 지금 단계에서 새 감지 로직이나 alternative
+extractor를 설계하기엔 근거가 아직 부족하다고 판단.
+
+**결정**: 지금은 코드를 더 추가하지 않는다. `PlaywrightExtractionStrategy`의
+WARN 로그(`readability4j still picked boilerplate`) 빈도만 계속
+관찰한다 - 100건 스크랩 중 WARN이 2건이면 구조를 안 바꿔도 되고,
+18건이면 그때 decoy들의 공통 구조를 분석해서 extractor 개선을
+검토한다는 기준. 이번 조사에서 가장 중요한 변화는 "문제를 해결하는
+코드"가 아니라 **"문제를 실제 운영에서 안정적으로 관찰할 수 있는
+체계가 생겼다"**는 것 - 앞으로의 개선은 추측이 아니라 운영 로그
+데이터에 기반해 진행할 수 있다.
+
 ## Non-goals
 
 의도적으로 다루지 않는다 - 범위를 넘는 접근은 하지 않는다:
