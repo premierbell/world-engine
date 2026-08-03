@@ -13,6 +13,7 @@ import { useAddScrapsToTopic } from '../hooks/useAddScrapsToTopic';
 import { useCreateTopic } from '../hooks/useCreateTopic';
 import { useGenerateTopicCandidates } from '../hooks/useGenerateTopicCandidates';
 import { useIsland } from '../hooks/useIsland';
+import type { ScrapSummary } from '../types/scrap';
 import type { TopicCandidateResponse } from '../types/topic';
 
 export function IslandDetailPage() {
@@ -26,6 +27,7 @@ export function IslandDetailPage() {
   const [topicCandidates, setTopicCandidates] = useState<TopicCandidateResponse | null>(null);
   const [topicCandidatesStatus, setTopicCandidatesStatus] = useState('');
   const [topicCreateResult, setTopicCreateResult] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Island를 새로 열 때만 초기화한다 - Topic 생성/편입 후에는 후보 카드가 남아있어야
   // 사용자가 나머지 후보를 이어서 처리할 수 있다(app.js의 openIslandDetail vs
@@ -36,6 +38,7 @@ export function IslandDetailPage() {
     setTopicCandidates(null);
     setTopicCandidatesStatus('');
     setTopicCreateResult('');
+    setSearchQuery('');
   }, [islandId]);
 
   const generateCandidatesMutation = useGenerateTopicCandidates();
@@ -143,6 +146,19 @@ export function IslandDetailPage() {
   const assignedScrapIds = new Set(island.topics.flatMap((topic) => topic.scraps.map((scrap) => scrap.id)));
   const unassignedScraps = island.scraps.filter((scrap) => !assignedScrapIds.has(scrap.id));
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const matchesQuery = (scrap: ScrapSummary) =>
+    !normalizedQuery ||
+    (scrap.title ?? '').toLowerCase().includes(normalizedQuery) ||
+    scrap.url.toLowerCase().includes(normalizedQuery);
+
+  const filteredTopics = normalizedQuery
+    ? island.topics
+        .map((topic) => ({ ...topic, scraps: topic.scraps.filter(matchesQuery) }))
+        .filter((topic) => topic.scraps.length > 0)
+    : island.topics;
+  const filteredUnassignedScraps = unassignedScraps.filter(matchesQuery);
+
   return (
     <section className="card">
       <BackLink />
@@ -158,7 +174,16 @@ export function IslandDetailPage() {
       />
 
       <TopicMapView topics={island.topics} />
-      <TopicList topics={island.topics} />
+
+      <input
+        type="text"
+        className="search-input"
+        placeholder="제목/URL로 스크랩 찾기"
+        value={searchQuery}
+        onChange={(event) => setSearchQuery(event.target.value)}
+      />
+
+      <TopicList topics={filteredTopics} />
 
       <div className="topic-create-form">
         <input
@@ -173,7 +198,7 @@ export function IslandDetailPage() {
       </div>
       <p className="result">{topicCreateResult}</p>
 
-      <ScrapList scraps={unassignedScraps} selectedIds={selectedScrapIds} onToggle={handleToggleScrap} />
+      <ScrapList scraps={filteredUnassignedScraps} selectedIds={selectedScrapIds} onToggle={handleToggleScrap} />
     </section>
   );
 }

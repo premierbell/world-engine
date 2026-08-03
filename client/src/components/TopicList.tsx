@@ -18,7 +18,11 @@ export function TopicList({ topics }: TopicListProps) {
           </div>
           <ul className="entity-list">
             {topic.scraps.map((scrap) => (
-              <li key={scrap.id}>{scrap.title ?? scrap.url}</li>
+              <li key={scrap.id}>
+                <a href={scrap.url} target="_blank" rel="noopener noreferrer">
+                  {scrap.title ?? scrap.url}
+                </a>
+              </li>
             ))}
           </ul>
         </div>
