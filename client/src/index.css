@@ -179,6 +179,21 @@ button.refresh:hover {
   border-radius: 6px;
 }
 
+.entity-list a {
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.entity-list a:hover {
+  color: #2b6cb0;
+  text-decoration: underline;
+}
+
+.search-input {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
 .pending-list li {
   padding: 0;
   background: none;

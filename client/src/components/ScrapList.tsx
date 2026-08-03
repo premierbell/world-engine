@@ -21,7 +21,9 @@ export function ScrapList({ scraps, selectedIds, onToggle }: ScrapListProps) {
               onChange={() => onToggle(scrap.id)}
             />
             <label>
-              {scrap.title ?? scrap.url}
+              <a href={scrap.url} target="_blank" rel="noopener noreferrer">
+                {scrap.title ?? scrap.url}
+              </a>
               {scrap.wasCorrected ? ' ⚠️정정됨' : ''}
             </label>
           </li>
