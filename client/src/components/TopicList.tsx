@@ -9,9 +9,11 @@ export function TopicList({ topics }: TopicListProps) {
     return null;
   }
 
+  const sortedTopics = topics.slice().sort((a, b) => b.id - a.id);
+
   return (
     <div id="island-topics">
-      {topics.map((topic) => (
+      {sortedTopics.map((topic) => (
         <div key={topic.id} id={`topic-${topic.id}`} className="topic-candidate-card">
           <div className="topic-candidate-heading">
             📍 {topic.name} ({topic.scraps.length})
