@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { IslandList } from '../components/IslandList';
+import { IslandPanelContent } from '../components/IslandPanelContent';
 import { MapView } from '../components/MapView';
+import { Panel } from '../components/Panel';
 import { PendingList } from '../components/PendingList';
 import { RecentScraps } from '../components/RecentScraps';
 import { RecommendPanel } from '../components/RecommendPanel';
@@ -23,6 +26,16 @@ const FAILURE_MESSAGES: Record<string, string> = {
 
 export function HomePage() {
   const { data: islands } = useIslands();
+  const navigate = useNavigate();
+  const params = useParams();
+
+  // /islands/:id의 id는 URL이 유일한 출처다 - 별도 로컬 state로 들고
+  // 있지 않는다. 그래야 새로고침/공유 링크/브라우저 뒤로가기가 전부
+  // 그대로 동작한다(docs/map_home_redesign.md "라우팅 변경" 참고).
+  const parsedIslandId = Number(params.id);
+  const selectedIslandId =
+    params.id !== undefined && Number.isFinite(parsedIslandId) && parsedIslandId > 0 ? parsedIslandId : null;
+
   const [currentScrapId, setCurrentScrapId] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<IslandRecommendation[] | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -93,12 +106,22 @@ export function HomePage() {
     );
   };
 
+  const selectedIsland = islands?.find((island) => island.id === selectedIslandId) ?? null;
+
+  const handleIslandClick = (islandId: number) => {
+    navigate(`/islands/${islandId}`);
+  };
+
+  const handleClosePanel = () => {
+    navigate('/');
+  };
+
   return (
     <div className="layout">
       <main className="main">
         <h1>World Engine</h1>
 
-        <MapView islands={islands ?? []} />
+        <MapView islands={islands ?? []} onIslandClick={handleIslandClick} />
 
         <section className="card">
           <h2>스크랩</h2>
@@ -119,6 +142,9 @@ export function HomePage() {
         <PendingList onSelect={handlePendingSelect} />
         <RecentScraps />
       </aside>
+      <Panel isOpen={selectedIslandId !== null} onClose={handleClosePanel} title={selectedIsland?.name ?? ''}>
+        {selectedIslandId !== null && <IslandPanelContent islandId={selectedIslandId} />}
+      </Panel>
     </div>
   );
 }

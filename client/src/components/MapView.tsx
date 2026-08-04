@@ -1,8 +1,8 @@
-import { useNavigate } from 'react-router-dom';
 import type { IslandSummary } from '../types/island';
 
 interface MapViewProps {
   islands: IslandSummary[];
+  onIslandClick: (islandId: number) => void;
 }
 
 const SIZE = 600;
@@ -10,9 +10,7 @@ const CENTER = SIZE / 2;
 const MIN_CIRCLE_RADIUS = 18;
 const MAX_CIRCLE_RADIUS = 50;
 
-export function MapView({ islands }: MapViewProps) {
-  const navigate = useNavigate();
-
+export function MapView({ islands, onIslandClick }: MapViewProps) {
   if (islands.length === 0) {
     return null;
   }
@@ -34,7 +32,7 @@ export function MapView({ islands }: MapViewProps) {
             key={island.id}
             className="map-island"
             transform={`translate(${x}, ${y})`}
-            onClick={() => navigate(`/islands/${island.id}`)}
+            onClick={() => onIslandClick(island.id)}
           >
             <circle r={r} />
             {Array.from({ length: island.topicCount }).map((_, topicIndex) => {
