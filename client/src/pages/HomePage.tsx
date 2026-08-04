@@ -119,12 +119,19 @@ export function HomePage() {
     navigate('/');
   };
 
+  // 모바일에서는 패널이 Bottom Sheet로 화면 하단을 차지해서 FAB과
+  // 겹친다(데스크톱은 패널이 좌/우/상단에 있어서 하단 중앙 FAB과
+  // 안 겹침) - "패널 열림" 자체는 여기서 계산하고, 실제로 숨길지는
+  // CSS 미디어쿼리 안에서만 결정해서 데스크톱은 영향 없게 한다.
+  const anyPanelOpen = selectedIslandId !== null || isScrapPanelOpen || isSearchPanelOpen;
+  const fabClassName = anyPanelOpen ? ' fab-hide-when-panel-open' : '';
+
   return (
     <div className="layout">
       <main className="main">
         <h1>World Engine</h1>
 
-        <MapView islands={islands ?? []} onIslandClick={handleIslandClick} />
+        <MapView islands={islands ?? []} onIslandClick={handleIslandClick} selectedIslandId={selectedIslandId} />
       </main>
       <aside className="sidebar">
         <IslandList />
@@ -148,12 +155,17 @@ export function HomePage() {
       <Panel position="top" isOpen={isSearchPanelOpen} onClose={() => setIsSearchPanelOpen(false)} title="검색">
         <SearchPanelContent />
       </Panel>
-      <button type="button" className="fab fab-add" onClick={() => setIsScrapPanelOpen(true)} aria-label="스크랩 추가">
+      <button
+        type="button"
+        className={`fab fab-add${fabClassName}`}
+        onClick={() => setIsScrapPanelOpen(true)}
+        aria-label="스크랩 추가"
+      >
         +
       </button>
       <button
         type="button"
-        className="fab fab-search"
+        className={`fab fab-search${fabClassName}`}
         onClick={() => setIsSearchPanelOpen(true)}
         aria-label="검색"
       >
