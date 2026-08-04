@@ -9,6 +9,7 @@ import { PendingList } from '../components/PendingList';
 import { RecentScraps } from '../components/RecentScraps';
 import { RecommendPanel } from '../components/RecommendPanel';
 import { ScrapForm } from '../components/ScrapForm';
+import { SearchPanelContent } from '../components/SearchPanelContent';
 import { useConfirmScrap } from '../hooks/useConfirmScrap';
 import { useCreateScrap } from '../hooks/useCreateScrap';
 import { useIslands } from '../hooks/useIslands';
@@ -36,6 +37,8 @@ export function HomePage() {
   const selectedIslandId =
     params.id !== undefined && Number.isFinite(parsedIslandId) && parsedIslandId > 0 ? parsedIslandId : null;
 
+  const [isScrapPanelOpen, setIsScrapPanelOpen] = useState(false);
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   const [currentScrapId, setCurrentScrapId] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<IslandRecommendation[] | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -122,20 +125,6 @@ export function HomePage() {
         <h1>World Engine</h1>
 
         <MapView islands={islands ?? []} onIslandClick={handleIslandClick} />
-
-        <section className="card">
-          <h2>스크랩</h2>
-          <ScrapForm onSubmit={handleScrapSubmit} />
-          <p className="result">{statusMessage}</p>
-        </section>
-
-        {recommendations !== null && (
-          <RecommendPanel
-            recommendations={recommendations}
-            confirmMessage={confirmMessage}
-            onConfirm={handleConfirm}
-          />
-        )}
       </main>
       <aside className="sidebar">
         <IslandList />
@@ -145,6 +134,31 @@ export function HomePage() {
       <Panel isOpen={selectedIslandId !== null} onClose={handleClosePanel} title={selectedIsland?.name ?? ''}>
         {selectedIslandId !== null && <IslandPanelContent islandId={selectedIslandId} />}
       </Panel>
+      <Panel position="left" isOpen={isScrapPanelOpen} onClose={() => setIsScrapPanelOpen(false)} title="스크랩 추가">
+        <ScrapForm onSubmit={handleScrapSubmit} />
+        <p className="result">{statusMessage}</p>
+        {recommendations !== null && (
+          <RecommendPanel
+            recommendations={recommendations}
+            confirmMessage={confirmMessage}
+            onConfirm={handleConfirm}
+          />
+        )}
+      </Panel>
+      <Panel position="top" isOpen={isSearchPanelOpen} onClose={() => setIsSearchPanelOpen(false)} title="검색">
+        <SearchPanelContent />
+      </Panel>
+      <button type="button" className="fab fab-add" onClick={() => setIsScrapPanelOpen(true)} aria-label="스크랩 추가">
+        +
+      </button>
+      <button
+        type="button"
+        className="fab fab-search"
+        onClick={() => setIsSearchPanelOpen(true)}
+        aria-label="검색"
+      >
+        🔍
+      </button>
     </div>
   );
 }

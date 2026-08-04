@@ -359,6 +359,55 @@ button.refresh:hover {
   padding: 16px;
 }
 
+/* 패널이 여러 개 동시에 열려도 안 겹치게 좌/우/상단으로 나눈다(임시
+   규칙 - 여러 창을 자동 정렬하는 정식 배치 로직은 아직 없음, docs/
+   map_home_redesign.md "아직 안 정한 것" 참고). */
+.panel-left {
+  right: auto;
+  left: 20px;
+}
+
+.panel-top {
+  top: 20px;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translateX(-50%);
+  height: auto;
+  max-height: 70vh;
+}
+
+.fab {
+  position: fixed;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #2b6cb0;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 101;
+}
+
+.fab:hover {
+  background: #1e4e80;
+}
+
+.fab-add {
+  bottom: 24px;
+  left: 24px;
+}
+
+.fab-search {
+  top: 24px;
+  right: 24px;
+  font-size: 18px;
+}
+
 @media (max-width: 720px) {
   .panel {
     top: auto;
@@ -368,5 +417,6 @@ button.refresh:hover {
     width: auto;
     max-height: 70vh;
     border-radius: 16px 16px 0 0;
+    transform: none;
   }
 }
