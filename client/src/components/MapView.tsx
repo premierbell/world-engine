@@ -7,7 +7,6 @@ interface MapViewProps {
 
 const SIZE = 600;
 const CENTER = SIZE / 2;
-const PLACEMENT_RADIUS = 220;
 const MIN_CIRCLE_RADIUS = 18;
 const MAX_CIRCLE_RADIUS = 50;
 
@@ -22,10 +21,11 @@ export function MapView({ islands }: MapViewProps) {
 
   return (
     <svg className="map-view" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="Island 지도">
-      {islands.map((island, index) => {
-        const angle = (2 * Math.PI * index) / islands.length;
-        const x = CENTER + PLACEMENT_RADIUS * Math.cos(angle);
-        const y = CENTER + PLACEMENT_RADIUS * Math.sin(angle);
+      {islands.map((island) => {
+        // island.x/y는 서버(MapCoordinateService)가 주는 World Unit 좌표 -
+        // 화면 좌표로는 CENTER만큼 평행이동해서 그린다(줌/팬은 아직 없음, zoom=1 고정).
+        const x = CENTER + island.x;
+        const y = CENTER + island.y;
         const r =
           MIN_CIRCLE_RADIUS + (island.scrapCount / maxScrapCount) * (MAX_CIRCLE_RADIUS - MIN_CIRCLE_RADIUS);
 

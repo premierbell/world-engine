@@ -14,6 +14,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,20 +23,35 @@ public class IslandQueryService {
     private final IslandRepository islandRepository;
     private final ScrapRepository scrapRepository;
     private final TopicRepository topicRepository;
+    private final MapCoordinateService mapCoordinateService;
 
-    public IslandQueryService(IslandRepository islandRepository, ScrapRepository scrapRepository, TopicRepository topicRepository) {
+    public IslandQueryService(
+        IslandRepository islandRepository,
+        ScrapRepository scrapRepository,
+        TopicRepository topicRepository,
+        MapCoordinateService mapCoordinateService) {
         this.islandRepository = islandRepository;
         this.scrapRepository = scrapRepository;
         this.topicRepository = topicRepository;
+        this.mapCoordinateService = mapCoordinateService;
     }
 
     public List<IslandSummaryResponse> findAll() {
-        return islandRepository.findAll().stream()
-            .map(island -> new IslandSummaryResponse(
-                island.getId(),
-                island.getName(),
-                scrapRepository.countByIslandId(island.getId()),
-                topicRepository.countByIslandId(island.getId())))
+        List<Island> islands = islandRepository.findAll();
+        int totalCount = islands.size();
+
+        return IntStream.range(0, totalCount)
+            .mapToObj(index -> {
+                Island island = islands.get(index);
+                MapCoordinateService.Coordinate coordinate = mapCoordinateService.getCoordinate(island, index, totalCount);
+                return new IslandSummaryResponse(
+                    island.getId(),
+                    island.getName(),
+                    scrapRepository.countByIslandId(island.getId()),
+                    topicRepository.countByIslandId(island.getId()),
+                    coordinate.x(),
+                    coordinate.y());
+            })
             .toList();
     }
 
