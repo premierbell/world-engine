@@ -38,6 +38,10 @@ h1 {
   max-width: 320px;
 }
 
+.map-camera {
+  transition: transform 0.5s ease;
+}
+
 .map-island {
   cursor: pointer;
 }
@@ -75,6 +79,14 @@ h2 {
   max-width: 960px;
   margin: 40px auto;
   padding: 0 20px;
+}
+
+/* grid item의 기본 min-width는 auto(=콘텐츠의 min-content 크기)라서,
+   줄바꿈 없는 긴 URL 텍스트가 하나만 있어도 트랙 자체가 넓어져
+   가로 스크롤이 생긴다 - 모바일 폭에서 실제로 발견됨. */
+.main,
+.sidebar {
+  min-width: 0;
 }
 
 .card {
@@ -177,6 +189,7 @@ button.refresh:hover {
   padding: 6px 8px;
   background: #f7f7f5;
   border-radius: 6px;
+  overflow-wrap: break-word;
 }
 
 .entity-list a {
@@ -309,5 +322,125 @@ button.refresh:hover {
 @media (max-width: 720px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  bottom: 20px;
+  width: 360px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e0e0dc;
+  flex-shrink: 0;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.panel-close {
+  background: none;
+  color: #666;
+  padding: 4px 8px;
+  font-size: 16px;
+}
+
+.panel-close:hover {
+  background: none;
+  color: #1a1a1a;
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* 패널이 여러 개 동시에 열려도 안 겹치게 좌/우/상단으로 나눈다(임시
+   규칙 - 여러 창을 자동 정렬하는 정식 배치 로직은 아직 없음, docs/
+   map_home_redesign.md "아직 안 정한 것" 참고). */
+.panel-left {
+  right: auto;
+  left: 20px;
+}
+
+.panel-top {
+  top: 20px;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translateX(-50%);
+  height: auto;
+  max-height: 70vh;
+}
+
+.fab {
+  position: fixed;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #2b6cb0;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 101;
+}
+
+.fab:hover {
+  background: #1e4e80;
+}
+
+/* 둘 다 하단 중앙에 나란히 둔다 - panel-left/panel-right/panel-top
+   중 무엇이 열려도(각각 좌측/우측/상단 가장자리를 차지) 이 자리와는
+   안 겹친다. 실제로 검색 버튼을 우측 상단에 뒀다가 Island 패널의
+   닫기(X) 버튼과 겹쳐서 오클릭이 났던 걸 확인하고 옮김. */
+.fab-add {
+  bottom: 24px;
+  left: calc(50% - 64px);
+}
+
+.fab-search {
+  bottom: 24px;
+  left: calc(50% + 12px);
+  font-size: 18px;
+}
+
+@media (max-width: 720px) {
+  .panel {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: 70vh;
+    border-radius: 16px 16px 0 0;
+    transform: none;
+  }
+
+  /* 모바일에서만 - 패널이 Bottom Sheet로 화면 하단을 차지하는 동안은
+     같은 자리의 FAB을 숨긴다(콘텐츠를 가리는 문제 방지). 데스크톱은
+     이 미디어쿼리 밖이라 클래스가 붙어도 계속 보인다. */
+  .fab-hide-when-panel-open {
+    display: none;
   }
 }

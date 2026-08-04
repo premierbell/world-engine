@@ -35,6 +35,9 @@ class IslandQueryServiceTest {
     @Mock
     private TopicRepository topicRepository;
 
+    @Mock
+    private MapCoordinateService mapCoordinateService;
+
     @InjectMocks
     private IslandQueryService islandQueryService;
 
@@ -44,6 +47,8 @@ class IslandQueryServiceTest {
         ReflectionTestUtils.setField(island, "id", 1L);
         when(islandRepository.findAll()).thenReturn(List.of(island));
         when(scrapRepository.countByIslandId(1L)).thenReturn(3L);
+        when(mapCoordinateService.getCoordinate(island, 0, 1))
+            .thenReturn(new MapCoordinateService.Coordinate(0.0, 0.0));
 
         List<IslandSummaryResponse> result = islandQueryService.findAll();
 

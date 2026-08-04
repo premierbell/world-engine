@@ -1,26 +1,31 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
-import { BackLink } from '../components/BackLink';
-import { ErrorCard } from '../components/ErrorCard';
-import { IslandHeader } from '../components/IslandHeader';
-import { LoadingCard } from '../components/LoadingCard';
-import { ScrapList } from '../components/ScrapList';
-import { TopicCandidates } from '../components/TopicCandidates';
-import { TopicList } from '../components/TopicList';
-import { TopicMapView } from '../components/TopicMapView';
 import { useAddScrapsToTopic } from '../hooks/useAddScrapsToTopic';
 import { useCreateTopic } from '../hooks/useCreateTopic';
 import { useGenerateTopicCandidates } from '../hooks/useGenerateTopicCandidates';
 import { useIsland } from '../hooks/useIsland';
 import type { ScrapSummary } from '../types/scrap';
 import type { TopicCandidateResponse } from '../types/topic';
+import { ErrorCard } from './ErrorCard';
+import { IslandHeader } from './IslandHeader';
+import { LoadingCard } from './LoadingCard';
+import { ScrapList } from './ScrapList';
+import { TopicCandidates } from './TopicCandidates';
+import { TopicList } from './TopicList';
+import { TopicMapView } from './TopicMapView';
 
-export function IslandDetailPage() {
-  const params = useParams();
-  const islandId = Number(params.id);
-  const isValidId = Number.isFinite(islandId) && islandId > 0;
-  const { data: island, isLoading, isError, error, refetch } = useIsland(islandId, isValidId);
+interface IslandPanelContentProps {
+  islandId: number;
+}
+
+/**
+ * Island 상세(Topic 후보/지도/목록, 스크랩 목록, 검색)를 렌더링하는
+ * 내용물 - HomePage가 /islands/:id일 때 지도 위 Panel 안에 이걸
+ * 그대로 띄운다(별도 페이지로 이동하지 않음). docs/map_home_redesign.md
+ * 참고.
+ */
+export function IslandPanelContent({ islandId }: IslandPanelContentProps) {
+  const { data: island, isLoading, isError, error, refetch } = useIsland(islandId, true);
 
   const [selectedScrapIds, setSelectedScrapIds] = useState<Set<number>>(new Set());
   const [topicName, setTopicName] = useState('');
@@ -29,9 +34,6 @@ export function IslandDetailPage() {
   const [topicCreateResult, setTopicCreateResult] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Island를 새로 열 때만 초기화한다 - Topic 생성/편입 후에는 후보 카드가 남아있어야
-  // 사용자가 나머지 후보를 이어서 처리할 수 있다(app.js의 openIslandDetail vs
-  // refreshIslandDetail 구분과 동일한 이유).
   useEffect(() => {
     setSelectedScrapIds(new Set());
     setTopicName('');
@@ -45,33 +47,14 @@ export function IslandDetailPage() {
   const createTopicMutation = useCreateTopic();
   const addScrapsToTopicMutation = useAddScrapsToTopic(islandId);
 
-  if (!isValidId) {
-    return (
-      <div className="layout">
-        <BackLink />
-        <ErrorCard message="잘못된 Island ID예요." />
-      </div>
-    );
-  }
-
   if (isLoading) {
-    return (
-      <div className="layout">
-        <BackLink />
-        <LoadingCard />
-      </div>
-    );
+    return <LoadingCard />;
   }
 
   if (isError || !island) {
     const status = error instanceof ApiError ? error.status : null;
     const message = status === 404 ? 'Island를 찾을 수 없어요.' : `불러오기 실패: ${error?.message}`;
-    return (
-      <div className="layout">
-        <BackLink />
-        <ErrorCard message={message} onRetry={() => refetch()} />
-      </div>
-    );
+    return <ErrorCard message={message} onRetry={() => refetch()} />;
   }
 
   const handleToggleScrap = (scrapId: number) => {
@@ -160,8 +143,7 @@ export function IslandDetailPage() {
   const filteredUnassignedScraps = unassignedScraps.filter(matchesQuery);
 
   return (
-    <section className="card">
-      <BackLink />
+    <>
       <IslandHeader island={island} />
 
       <TopicCandidates
@@ -199,6 +181,6 @@ export function IslandDetailPage() {
       <p className="result">{topicCreateResult}</p>
 
       <ScrapList scraps={filteredUnassignedScraps} selectedIds={selectedScrapIds} onToggle={handleToggleScrap} />
-    </section>
+    </>
   );
 }

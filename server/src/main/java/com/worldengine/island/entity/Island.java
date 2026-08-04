@@ -22,6 +22,10 @@ public class Island {
     @Column(nullable = false, columnDefinition = "TEXT")
     private float[] embedding;
 
+    private Double x;
+
+    private Double y;
+
     protected Island() {}
 
     public Island(String name, float[] embedding) {
@@ -40,4 +44,8 @@ public class Island {
     public float[] getEmbedding() {
         return embedding;
     }
+
+    public Double getX() { return x; }
+
+    public Double getY() { return y; }
 }

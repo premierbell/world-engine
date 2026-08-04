@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { IslandList } from '../components/IslandList';
+import { IslandPanelContent } from '../components/IslandPanelContent';
 import { MapView } from '../components/MapView';
+import { Panel } from '../components/Panel';
 import { PendingList } from '../components/PendingList';
 import { RecentScraps } from '../components/RecentScraps';
 import { RecommendPanel } from '../components/RecommendPanel';
 import { ScrapForm } from '../components/ScrapForm';
+import { SearchPanelContent } from '../components/SearchPanelContent';
 import { useConfirmScrap } from '../hooks/useConfirmScrap';
 import { useCreateScrap } from '../hooks/useCreateScrap';
 import { useIslands } from '../hooks/useIslands';
@@ -23,6 +27,18 @@ const FAILURE_MESSAGES: Record<string, string> = {
 
 export function HomePage() {
   const { data: islands } = useIslands();
+  const navigate = useNavigate();
+  const params = useParams();
+
+  // /islands/:id의 id는 URL이 유일한 출처다 - 별도 로컬 state로 들고
+  // 있지 않는다. 그래야 새로고침/공유 링크/브라우저 뒤로가기가 전부
+  // 그대로 동작한다(docs/map_home_redesign.md "라우팅 변경" 참고).
+  const parsedIslandId = Number(params.id);
+  const selectedIslandId =
+    params.id !== undefined && Number.isFinite(parsedIslandId) && parsedIslandId > 0 ? parsedIslandId : null;
+
+  const [isScrapPanelOpen, setIsScrapPanelOpen] = useState(false);
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   const [currentScrapId, setCurrentScrapId] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<IslandRecommendation[] | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -93,19 +109,41 @@ export function HomePage() {
     );
   };
 
+  const selectedIsland = islands?.find((island) => island.id === selectedIslandId) ?? null;
+
+  const handleIslandClick = (islandId: number) => {
+    navigate(`/islands/${islandId}`);
+  };
+
+  const handleClosePanel = () => {
+    navigate('/');
+  };
+
+  // 모바일에서는 패널이 Bottom Sheet로 화면 하단을 차지해서 FAB과
+  // 겹친다(데스크톱은 패널이 좌/우/상단에 있어서 하단 중앙 FAB과
+  // 안 겹침) - "패널 열림" 자체는 여기서 계산하고, 실제로 숨길지는
+  // CSS 미디어쿼리 안에서만 결정해서 데스크톱은 영향 없게 한다.
+  const anyPanelOpen = selectedIslandId !== null || isScrapPanelOpen || isSearchPanelOpen;
+  const fabClassName = anyPanelOpen ? ' fab-hide-when-panel-open' : '';
+
   return (
     <div className="layout">
       <main className="main">
         <h1>World Engine</h1>
 
-        <MapView islands={islands ?? []} />
-
-        <section className="card">
-          <h2>스크랩</h2>
-          <ScrapForm onSubmit={handleScrapSubmit} />
-          <p className="result">{statusMessage}</p>
-        </section>
-
+        <MapView islands={islands ?? []} onIslandClick={handleIslandClick} selectedIslandId={selectedIslandId} />
+      </main>
+      <aside className="sidebar">
+        <IslandList />
+        <PendingList onSelect={handlePendingSelect} />
+        <RecentScraps />
+      </aside>
+      <Panel isOpen={selectedIslandId !== null} onClose={handleClosePanel} title={selectedIsland?.name ?? ''}>
+        {selectedIslandId !== null && <IslandPanelContent islandId={selectedIslandId} />}
+      </Panel>
+      <Panel position="left" isOpen={isScrapPanelOpen} onClose={() => setIsScrapPanelOpen(false)} title="스크랩 추가">
+        <ScrapForm onSubmit={handleScrapSubmit} />
+        <p className="result">{statusMessage}</p>
         {recommendations !== null && (
           <RecommendPanel
             recommendations={recommendations}
@@ -113,12 +151,26 @@ export function HomePage() {
             onConfirm={handleConfirm}
           />
         )}
-      </main>
-      <aside className="sidebar">
-        <IslandList />
-        <PendingList onSelect={handlePendingSelect} />
-        <RecentScraps />
-      </aside>
+      </Panel>
+      <Panel position="top" isOpen={isSearchPanelOpen} onClose={() => setIsSearchPanelOpen(false)} title="검색">
+        <SearchPanelContent />
+      </Panel>
+      <button
+        type="button"
+        className={`fab fab-add${fabClassName}`}
+        onClick={() => setIsScrapPanelOpen(true)}
+        aria-label="스크랩 추가"
+      >
+        +
+      </button>
+      <button
+        type="button"
+        className={`fab fab-search${fabClassName}`}
+        onClick={() => setIsSearchPanelOpen(true)}
+        aria-label="검색"
+      >
+        🔍
+      </button>
     </div>
   );
 }
