@@ -354,14 +354,61 @@ anchor 주변이 이미 붐비면 충돌 회피 때문에 반경이 similarity�
 - 3단계 후보 위치 생성 방식: 고정 각도(8/16방향) 링 확장 vs 나선
   (spiral) 탐색 - 둘 다 검토했고 결과 구조에 영향 없음(둘 중 뭘
   써도 위 4단계 알고리즘은 동일), 구현하면서 선택.
-- **마이그레이션 부트스트랩 순서**: NN이 준비되면 현재 NULL인 Island
-  전체(지금 8개)를 한 번에 계산해야 하는데, 맨 처음 처리되는 섬은
-  비교할 "기존 섬"이 없다 - id 순으로 처리하면서 "이번 배치에서
-  이미 좌표가 정해진 섬"을 그때그때 기존 섬으로 취급, 첫 번째만
-  원점(0,0)에 배치.
-- 마이그레이션은 한 번 실행되면 되돌리기 어려운 영구 결정이라,
-  실행 전에 MapView로 결과를 눈으로 한 번 확인하는 절차를 끼워넣을
-  것(이미 있는 검증 도구 재사용, 추가 비용 거의 없음).
+### 마이그레이션 설계 (확정, 2026-08-05)
+
+기존 8개 Island는 전부 NULL이라 "생성 이벤트"에 못 얹는다 - 별도의
+**한 번짜리 일괄 처리**가 필요. 실시간 생성(앞으로 새로 생기는
+Island)과 이 일괄 처리가 같은 알고리즘을 재사용하도록 설계한다.
+
+**핵심 인터페이스** - `NearestNeighborCoordinateStrategy`는 JPA
+엔티티에 안 묶인 순수 함수로 둔다:
+
+```
+Coordinate calculate(Embedding embedding, List<PlacedIsland> placed)
+```
+
+`PlacedIsland`는 `(x, y, embedding)` 튜플. 신규 Island 생성
+(`ScrapConfirmService.resolveIsland()`)과 마이그레이션 둘 다 이
+함수 하나만 호출한다.
+
+**`CoordinateMigrationService`는 영구 코드로 남긴다** - "한 번 쓰고
+버릴 스크립트"가 아니라, 실시간 생성과 동일한 로직을 여러 Island에
+대해 반복 호출하는 것뿐이라 원래부터 재사용 가치가 있다(예: 나중에
+어떤 이유로 좌표가 NULL로 리셋된 Island가 생겨도 이 서비스로 다시
+채울 수 있음).
+
+```
+CoordinateMigrationService.migrateAll(dryRun: boolean)
+  │
+  ▼
+IslandRepository.findAllByOrderById()
+  │
+  ▼
+placed = 이미 x,y가 있는 Island들(NULL 아닌 것)로 초기화
+  │
+  ▼
+NULL인 Island를 id 순으로:
+  - placed가 비어있으면 (0,0)
+  - 아니면 calculate(embedding, placed)로 좌표 계산
+  - dryRun=false면 DB에 저장, true면 로그만 남김
+  - placed에 추가(다음 Island의 비교 대상이 됨)
+```
+
+**Dry Run 모드 포함** - 저장 없이 계산 결과만 로그로 확인하는 옵션.
+내일 MIN_DISTANCE/MAX_DISTANCE/k 상수를 튜닝할 때, 매번 DB에 쓰고
+MapView를 열어보는 것보다 좌표만 빠르게 반복 계산해서 눈으로
+스캔하는 게 훨씬 빠르다. 실사용에 들어가기 전(지금 8개는 아직
+"리허설" 단계)까지는 결과가 이상하면 그냥 재실행해도 된다는 유보도
+동일하게 적용.
+
+**실제로 한 번 실행하는 방법**: `CoordinateMigrationService`는
+영구 코드로 남기되, 이걸 실제로 "한 번 호출"하는 트리거는 이
+프로젝트가 계속 써온 패턴 그대로 - 임시 `@Tag("live")` JUnit
+테스트를 만들어 `migrateAll(dryRun=false)`를 부르고,
+`./gradlew liveTest`로 실행 후 결과(로그/DB/MapView) 확인, 테스트
+파일은 삭제. `CommandLineRunner`(실행 타이밍 제어가 애매함)나 임시
+Controller(API를 만들고 또 지워야 함)보다 이 프로젝트에 이미 있는
+패턴이 더 간단함.
 
 ## 참고
 
