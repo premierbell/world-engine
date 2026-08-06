@@ -4,7 +4,9 @@
 
 **지도 UI(패널/라우팅/줌/모바일) 구현 완료(PR #103, 2026-08-04
 머지).** Nearest Neighbor 배치 알고리즘은 2026-08-05에 설계 완료,
-**구현은 아직** - "Nearest Neighbor 배치 알고리즘" 섹션 참고.
+**2026-08-06에 구현+실시간 연결까지 완료** - "Nearest Neighbor
+배치 알고리즘" 섹션과 "구현 완료" 섹션 참고. 다음은 수동 줌/팬
+카메라(편의 기능, 아직 미착수).
 
 ## 왜 이 논의가 시작됐는가
 
@@ -349,11 +351,13 @@ anchor 주변이 이미 붐비면 충돌 회피 때문에 반경이 similarity�
 암시하는 것보다 훨씬 커질 수 있음 - "거리가 similarity를 대략
 반영하지만 항상 정확하진 않다"는 근사로 받아들인다.
 
-### 아직 안 정한 것 (구현 시 결정)
+### 아직 안 정한 것 (구현 시 결정) → 구현하며 전부 결정됨
 
-- 3단계 후보 위치 생성 방식: 고정 각도(8/16방향) 링 확장 vs 나선
-  (spiral) 탐색 - 둘 다 검토했고 결과 구조에 영향 없음(둘 중 뭘
-  써도 위 4단계 알고리즘은 동일), 구현하면서 선택.
+- 3단계 후보 위치 생성 방식: 고정 각도(8방향) 링 확장으로 결정
+  (나선 탐색은 안 씀 - 결과 구조에 영향 없다고 판단했던 게 맞았음).
+  대신 구현 후 실제 렌더링에서 **"철도 선로" 편향**을 발견 - 아래
+  "구현 완료" 섹션 참고.
+
 ### 마이그레이션 설계 (확정, 2026-08-05)
 
 기존 8개 Island는 전부 NULL이라 "생성 이벤트"에 못 얹는다 - 별도의
@@ -409,6 +413,59 @@ MapView를 열어보는 것보다 좌표만 빠르게 반복 계산해서 눈으
 파일은 삭제. `CommandLineRunner`(실행 타이밍 제어가 애매함)나 임시
 Controller(API를 만들고 또 지워야 함)보다 이 프로젝트에 이미 있는
 패턴이 더 간단함.
+
+## 구현 완료 (2026-08-06)
+
+설계 그대로 `PlacedIsland`/`NearestNeighborCoordinateStrategy`(4개
+유닛테스트)/`CoordinateMigrationService`/`Island.assignCoordinate()`
+구현 → 실제 로컬 Postgres에 Dry Run → 실제 저장까지 진행.
+
+**fit-to-bounds 카메라를 먼저 추가함(원래 설계엔 없던 항목)** - 실제
+저장 직후 MapView로 확인했더니, 좌표 범위가 기존 임시 원형 배치보다
+훨씬 넓어져서(예: x가 0~2118) `MapView.tsx`의 기본 카메라(고정
+`zoom=1, translate=(0,0)`, 600×600 뷰박스)로는 원점 근처 섬 1개만
+보였음. "알고리즘을 뷰포트에 맞추지 말고 카메라를 좌표에 맞추라"는
+판단(사용자+GPT 논의 후 합의) - 전 섬의 minX/maxX/minY/maxY로
+scale/translate를 계산해 항상 전체가 화면에 들어오도록 함. 섬 클릭
+시 확대 카메라와 같은 "타겟 중심점+zoom → translate" 패턴으로 통일해서
+코드 중복 없앰.
+
+**"철도 선로" 편향 발견 + 수정** - fit-to-bounds로 실제로 보고 나서야
+확정된 문제: 8방향 후보 탐색이 항상 절대 각도 0°(오른쪽)부터 시작해서,
+anchor가 바뀌어도 매번 같은 절대 방향으로 뻗어나가며 여러 섬이
+일직선으로 체이닝됨. `anchor.embedding()`의 `Arrays.hashCode()`를
+360도로 매핑해 anchor마다 다른 탐색 시작각을 쓰도록 수정(같은
+anchor → 항상 같은 결과라 재현 가능, `PlacedIsland`에 없는 `id` 대신
+이미 있는 embedding으로 해결). 이후 실사용(21개 스크랩, 8개 섬)에서
+직선 편향 없이 자연스럽게 퍼진 것 확인.
+
+**신규 Island 실시간 좌표 배정 연결** - 원래 설계엔 있었지만
+구현 우선순위에서 미뤄뒀던 부분. `NearestNeighborCoordinateStrategy`가
+`CoordinateMigrationService`(일괄 마이그레이션)에만 연결돼 있어서,
+실제 스크랩 확정 흐름(`ScrapConfirmService.resolveIsland()`)으로
+생기는 새 섬은 계속 `MapCoordinateService`의 임시 원형 fallback을
+썼음(좌표가 `totalCount`에 의존해서 섬이 늘 때마다 계속 움직이는
+부작용까지 있었음 - 실사용 중 발견). `IslandCoordinateService`(얇은
+어댑터, `IslandRecallService`와 같은 패턴)를 새로 만들어
+`ScrapConfirmService`에 연결, 새 섬 생성 시 즉시 실좌표 배정하도록
+수정.
+
+**사고 기록 - 로컬 DB 전체 소실**: 재검증을 위해 8개 섬 좌표를
+NULL로 리셋하고 같은 `@Tag("live")` 테스트 패턴으로 재실행하다가,
+`src/test/resources/application.properties`의
+`ddl-auto=create-drop`(H2용 설정)이 `@SpringBootTest(properties=...)`
+에서 datasource만 덮어쓴 채 그대로 상속되어 실제 Postgres 전체
+테이블이 drop됨(스크랩 120건 이상 포함, 백업 없어 복구 불가 -
+사용자가 복구 포기 결정). 이후 라이브 테스트는 반드시
+`spring.jpa.hibernate.ddl-auto=none`을 **명시적으로** 같이 오버라이드
+하는 것으로 수정 - 상세 재발 방지 규칙은 Claude 메모리
+`feedback_live_test_real_db_ddl_auto_danger`에 별도 기록.
+
+**다음(편의 기능, 아직 미착수)**: 지도가 커지면서 라벨 글자가 fit-to-
+bounds 축소를 따라 함께 작아져 안 읽히는 문제 - 실사용 중 발견.
+① 줌 레벨과 무관하게 라벨 최소 크기 유지 ② 마우스 휠 줌 + 드래그
+팬(사용자가 직접 조작하는 세 번째 카메라 - 지금은 fit-to-bounds/
+섬 클릭 확대 둘 다 자동 카메라뿐).
 
 ## 참고
 
