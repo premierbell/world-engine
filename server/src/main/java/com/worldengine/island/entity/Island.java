@@ -48,4 +48,9 @@ public class Island {
     public Double getX() { return x; }
 
     public Double getY() { return y; }
+
+    public void assignCoordinate(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
 }

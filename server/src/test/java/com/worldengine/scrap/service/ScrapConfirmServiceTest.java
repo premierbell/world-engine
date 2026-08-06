@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
+import com.worldengine.island.service.IslandCoordinateService;
+import com.worldengine.island.service.MapCoordinateService;
 import com.worldengine.scrap.dto.ScrapConfirmResponse;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
@@ -27,6 +29,9 @@ class ScrapConfirmServiceTest {
 
     @Mock
     private IslandRepository islandRepository;
+
+    @Mock
+    private IslandCoordinateService islandCoordinateService;
 
     @InjectMocks
     private ScrapConfirmService scrapConfirmService;
@@ -63,6 +68,7 @@ class ScrapConfirmServiceTest {
             return island;
         });
         when(scrapRepository.save(any())).thenReturn(scrap);
+        when(islandCoordinateService.assignCoordinateForNewIsland(any())).thenReturn(new MapCoordinateService.Coordinate(100, 200));
 
         ScrapConfirmResponse response = scrapConfirmService.confirm(1L, null, "새로운 섬");
 

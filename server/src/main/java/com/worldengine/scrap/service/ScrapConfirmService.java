@@ -2,6 +2,8 @@ package com.worldengine.scrap.service;
 
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
+import com.worldengine.island.service.IslandCoordinateService;
+import com.worldengine.island.service.MapCoordinateService;
 import com.worldengine.scrap.dto.ScrapConfirmResponse;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
@@ -13,10 +15,12 @@ public class ScrapConfirmService {
 
     private final ScrapRepository scrapRepository;
     private final IslandRepository islandRepository;
+    private final IslandCoordinateService islandCoordinateService;
 
-    public ScrapConfirmService(ScrapRepository scrapRepository, IslandRepository islandRepository) {
+    public ScrapConfirmService(ScrapRepository scrapRepository, IslandRepository islandRepository, IslandCoordinateService islandCoordinateService) {
         this.scrapRepository = scrapRepository;
         this.islandRepository = islandRepository;
+        this.islandCoordinateService = islandCoordinateService;
     }
 
     public ScrapConfirmResponse confirm(Long scrapId, Long islandId, String newIslandName) {
@@ -45,6 +49,8 @@ public class ScrapConfirmService {
         }
 
         Island newIsland = new Island(newIslandName, scrap.getEmbedding());
+        MapCoordinateService.Coordinate coordinate = islandCoordinateService.assignCoordinateForNewIsland(scrap.getEmbedding());
+        newIsland.assignCoordinate(coordinate.x(), coordinate.y());
         return islandRepository.save(newIsland);
     }
 }
