@@ -32,6 +32,8 @@ h1 {
   height: auto;
   display: block;
   margin: 0 auto 20px;
+  touch-action: none; /* 드래그 팬을 브라우저 기본 스크롤/핀치와 충돌 없이 직접 처리 */
+  cursor: grab;
 }
 
 .map-view-topics {
@@ -40,6 +42,13 @@ h1 {
 
 .map-camera {
   transition: transform 0.5s ease;
+}
+
+/* 휠/드래그로 수동 조작 중에는 0.5s 트랜지션이 커서를 못 따라가고
+   항상 지연되는 것처럼 보여서 끈다 - fit-to-bounds/섬 확대 같은 자동
+   전환에만 트랜지션이 남는다. */
+.map-camera--manual {
+  transition: none;
 }
 
 .map-island {
