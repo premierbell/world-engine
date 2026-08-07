@@ -208,9 +208,17 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null }: Map
                 const dotY = (r - 6) * Math.sin(dotAngle);
                 return <circle key={topicIndex} cx={dotX} cy={dotY} r={2.5} className="map-island-topic-dot" />;
               })}
-              <text y={r + 16} textAnchor="middle">
-                {island.name} ({island.scrapCount})
-              </text>
+              {/* 라벨은 카메라 zoom과 무관하게 항상 같은 화면 크기로 보여야
+                  읽을 수 있다(지도가 커질수록 fit-to-bounds가 계속
+                  축소시키기 때문). translate로 위치를 먼저 잡고 나서
+                  scale(1/zoom)으로 카메라의 확대/축소를 상쇄한다 - 배치
+                  카메라의 scale(zoom)과 상쇄되어 최종 렌더 크기는 항상
+                  12px 고정, 위치(원과의 간격)는 기존과 동일하다. */}
+              <g transform={`translate(0, ${r + 16}) scale(${1 / zoom})`}>
+                <text textAnchor="middle">
+                  {island.name} ({island.scrapCount})
+                </text>
+              </g>
             </g>
           );
         })}
