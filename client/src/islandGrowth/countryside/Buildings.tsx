@@ -16,6 +16,22 @@ export function HouseSmall01() {
 }
 
 // 지붕 경사/창문 위치를 살짝 다르게 한 변형 - 같은 규칙, 다른 실루엣.
+// large 등급 - house_small보다 넓고 높음, 굴뚝으로 실루엣에 포인트.
+export function HouseLarge01() {
+  return (
+    <>
+      <ellipse cx={6} cy={2} rx={22} ry={5.5} fill={PALETTE.dropShadow} />
+      <rect x={-18} y={-28} width={18} height={28} fill={PALETTE.buildingLight} />
+      <rect x={0} y={-28} width={18} height={28} fill={PALETTE.buildingShadow} />
+      <polygon points="-20,-28 0,-28 0,-44" fill={PALETTE.roofLight} />
+      <polygon points="0,-28 20,-28 0,-44" fill={PALETTE.roofShadow} />
+      <rect x={3} y={-50} width={4} height={8} fill={PALETTE.roofShadow} />
+      <rect x={-13} y={-22} width={7} height={7} fill={PALETTE.window} />
+      <rect x={-13} y={-11} width={7} height={7} fill={PALETTE.window} />
+    </>
+  );
+}
+
 export function HouseSmall02() {
   return (
     <>
