@@ -13,6 +13,21 @@ export function Tree01() {
   );
 }
 
+// tree_01(둥근 활엽수)과 다른 실루엣 - 침엽수(층이 진 삼각형). 같은
+// 좌상단 광원 규칙: 각 층을 좌(밝은면)/우(그림자면)로 나눔.
+export function Tree02() {
+  return (
+    <>
+      <ellipse cx={2} cy={1} rx={8} ry={2.5} fill={PALETTE.dropShadow} />
+      <rect x={-1.2} y={-8} width={2.4} height={8} fill={PALETTE.trunk} />
+      <polygon points="-9,-8 0,-8 0,-19" fill={PALETTE.foliageLight} />
+      <polygon points="0,-8 9,-8 0,-19" fill={PALETTE.foliageShadow} />
+      <polygon points="-6,-15 0,-15 0,-26" fill={PALETTE.foliageLight} />
+      <polygon points="0,-15 6,-15 0,-26" fill={PALETTE.foliageShadow} />
+    </>
+  );
+}
+
 export function Rock01() {
   return (
     <>
