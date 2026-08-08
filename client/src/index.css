@@ -55,40 +55,22 @@ h1 {
   cursor: pointer;
 }
 
-.map-island circle {
-  fill: #2b6cb0; /* 티어 클래스가 없는 경우의 기본값(fallback) */
-}
-
-/* 티어별 색상 - Growth Point(scrapCount)가 쌓일수록 진해지는 같은
-   파란 계열. 이건 "성장 단계를 구분해서 보여준다"는 목적을 위한
-   임시 중간 단계 디자인이다 - 최종 디자인이 아니다. 장기 목표는
-   섬에 실제로 마을→도시가 자라나는 시각적 변화(아이콘/일러스트
-   수준)이고, 그때 색상 체계도 같이 다시 정한다.
-   docs/vision.md "성장 지표와 시각적 티어" 참고. */
-.map-island--seed circle {
-  fill: #a3c9e8;
-}
-
-.map-island--islet circle {
-  fill: #6ba3d6;
-}
-
-.map-island--village circle {
-  fill: #2b6cb0;
-}
-
-.map-island--city circle {
-  fill: #163d66;
-}
+/* Growth Point/티어별 색상 구분(PR #112)은 여기까지 - 섬을 실제
+   에셋 조합(client/src/islandGrowth/, docs/island_growth_visual.md)
+   으로 그리기 시작하면서 더 안 씀. 티어 구분은 이제 조합되는 에셋의
+   종류/개수 자체가 대신한다. 클릭 판정용 히트서클은 JSX에서
+   style={{ fill: 'transparent' }}로 직접 투명 처리한다(인라인
+   style이 클래스 규칙보다 우선순위가 높아야 여기 CSS에 안 덮임). */
 
 .map-island circle.map-island-topic-dot {
   fill: #f4f4f2;
 }
 
-.map-island:hover circle {
-  /* fill을 직접 덮어쓰지 않고 밝기만 조정 - 티어마다 색이 달라도
-     하나의 규칙으로 전부 대응된다. */
-  filter: brightness(0.85);
+.map-island:hover {
+  /* 섬 전체(지형+건물+나무 전부)를 하나로 살짝 어둡게 - 개별 circle이
+     아니라 그룹 자체에 걸어서 어떤 모양(rect/polygon/path)이든 전부
+     대응된다. */
+  filter: brightness(0.92);
 }
 
 .map-island text {

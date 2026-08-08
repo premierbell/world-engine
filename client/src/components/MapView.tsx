@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { GrowthTier, IslandSummary } from '../types/island';
+import { composeIsland } from '../islandGrowth/compose';
+import { countrysideAssetsByCategory, countrysideTerrains } from '../islandGrowth/countryside';
 
 interface MapViewProps {
   islands: IslandSummary[];
@@ -33,6 +35,14 @@ const FIT_PADDING = 150; // World Unit - 섬 원+라벨이 화면 가장자리�
 const MAX_ZOOM = 10;
 const WHEEL_ZOOM_SENSITIVITY = 0.0015;
 const CLICK_DRAG_THRESHOLD_PX = 6; // 화면 픽셀 기준 - 이 이상 움직여야 "드래그"로 인정(손떨림에도 클릭이 씹히지 않을 정도)
+
+// 조합 에셋(client/src/islandGrowth/)의 지형은 전부 같은 가이드라인
+// 범위(x:32~154, y:74~152, docs/island_growth_visual.md "통일된 이미지
+// 양식") 안에서 그려진다 - 그 범위의 중심/반너비를 기준으로 기존 원
+// 반지름(r)과 맞먹는 크기가 되도록 scale을 계산한다.
+const TERRAIN_CENTER_X = 93;
+const TERRAIN_CENTER_Y = 113;
+const TERRAIN_HALF_EXTENT = 61;
 
 // Growth Point(scrapCount)를 사람이 체감할 수 있는 이름으로 보여준다 -
 // 원 크기는 그대로 두고 라벨에 티어 이름만 덧붙인다("성장은 체감
@@ -288,6 +298,13 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
           const y = CENTER + island.y;
           const r =
             MIN_CIRCLE_RADIUS + (island.scrapCount / maxScrapCount) * (MAX_CIRCLE_RADIUS - MIN_CIRCLE_RADIUS);
+          const islandScale = r / TERRAIN_HALF_EXTENT;
+
+          // 섬을 원 하나가 아니라 지형+나무+건물 등을 조합해서 그린다
+          // (client/src/islandGrowth/, docs/island_growth_visual.md).
+          // islandId를 시드로 써서 같은 섬은 항상 같은 조합이 나온다.
+          const composed = composeIsland(island.id, island.tier, countrysideTerrains, countrysideAssetsByCategory);
+          const Terrain = composed.terrain.Component;
 
           return (
             <g
@@ -296,7 +313,22 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
               transform={`translate(${x}, ${y})`}
               onClick={(event) => handleIslandClick(event, island.id)}
             >
-              <circle r={r} />
+              {/* 클릭 판정 전용 - 지형이 원이 아니라 불규칙한 모양이라
+                  실루엣 밖의 빈틈도 전부 클릭되게 투명 원을 깔아둔다.
+                  인라인 style로 줘야 CSS보다 우선순위가 높아서 투명이
+                  실제로 유지된다. */}
+              <circle r={r} style={{ fill: 'transparent' }} />
+              <g transform={`scale(${islandScale}) translate(${-TERRAIN_CENTER_X}, ${-TERRAIN_CENTER_Y})`}>
+                <Terrain />
+                {composed.objects.map((placed, index) => {
+                  const Asset = placed.asset.Component;
+                  return (
+                    <g key={index} transform={`translate(${placed.x}, ${placed.y})`}>
+                      <Asset />
+                    </g>
+                  );
+                })}
+              </g>
               {Array.from({ length: island.topicCount }).map((_, topicIndex) => {
                 const dotAngle = (2 * Math.PI * topicIndex) / island.topicCount;
                 const dotX = (r - 6) * Math.cos(dotAngle);
