@@ -3,6 +3,7 @@ package com.worldengine.island.service;
 import com.worldengine.island.dto.IslandDetailResponse;
 import com.worldengine.island.dto.IslandSummaryResponse;
 import com.worldengine.island.entity.Island;
+import com.worldengine.island.model.GrowthTier;
 import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.recommendation.vector.CosineSimilarity;
 import com.worldengine.scrap.dto.ScrapSummaryResponse;
@@ -44,13 +45,15 @@ public class IslandQueryService {
             .mapToObj(index -> {
                 Island island = islands.get(index);
                 MapCoordinateService.Coordinate coordinate = mapCoordinateService.getCoordinate(island, index, totalCount);
+                long scrapCount = scrapRepository.countByIslandId(island.getId());
                 return new IslandSummaryResponse(
                     island.getId(),
                     island.getName(),
-                    scrapRepository.countByIslandId(island.getId()),
+                    scrapCount,
                     topicRepository.countByIslandId(island.getId()),
                     coordinate.x(),
-                    coordinate.y());
+                    coordinate.y(),
+                    GrowthTier.fromScrapCount(scrapCount));
             })
             .toList();
     }

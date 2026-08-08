@@ -1,6 +1,8 @@
 import type { ScrapSummary } from './scrap';
 import type { TopicSummary } from './topic';
 
+export type GrowthTier = 'SEED' | 'ISLET' | 'VILLAGE' | 'CITY';
+
 export interface IslandSummary {
   id: number;
   name: string;
@@ -8,6 +10,7 @@ export interface IslandSummary {
   topicCount: number;
   x: number;
   y: number;
+  tier: GrowthTier;
 }
 
 export interface IslandDetail {
