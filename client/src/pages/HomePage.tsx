@@ -131,7 +131,12 @@ export function HomePage() {
       <main className="main">
         <h1>World Engine</h1>
 
-        <MapView islands={islands ?? []} onIslandClick={handleIslandClick} selectedIslandId={selectedIslandId} />
+        <MapView
+          islands={islands ?? []}
+          onIslandClick={handleIslandClick}
+          selectedIslandId={selectedIslandId}
+          onBackgroundClick={handleClosePanel}
+        />
       </main>
       <aside className="sidebar">
         <IslandList />
