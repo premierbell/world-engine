@@ -56,7 +56,29 @@ h1 {
 }
 
 .map-island circle {
+  fill: #2b6cb0; /* 티어 클래스가 없는 경우의 기본값(fallback) */
+}
+
+/* 티어별 색상 - Growth Point(scrapCount)가 쌓일수록 진해지는 같은
+   파란 계열. 이건 "성장 단계를 구분해서 보여준다"는 목적을 위한
+   임시 중간 단계 디자인이다 - 최종 디자인이 아니다. 장기 목표는
+   섬에 실제로 마을→도시가 자라나는 시각적 변화(아이콘/일러스트
+   수준)이고, 그때 색상 체계도 같이 다시 정한다.
+   docs/vision.md "성장 지표와 시각적 티어" 참고. */
+.map-island--seed circle {
+  fill: #a3c9e8;
+}
+
+.map-island--islet circle {
+  fill: #6ba3d6;
+}
+
+.map-island--village circle {
   fill: #2b6cb0;
+}
+
+.map-island--city circle {
+  fill: #163d66;
 }
 
 .map-island circle.map-island-topic-dot {
@@ -64,7 +86,9 @@ h1 {
 }
 
 .map-island:hover circle {
-  fill: #1e4e80;
+  /* fill을 직접 덮어쓰지 않고 밝기만 조정 - 티어마다 색이 달라도
+     하나의 규칙으로 전부 대응된다. */
+  filter: brightness(0.85);
 }
 
 .map-island text {
