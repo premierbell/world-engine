@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
-import type { IslandSummary } from '../types/island';
+import type { GrowthTier, IslandSummary } from '../types/island';
 
 interface MapViewProps {
   islands: IslandSummary[];
@@ -33,6 +33,21 @@ const FIT_PADDING = 150; // World Unit - 섬 원+라벨이 화면 가장자리�
 const MAX_ZOOM = 10;
 const WHEEL_ZOOM_SENSITIVITY = 0.0015;
 const CLICK_DRAG_THRESHOLD_PX = 6; // 화면 픽셀 기준 - 이 이상 움직여야 "드래그"로 인정(손떨림에도 클릭이 씹히지 않을 정도)
+
+// Growth Point(scrapCount)를 사람이 체감할 수 있는 이름으로 보여준다 -
+// 원 크기는 그대로 두고 라벨에 티어 이름만 덧붙인다("성장은 체감
+// 가능해야 한다", docs/vision.md 제품 원칙 4번). 경계값 자체는 서버의
+// GrowthTier.fromScrapCount가 정하고, 여기서는 표시 이름만 맡는다.
+const TIER_LABELS: Record<GrowthTier, string> = {
+  SEED: 'Seed',
+  ISLET: 'Islet',
+  VILLAGE: 'Village',
+  CITY: 'City',
+};
+
+function formatTier(tier: GrowthTier): string {
+  return TIER_LABELS[tier];
+}
 
 function computeBounds(islands: IslandSummary[]): WorldBounds {
   return {
@@ -296,7 +311,7 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
                   12px 고정, 위치(원과의 간격)는 기존과 동일하다. */}
               <g transform={`translate(0, ${r + 16}) scale(${1 / zoom})`}>
                 <text textAnchor="middle">
-                  {island.name} ({island.scrapCount})
+                  {island.name} ({island.scrapCount}) · {formatTier(island.tier)}
                 </text>
               </g>
             </g>
