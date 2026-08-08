@@ -192,6 +192,67 @@ function seededRandom(seed: number): () => number {
 (decoration은 Phase 2 최소 세트에서는 제외 - City 티어에서만 쓰이고
 없어도 구성이 성립함)
 
+**Phase 2~4 완료(2026-08-08, PR #111~116)** - A안(Island 외형, 이
+문서 전체)이 실제로 구현되고 `MapView.tsx`에 연결되어 지도에서
+확인까지 끝남. 아래 "B안"은 그 위에 이어서 설계만 해둔 것 - 아직
+구현 전.
+
+## B안 — Topic 기반 정착지 시각화 (설계만 확정, 구현 전)
+
+A안에서 확정된 것(캔버스/팔레트/음영/anchor point/deterministic
+선택)은 전혀 안 바뀐다. **딱 하나만 바뀐다**: `building` 카테고리를
+채우는 기준이 Tier가 아니라 실제 Topic이 된다.
+
+| 요소 | 결정 기준 |
+|---|---|
+| 섬 크기/지형, 자연물, 길/인프라, 장식 | 그대로 Tier(scrapCount) |
+| 건물 개수 | Tier가 아니라 **실제 Topic 개수** |
+| 건물 종류 | Topic **id를 시드**로 building 풀에서 deterministic 선택 |
+| 건물 위치 | Topic **생성 순서**로 지형의 building anchor에 순서대로 배정 |
+
+Topic의 `id`가 두 가지로 다르게 쓰인다는 걸 헷갈리지 않게 분리해서
+적는다:
+- **생성 순서(정렬 기준)** → 어느 anchor에 배정될지를 정함
+- **시드(난수 기준)** → 어떤 building asset이 될지를 정함
+
+**핵심 원칙 - 한 번 배정된 anchor는 안 바뀐다**(좌표가 "한 번 정해지면
+안 움직인다"는 원칙과 동일). 예:
+
+```
+Topic 1 → Anchor 1 → house_small_02
+Topic 2 → Anchor 2 → house_large_01
+Topic 3 → Anchor 3 → house_small_01
+```
+
+여기서 Topic이 하나 더 생기면:
+
+```
+Topic 1 → Anchor 1 → house_small_02   (그대로)
+Topic 2 → Anchor 2 → house_large_01   (그대로)
+Topic 3 → Anchor 3 → house_small_01   (그대로)
+Topic 4 → Anchor 4 → (새로 배정)
+```
+
+기존 Topic 3개는 전혀 안 움직이고 Topic 4만 다음 빈 anchor에 새로
+들어간다.
+
+**이렇게 하면 Tier와 Topic이 서로 다른 정보를 표현하게 된다**: Tier는
+"섬 자체가 얼마나 성장했는가"(활동량/규모), Topic은 "그 안에서 실제로
+무엇이 생겨났는가"(분화/구조). **Topic이 0개면 건물도 0개** -
+버그가 아니라 "스크랩은 쌓였는데 아직 Topic으로 안 나눴다"를 지도에서
+바로 보여주는 의도된 신호다.
+
+**의도적으로 지금 범위 밖에 두는 것**:
+- Topic 의미(이름/내용)를 분석해서 건물 종류를 결정하는 AI 분류 -
+  근거 없이 새 분류 로직을 안 만든다. Topic id 기반 deterministic
+  선택으로 충분.
+- Topic 수가 지금 지형의 building anchor 수(terrain당 4개)를 넘는
+  경우의 대응 - **실제로 그런 섬이 생기기 전까지는 anchor를 더
+  만들거나 더 큰 지형을 미리 준비하지 않는다.** 실제 초과 사례가
+  생기면 그 시점 데이터로 판단.
+- 가장 큰/오래된 Topic에게 더 큰 건물을 주는 것 같은 시각적 위계 -
+  나중에 필요성이 보이면 추가.
+
 ## 지금은 안 하는 것
 
 - **동적 배치 알고리즘** - 위 "왜 anchor point인가" 참고. 섬이 많이
@@ -203,19 +264,17 @@ function seededRandom(seed: number): () => number {
   넣어뒀지만(`countryside/...`), `countryside` 하나부터 제대로 만들고
   "이 에셋 시스템으로 충분히 자연스러운 섬이 나온다"를 확인한 다음에
   고려. Island별로 테마를 어떻게 고를지도 아직 미정.
-- **Topic을 건물로 승격(B안)** - Island 외형(A안)이 만족스러워진
-  뒤에 별도로. 이 문서는 A안만 다룬다.
+- **B안 실제 구현** - 위에서 규칙만 확정, `compose.ts`/`MapView.tsx`에
+  Topic 데이터를 연결하는 건 다음 작업.
 - **정확한 티어별 개수 확정** - 위 표는 가안, 실제 에셋으로 4개 티어
   나란히 띄워보고 조정.
 
 ## 다음 단계
 
-1. **Phase 2** - 위 최소 세트(terrain 2 + nature 3 + building 3 +
-   infra 2 = 10개) 제작
-2. **Phase 3** - 실제 데이터 없이 Seed/Islet/Village/City 4개를
-   조합해서 지도에 띄워보고 "성장하는 느낌이 드는가" 확인
-3. **Phase 4** - 실제 Growth Point(scrapCount → tier)에 연결,
-   `MapView.tsx`의 섬 렌더링 부분 교체
+1. ~~Phase 2~~ ~~Phase 3~~ ~~Phase 4~~ - 전부 완료(PR #111~116)
+2. **Phase 5(B안 구현)** - `compose.ts`가 Topic 목록을 받아서
+   building anchor에 순서대로 배정하도록 확장, `MapView.tsx`가
+   Island의 Topic 목록을 넘겨주도록 연결
 
 ## 참고
 - `docs/vision.md` - Growth Point/시각적 티어 정의, 장기 목표 원문
