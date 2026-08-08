@@ -292,7 +292,7 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
           return (
             <g
               key={island.id}
-              className="map-island"
+              className={`map-island map-island--${island.tier.toLowerCase()}`}
               transform={`translate(${x}, ${y})`}
               onClick={(event) => handleIslandClick(event, island.id)}
             >
