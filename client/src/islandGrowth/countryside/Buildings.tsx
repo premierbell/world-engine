@@ -44,3 +44,20 @@ export function HouseSmall02() {
     </>
   );
 }
+
+// building anchor 중 'small' 등급 전용 - house_small_01/02는 이름과
+// 달리 size가 'medium'이라(anchor에 맞는 자산이 없었음), 실제로 더
+// 작은 건물이 필요해서 추가. 굴뚝/창문 없이 몸통+지붕만으로 실루엣을
+// 짧게 유지 - 다른 건물보다 낮은 anchor 자리에도 여유 있게 들어간다.
+export function Cottage01() {
+  return (
+    <>
+      <ellipse cx={3} cy={1.5} rx={12} ry={3.2} fill={PALETTE.dropShadow} />
+      <rect x={-8} y={-12} width={8} height={12} fill={PALETTE.buildingLight} />
+      <rect x={0} y={-12} width={8} height={12} fill={PALETTE.buildingShadow} />
+      <polygon points="-10,-12 0,-12 0,-24" fill={PALETTE.roofLight} />
+      <polygon points="0,-12 10,-12 0,-24" fill={PALETTE.roofShadow} />
+      <rect x={-6} y={-8} width={5} height={5} fill={PALETTE.window} />
+    </>
+  );
+}

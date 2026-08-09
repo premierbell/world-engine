@@ -87,9 +87,15 @@ export function composeIsland(
         return;
       }
       // 건물 종류는 이 Topic 고유의 시드로 고른다 - 다른 Topic이
-      // 추가/변경돼도 이 건물의 모양은 안 바뀐다.
+      // 추가/변경돼도 이 건물의 모양은 안 바뀐다. anchor.size와 같은
+      // 크기의 건물만 후보로 좁힌다 - large 건물(지붕/굴뚝까지 anchor
+      // 기준 50px)이 좁은 자리에 배정돼 지형 밖으로 튀어나오는 걸
+      // 막기 위함(같은 크기가 없으면 전체 풀로 폴백해서 항상 뭔가는
+      // 배정되게 한다).
       const topicRand = seededRandom(topicId);
-      const asset = buildingPool[Math.floor(topicRand() * buildingPool.length)];
+      const sizedPool = buildingPool.filter((asset) => asset.size === anchor.size);
+      const pool = sizedPool.length > 0 ? sizedPool : buildingPool;
+      const asset = pool[Math.floor(topicRand() * pool.length)];
       objects.push({ asset, x: anchor.x, y: anchor.y });
     });
   }

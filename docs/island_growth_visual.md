@@ -264,17 +264,58 @@ Topic 4 → Anchor 4 → (새로 배정)
   넣어뒀지만(`countryside/...`), `countryside` 하나부터 제대로 만들고
   "이 에셋 시스템으로 충분히 자연스러운 섬이 나온다"를 확인한 다음에
   고려. Island별로 테마를 어떻게 고를지도 아직 미정.
-- **B안 실제 구현** - 위에서 규칙만 확정, `compose.ts`/`MapView.tsx`에
-  Topic 데이터를 연결하는 건 다음 작업.
 - **정확한 티어별 개수 확정** - 위 표는 가안, 실제 에셋으로 4개 티어
   나란히 띄워보고 조정.
 
 ## 다음 단계
 
-1. ~~Phase 2~~ ~~Phase 3~~ ~~Phase 4~~ - 전부 완료(PR #111~116)
-2. **Phase 5(B안 구현)** - `compose.ts`가 Topic 목록을 받아서
-   building anchor에 순서대로 배정하도록 확장, `MapView.tsx`가
-   Island의 Topic 목록을 넘겨주도록 연결
+1. ~~Phase 2~~ ~~Phase 3~~ ~~Phase 4~~ ~~Phase 5~~ - 전부 완료(PR
+   #111~118)
+2. 다음 방향 미정 - 두 번째 테마, Topic 의미 기반 건물 매칭, 건물
+   위계 등은 필요 근거가 쌓이면 재검토.
+
+## 버그 수정 + 에셋 확장(2026-08-09, PR #119)
+
+실사용 중 발견된 버그 2건:
+
+1. **건물 위에 흰 점처럼 보이는 것** - `MapView.tsx`가 B안 이전(PR
+   #112, Growth Tier 시절)에 만든 `circle.map-island-topic-dot`을
+   그대로 갖고 있었다. 섬이 "원 하나"였던 시절 Topic 개수를 원 둘레의
+   점으로 표시하던 것인데, 배경색(`#f4f4f2`)과 같은 색으로 칠해서
+   원의 배경에 파묻히게 하는 트릭이었다. 이제 섬이 원이 아니라
+   지형+건물이라 이 점들이 지형 밖 아무 데나(원래 반지름 `r` 기준
+   좌표라 실제 지형 실루엣과 무관) 떠 있는 것처럼 보였다. B안이 이미
+   건물 개수/위치로 Topic을 보여주고 있어서 완전히 중복 - 제거.
+2. **건물이 섬 밖으로 나와 보이는 것** - building anchor가 지형의
+   위쪽 경계(top boundary)에 너무 가깝게 잡혀 있어서, 특히
+   `house_large_01`(anchor 기준 위로 50px, 굴뚝 포함)의 지붕/굴뚝이
+   지형 실루엣 위 배경으로 튀어나왔다. terrain_01/02의 SVG 곡선을
+   직접 파라미터로 풀어서(quadratic bezier 최소/최대점 계산) 각
+   x 위치의 실제 위쪽 경계를 구하고, 그 경계보다 각 건물 크기의
+   최대 높이 + 여유(8px)만큼 아래에 anchor를 다시 배치했다.
+
+같이 진행한 에셋 확장:
+
+- **anchor.size가 실제로 건물 선택에 반영되게 함** - 이전엔 정의만
+  있고 `compose.ts`가 무시해서 좁은 anchor에 큰 건물이 배정될 수
+  있었다(버그 2의 근본 원인 중 하나). `topicId`로 고른 building
+  풀을 `anchor.size`와 같은 크기로 먼저 좁히고, 없으면 전체 풀로
+  폴백하도록 수정.
+- **`building_cottage_01`(size: small) 추가** - 기존
+  `house_small_01/02`는 이름과 달리 size가 'medium'이라 실제로는
+  'small' anchor에 맞는 건물이 없었다(anchor.size 필터링을 넣으려면
+  필수). 몸통/지붕만 있는 낮은 실루엣.
+- **`nature_bush_01`(size: small) 추가** - small nature anchor가
+  전부 `rock_01`만 반복하던 걸 보완.
+- **`terrain_03` 추가** - 위쪽 능선을 terrain_01/02보다 넓고 완만하게
+  설계해서(anchor 배치를 먼저 계산하고 모양을 맞춤) building anchor
+  여유를 처음부터 확보. 실루엣도 더 길쭉해서 섬 구분이 더 잘 됨.
+
+검증: 실제 프로덕션 데이터(6 topics/4 anchors인 "백엔드 기술" 섬)로
+확인 - 건물 4개 전부 지형 안에 들어감. HomePage에 `ComposedIslandView`
+그리드를 임시로 붙여서(Phase 2와 같은 패턴, 확인 후 원복) 지형
+3종 × Topic 0~6개 조합을 전부 스크린샷으로 확인 - 어디서도 지형
+경계 밖으로 튀어나오는 에셋 없음.
 
 ## 참고
 - `docs/vision.md` - Growth Point/시각적 티어 정의, 장기 목표 원문

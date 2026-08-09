@@ -1,13 +1,20 @@
 import { Terrain01 } from './Terrain01';
 import { Terrain02 } from './Terrain02';
-import { Rock01, Tree01, Tree02 } from './Nature';
-import { HouseLarge01, HouseSmall01, HouseSmall02 } from './Buildings';
+import { Terrain03 } from './Terrain03';
+import { Bush01, Rock01, Tree01, Tree02 } from './Nature';
+import { Cottage01, HouseLarge01, HouseSmall01, HouseSmall02 } from './Buildings';
 import { Dock01, Road01 } from './Infrastructure';
 import type { AssetCategory, ObjectAsset, TerrainDefinition } from '../types';
 
 // 컴포넌트 파일은 컴포넌트만 export하고(Fast Refresh 때문에 lint가
 // 요구함), 메타데이터(id/category/size/anchors)는 여기서 감싼다.
 
+// building anchor 좌표는 각 지형의 SVG 곡선(top/bottom boundary)을
+// 직접 계산해서 잡았다 - 가장 키가 큰 건물(house_large_01, anchor
+// 기준 위로 50px, 굴뚝 포함)이 지형 위쪽 경계 밖으로 안 튀어나오게
+// 여유(8px)까지 포함해서 역산한 값. 이전엔 anchor가 지형 위쪽 경계에
+// 너무 가까워서 건물 지붕/굴뚝이 섬 밖(배경)으로 튀어나와 보이는
+// 문제가 있었다.
 const terrain01: TerrainDefinition = {
   id: 'countryside/terrain_01',
   Component: Terrain01,
@@ -17,13 +24,13 @@ const terrain01: TerrainDefinition = {
     { x: 56, y: 100, size: 'medium', category: 'nature' },
     { x: 130, y: 104, size: 'small', category: 'nature' },
     { x: 44, y: 118, size: 'small', category: 'nature' },
-    { x: 90, y: 98, size: 'large', category: 'building' },
-    { x: 66, y: 104, size: 'medium', category: 'building' },
-    { x: 112, y: 100, size: 'medium', category: 'building' },
-    { x: 138, y: 120, size: 'small', category: 'building' },
-    { x: 90, y: 130, size: 'small', category: 'infrastructure' },
-    { x: 60, y: 132, size: 'small', category: 'infrastructure' },
-    { x: 100, y: 140, size: 'small', category: 'decoration' },
+    { x: 90, y: 137, size: 'large', category: 'building' },
+    { x: 60, y: 134, size: 'medium', category: 'building' },
+    { x: 118, y: 128, size: 'medium', category: 'building' },
+    { x: 136, y: 130, size: 'small', category: 'building' },
+    { x: 40, y: 128, size: 'small', category: 'infrastructure' },
+    { x: 150, y: 116, size: 'small', category: 'infrastructure' },
+    { x: 92, y: 148, size: 'small', category: 'decoration' },
   ],
 };
 
@@ -34,13 +41,33 @@ const terrain02: TerrainDefinition = {
     { x: 70, y: 96, size: 'medium', category: 'nature' },
     { x: 130, y: 108, size: 'small', category: 'nature' },
     { x: 50, y: 122, size: 'small', category: 'nature' },
-    { x: 100, y: 90, size: 'large', category: 'building' },
-    { x: 76, y: 110, size: 'medium', category: 'building' },
-    { x: 124, y: 88, size: 'medium', category: 'building' },
-    { x: 144, y: 112, size: 'small', category: 'building' },
-    { x: 96, y: 132, size: 'small', category: 'infrastructure' },
-    { x: 66, y: 136, size: 'small', category: 'infrastructure' },
-    { x: 116, y: 140, size: 'small', category: 'decoration' },
+    { x: 95, y: 136, size: 'large', category: 'building' },
+    { x: 64, y: 134, size: 'medium', category: 'building' },
+    { x: 122, y: 126, size: 'medium', category: 'building' },
+    { x: 140, y: 122, size: 'small', category: 'building' },
+    { x: 45, y: 134, size: 'small', category: 'infrastructure' },
+    { x: 150, y: 108, size: 'small', category: 'infrastructure' },
+    { x: 100, y: 148, size: 'small', category: 'decoration' },
+  ],
+};
+
+// terrain_01/02보다 위쪽 능선이 넓고 완만해서 building anchor 여유가
+// 더 크다(위 주석 참고) - 세 번째 테마 지형, 실루엣도 더 길쭉하게
+// 달라서 섬마다 확실히 다른 모양이 나온다.
+const terrain03: TerrainDefinition = {
+  id: 'countryside/terrain_03',
+  Component: Terrain03,
+  anchors: [
+    { x: 56, y: 132, size: 'medium', category: 'nature' },
+    { x: 40, y: 132, size: 'small', category: 'nature' },
+    { x: 115, y: 98, size: 'small', category: 'nature' },
+    { x: 100, y: 138, size: 'large', category: 'building' },
+    { x: 72, y: 130, size: 'medium', category: 'building' },
+    { x: 128, y: 126, size: 'medium', category: 'building' },
+    { x: 148, y: 126, size: 'small', category: 'building' },
+    { x: 85, y: 148, size: 'small', category: 'infrastructure' },
+    { x: 45, y: 118, size: 'small', category: 'infrastructure' },
+    { x: 100, y: 148, size: 'small', category: 'decoration' },
   ],
 };
 
@@ -65,6 +92,13 @@ const rock01: ObjectAsset = {
   Component: Rock01,
 };
 
+const bush01: ObjectAsset = {
+  id: 'countryside/nature_bush_01',
+  category: 'nature',
+  size: 'small',
+  Component: Bush01,
+};
+
 const houseSmall01: ObjectAsset = {
   id: 'countryside/building_house_small_01',
   category: 'building',
@@ -86,6 +120,13 @@ const houseLarge01: ObjectAsset = {
   Component: HouseLarge01,
 };
 
+const cottage01: ObjectAsset = {
+  id: 'countryside/building_cottage_01',
+  category: 'building',
+  size: 'small',
+  Component: Cottage01,
+};
+
 const road01: ObjectAsset = {
   id: 'countryside/infra_road_01',
   category: 'infrastructure',
@@ -100,12 +141,13 @@ const dock01: ObjectAsset = {
   Component: Dock01,
 };
 
-// Phase 2 최소 세트 완성(docs/island_growth_visual.md) - terrain 2개,
-// nature 3개, building 3개, infrastructure 2개.
-export const countrysideTerrains: TerrainDefinition[] = [terrain01, terrain02];
+// Phase 2 최소 세트(terrain 2 + nature 3 + building 3 + infrastructure 2)에
+// terrain_03/cottage_01(작은 건물)/bush_01(작은 나무)을 더함 -
+// docs/island_growth_visual.md 참고.
+export const countrysideTerrains: TerrainDefinition[] = [terrain01, terrain02, terrain03];
 
 export const countrysideAssetsByCategory: Partial<Record<AssetCategory, ObjectAsset[]>> = {
-  nature: [tree01, tree02, rock01],
-  building: [houseSmall01, houseSmall02, houseLarge01],
+  nature: [tree01, tree02, rock01, bush01],
+  building: [houseSmall01, houseSmall02, houseLarge01, cottage01],
   infrastructure: [road01, dock01],
 };
