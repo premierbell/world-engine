@@ -6,10 +6,12 @@ export type GrowthTier = 'SEED' | 'ISLET' | 'VILLAGE' | 'CITY';
 // B안(docs/island_growth_visual.md "B안") 적용 이후 building은 여기 없다 -
 // 실제 Topic 개수가 대신 정한다(아래 composeIsland 참고). nature/
 // infrastructure/decoration은 여전히 티어가 해금/개수를 정한다(가안 -
-// 실제 에셋 조합 보고 조정).
+// 실제 에셋 조합 보고 조정). SEED/ISLET의 nature 최소값은 실사용
+// 피드백("Topic 없는 섬이 휑해 보인다") 이후 한 단계씩 올렸다 - 실제
+// 섬 대부분이 SEED/ISLET 티어라 여기가 체감상 제일 크다.
 const TIER_COUNTS: Record<GrowthTier, Partial<Record<Exclude<AssetCategory, 'building'>, [min: number, max: number]>>> = {
-  SEED: { nature: [1, 2] },
-  ISLET: { nature: [2, 3] },
+  SEED: { nature: [2, 3] },
+  ISLET: { nature: [3, 4] },
   VILLAGE: { nature: [3, 5], infrastructure: [1, 1] },
   CITY: { nature: [4, 6], infrastructure: [2, 2], decoration: [1, 2] },
 };
@@ -19,6 +21,15 @@ const TIER_COUNTS: Record<GrowthTier, Partial<Record<Exclude<AssetCategory, 'bui
 // 로직(개수/카테고리)이 바뀌어도 이미 배정된 Topic의 건물 자리는 절대
 // 안 흔들리게 하기 위함. docs/island_growth_visual.md "B안" 참고.
 const BUILDING_ANCHOR_SEED_OFFSET = 1_000_003;
+
+// 오브젝트(건물/나무/길)를 지형에 비해 살짝 작게 렌더링하기 위한
+// 배율 - 지형 path 자체나 anchor 좌표는 안 건드리고 렌더링 쪽에서만
+// 곱한다(anchor는 여전히 "접지점" 원래 좌표를 그대로 가리킴). 값을
+// 낮추면 섬이 건물에 비해 더 넓어 보이고, building anchor의 위쪽
+// 여유(clearance)도 같이 늘어난다(오브젝트가 작아지니까). 호출부
+// (MapView.tsx/ComposedIslandView.tsx)에서 `scale(${OBJECT_SCALE})`로
+// 적용.
+export const OBJECT_SCALE = 0.82;
 
 export interface PlacedObject {
   asset: ObjectAsset;

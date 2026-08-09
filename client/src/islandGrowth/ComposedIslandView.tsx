@@ -1,5 +1,5 @@
 import { countrysideAssetsByCategory, countrysideTerrains } from './countryside';
-import { composeIsland } from './compose';
+import { composeIsland, OBJECT_SCALE } from './compose';
 import type { GrowthTier } from './compose';
 
 interface ComposedIslandViewProps {
@@ -21,7 +21,7 @@ export function ComposedIslandView({ islandId, tier, topicIds = [], size = 180 }
       {composed.objects.map((placed, index) => {
         const Asset = placed.asset.Component;
         return (
-          <g key={index} transform={`translate(${placed.x}, ${placed.y})`}>
+          <g key={index} transform={`translate(${placed.x}, ${placed.y}) scale(${OBJECT_SCALE})`}>
             <Asset />
           </g>
         );
