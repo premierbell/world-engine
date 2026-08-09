@@ -37,3 +37,17 @@ export function Rock01() {
     </>
   );
 }
+
+// rock_01과 같은 'small' 등급이지만 초록 계열이라 nature 카테고리
+// small anchor에 rock만 반복되지 않게 종류를 하나 더한다 - tree보다
+// 훨씬 낮은 실루엣(둥근 잎 덩어리만, 줄기 없음)이라 어떤 자리에도
+// 부담 없이 들어간다.
+export function Bush01() {
+  return (
+    <>
+      <ellipse cx={2} cy={1} rx={8} ry={2.2} fill={PALETTE.dropShadow} />
+      <circle cx={-2} cy={-7} r={7} fill={PALETTE.foliageLight} />
+      <circle cx={4} cy={-5.5} r={6} fill={PALETTE.foliageShadow} />
+    </>
+  );
+}

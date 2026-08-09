@@ -335,12 +335,6 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
                   );
                 })}
               </g>
-              {Array.from({ length: island.topicCount }).map((_, topicIndex) => {
-                const dotAngle = (2 * Math.PI * topicIndex) / island.topicCount;
-                const dotX = (r - 6) * Math.cos(dotAngle);
-                const dotY = (r - 6) * Math.sin(dotAngle);
-                return <circle key={topicIndex} cx={dotX} cy={dotY} r={2.5} className="map-island-topic-dot" />;
-              })}
               {/* 라벨은 카메라 zoom과 무관하게 항상 같은 화면 크기로 보여야
                   읽을 수 있다(지도가 커질수록 fit-to-bounds가 계속
                   축소시키기 때문). translate로 위치를 먼저 잡고 나서
