@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { GrowthTier, IslandSummary } from '../types/island';
-import { composeIsland } from '../islandGrowth/compose';
+import { composeIsland, OBJECT_SCALE } from '../islandGrowth/compose';
 import { countrysideAssetsByCategory, countrysideTerrains } from '../islandGrowth/countryside';
 
 interface MapViewProps {
@@ -329,7 +329,7 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
                 {composed.objects.map((placed, index) => {
                   const Asset = placed.asset.Component;
                   return (
-                    <g key={index} transform={`translate(${placed.x}, ${placed.y})`}>
+                    <g key={index} transform={`translate(${placed.x}, ${placed.y}) scale(${OBJECT_SCALE})`}>
                       <Asset />
                     </g>
                   );

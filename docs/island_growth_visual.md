@@ -317,6 +317,39 @@ Topic 4 → Anchor 4 → (새로 배정)
 3종 × Topic 0~6개 조합을 전부 스크린샷으로 확인 - 어디서도 지형
 경계 밖으로 튀어나오는 에셋 없음.
 
+## 비율 조정 + Topic 없는 섬 보완(2026-08-09, PR #120)
+
+PR #119 배포 직후 나온 실사용 피드백 2건:
+
+1. **건물이 지형에 비해 커 보임** - `OBJECT_SCALE = 0.82` 상수를
+   추가해서 오브젝트(건물/나무/길)만 렌더링 시점에 살짝 축소.
+   지형 path나 anchor 좌표는 그대로 두고 `MapView.tsx`/
+   `ComposedIslandView.tsx`의 오브젝트 `<g transform>`에
+   `scale(${OBJECT_SCALE})`만 추가 - 지형이 상대적으로 더 넓어
+   보이고, building anchor의 위쪽 여유도 덤으로 늘어남(오브젝트가
+   작아지니까).
+2. **Topic 없는(건물 0개) 섬이 휑해 보임** - 원인을 보니 nature
+   카테고리는 티어가 최대 5~6개까지 요청해도 지형에 anchor가 3개
+   (medium 1 + small 2)뿐이라 항상 3개에서 막히고 있었고,
+   decoration 카테고리는 anchor는 있는데 에셋 자체가 하나도 없어서
+   City 티어여도 항상 빈 자리였다. **"Topic 0개 → 건물 0개" 신호는
+   그대로 유지**(의도된 것이니 안 건드림) - 대신:
+   - 지형 3종 전부에 nature anchor 2개(medium 1 + small 1) +
+     decoration anchor 1개를 추가(모두 building들의 밑동 아래,
+     지형 바닥 쪽 여유 공간에 배치해서 건물과 안 겹침)
+   - `decoration_well_01`(작은 우물), `decoration_flower_pot_01`
+     (화분) 추가 - 팔레트 밖 색은 안 쓴다는 규칙 그대로 지키고,
+     건물처럼 안 보이게 낮은 실루엣으로 제한
+   - `TIER_COUNTS`의 SEED/ISLET nature 최소값을 한 단계씩 올림
+     (`[1,2]→[2,3]`, `[2,3]→[3,4]`) - 실제 섬 대부분이 이 두
+     티어라 체감 효과가 제일 큼
+
+검증: HomePage에 `ComposedIslandView` 그리드(지형 3종 × 티어 4종 ×
+Topic 0/6개, 확인 후 원복)로 전부 스크린샷 확인 - City 티어 Topic
+0개 섬도 나무/덤불/우물/화분/길이 어우러져 "안 정리됐지만 자연은
+무성한 섬"으로 보이고, Topic 6개(anchor 초과) 케이스도 여전히
+지형 경계 밖으로 튀어나오는 에셋 없음.
+
 ## 참고
 - `docs/vision.md` - Growth Point/시각적 티어 정의, 장기 목표 원문
 - Island Growth 스타일 스케치(3종 비교, 이 문서의 "1번" 채택 근거) -
