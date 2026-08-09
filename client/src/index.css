@@ -127,6 +127,31 @@ h2 {
   justify-content: space-between;
 }
 
+/* 사이드바 카드 헤더를 접기/펼치기 버튼으로 - 원래 h2의 일반 텍스트
+   자리를 대신하는 거라 버튼 기본 스타일(배경/테두리/패딩)은 지우고
+   h2와 같은 글자 크기/굵기만 남긴다. */
+.card-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.card-toggle .chevron {
+  display: inline-block;
+  width: 10px;
+  color: #999;
+  font-size: 12px;
+}
+
 .layout {
   display: grid;
   grid-template-columns: 1fr 320px;
