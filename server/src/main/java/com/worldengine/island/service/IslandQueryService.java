@@ -10,6 +10,7 @@ import com.worldengine.scrap.dto.ScrapSummaryResponse;
 import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
 import com.worldengine.topic.dto.TopicSummaryResponse;
+import com.worldengine.topic.entity.Topic;
 import com.worldengine.topic.repository.TopicRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
@@ -46,14 +47,19 @@ public class IslandQueryService {
                 Island island = islands.get(index);
                 MapCoordinateService.Coordinate coordinate = mapCoordinateService.getCoordinate(island, index, totalCount);
                 long scrapCount = scrapRepository.countByIslandId(island.getId());
+                List<Long> topicIds = topicRepository.findByIslandId(island.getId()).stream()
+                    .map(Topic::getId)
+                    .sorted()
+                    .toList();
                 return new IslandSummaryResponse(
                     island.getId(),
                     island.getName(),
                     scrapCount,
-                    topicRepository.countByIslandId(island.getId()),
+                    topicIds.size(),
                     coordinate.x(),
                     coordinate.y(),
-                    GrowthTier.fromScrapCount(scrapCount));
+                    GrowthTier.fromScrapCount(scrapCount),
+                    topicIds);
             })
             .toList();
     }
