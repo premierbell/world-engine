@@ -44,6 +44,45 @@ h1 {
   transition: transform 0.5s ease;
 }
 
+/* 바다 배경(MapView.tsx의 <rect fill="url(#map-ocean)">) 위에 얹는
+   장식용 물결선 - 카메라 group 밖(고정 화면 좌표)에 있어서 pan/zoom과
+   무관하게 항상 같은 자리에서 살짝 흔들린다. prefers-reduced-motion이면
+   애니메이션 없이 정지된 선으로만 남는다. */
+.wave-line {
+  fill: none;
+  stroke: rgba(234, 241, 236, 0.4);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wave-line {
+    animation: map-wave-drift 16s ease-in-out infinite;
+  }
+
+  .wave-line:nth-child(2) {
+    animation-delay: -5s;
+  }
+
+  .wave-line:nth-child(3) {
+    animation-delay: -10s;
+  }
+}
+
+@keyframes map-wave-drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(14px);
+  }
+}
+
+.map-island-water-shadow {
+  fill: rgba(15, 32, 36, 0.22);
+}
+
 /* 휠/드래그로 수동 조작 중에는 0.5s 트랜지션이 커서를 못 따라가고
    항상 지연되는 것처럼 보여서 끈다 - fit-to-bounds/섬 확대 같은 자동
    전환에만 트랜지션이 남는다. */

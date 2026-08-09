@@ -289,6 +289,22 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
       onPointerDown={handlePointerDown}
       onClick={handleBackgroundClick}
     >
+      <defs>
+        <radialGradient id="map-ocean" cx="30%" cy="15%" r="90%">
+          <stop offset="0%" stopColor="#8fb3ae" />
+          <stop offset="46%" stopColor="#5c8188" />
+          <stop offset="100%" stopColor="#3d5c63" />
+        </radialGradient>
+      </defs>
+      {/* 바다 배경 - 카메라(pan/zoom) group 밖에 둬서 섬이 아니라 화면
+          자체를 채우는 배경으로 고정한다(섬 좌표는 임의의 world unit이라
+          카메라를 따라가면 배경도 같이 움직여 오히려 어색하다). */}
+      <rect x={0} y={0} width={SIZE} height={SIZE} fill="url(#map-ocean)" />
+      <g className="map-waves" aria-hidden="true">
+        <path className="wave-line" d="M -20 90 Q 130 65 280 90 T 580 90 T 880 90" />
+        <path className="wave-line" d="M -20 260 Q 140 235 300 260 T 620 260 T 940 260" />
+        <path className="wave-line" d="M -20 430 Q 130 405 280 430 T 580 430 T 880 430" />
+      </g>
       <g
         className={`map-camera${manualCamera ? ' map-camera--manual' : ''}`}
         style={{ transform: `translate(${translateX}px, ${translateY}px) scale(${zoom})`, transformOrigin: '0 0' }}
@@ -319,6 +335,10 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
               transform={`translate(${x}, ${y})`}
               onClick={(event) => handleIslandClick(event, island.id)}
             >
+              {/* 물그림자 - 섬이 바다 위에 떠 있는 느낌을 주는 용도라
+                  지형의 실제 실루엣과 안 맞아도 된다(hit-circle과 같은
+                  이유로 반지름 r 기준 단순 타원 하나면 충분). */}
+              <ellipse cx={0} cy={r * 0.78} rx={r * 0.92} ry={r * 0.24} className="map-island-water-shadow" />
               {/* 클릭 판정 전용 - 지형이 원이 아니라 불규칙한 모양이라
                   실루엣 밖의 빈틈도 전부 클릭되게 투명 원을 깔아둔다.
                   인라인 style로 줘야 CSS보다 우선순위가 높아서 투명이
