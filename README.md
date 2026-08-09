@@ -11,9 +11,10 @@ AI는 이해하고, 알고리즘은 결정한다.
 
 - [x] V0 — Validation (Python, `prototype/`) — 임베딩/Cosine 유사도/threshold 분류/Label 생성/Growth Point 전부 검증 완료. 결론(Finding P2-002/P2-003): 완전 자동 분류는 현재 기술로 불가능, "AI 추천 + 사용자 확인" 구조로 V1 설계.
 - [x] V1 — Genesis (Java/Spring Boot, `server/`) — Scrap Flow(추출 → 임베딩 → 추천 → 사용자 확인) 전체 루프 완주. 조회 API, 정정 기록, 최소 UI까지 완료. 회고는 `docs/v1_retrospective.md`.
-- [ ] V2 — Evolution (성장 지표, 시각적 티어, Topic 분화) - Topic 핵심 루프(후보 생성 → 기존 Topic 매칭 → 승인 → 편입 → 병렬화) 완료(PR #80~90), 지금은 "구조 안정화 관찰" 단계(PR #91~92). 설계 근거는 `docs/v2_design.md`, 현재 구조의 강점/병목/미해결은 `docs/v2_architecture_review.md` 참고. 프런트를 vanilla JS에서 React(`client/`)로 이전 완료 - 지금은 기존 기능을 그대로 옮긴 1차 버전이고, `docs/vision.md`가 그리는 바다/섬/도시 시각화는 아직 구현 안 됨(다음 단계).
+- [x] V2 — Evolution (성장 지표, 시각적 티어, Topic 분화) - Topic 핵심 루프(후보 생성 → 기존 Topic 매칭 → 승인 → 편입 → 병렬화) 완료(PR #80~90). 프런트를 vanilla JS에서 React(`client/`)로 이전 완료. 지도를 원 하나가 아니라 실제 섬(지형+나무+건물)으로 그리는 Island Growth Visual 완료(PR #111~120) - 섬 외형(scrapCount/티어)과 건물(Topic 개수/생성순서/id)이 각각 독립적으로 시각을 결정하고, 건물이 없는(Topic 미분류) 섬은 의도된 신호로 남긴다. 바다 배경/사이드바 접기 등 UI 폴리시도 진행 중(PR #121~122). 설계 근거는 `docs/v2_design.md`, `docs/island_growth_visual.md`, `docs/map_home_redesign.md`, 구조의 강점/병목은 `docs/v2_architecture_review.md` 참고.
+- [ ] V3 — Memory (다음 단계 미정)
 
-각 Phase의 상세 근거는 `docs/research_phase_1_summary.md`, `docs/research_phase_2_summary.md`, `docs/v1_design.md`, `docs/v1_retrospective.md`, `docs/v2_design.md`, `docs/v2_architecture_review.md` 참고. PR 단위 작업 기록은 `experiments/v0_validation.md`에 누적.
+각 Phase의 상세 근거는 `docs/research_phase_1_summary.md`, `docs/research_phase_2_summary.md`, `docs/v1_design.md`, `docs/v1_retrospective.md`, `docs/v2_design.md`, `docs/v2_architecture_review.md`, `docs/island_growth_visual.md`, `docs/map_home_redesign.md` 참고. PR 단위 작업 기록은 `experiments/v0_validation.md`에 누적.
 
 ## Structure
 
