@@ -57,6 +57,28 @@ class IslandQueryServiceTest {
     }
 
     @Test
+    void includesTopicIdsSortedByCreationOrder() {
+        Island island = new Island("여행", new float[]{0.1f});
+        ReflectionTestUtils.setField(island, "id", 1L);
+
+        Topic topicB = new Topic("나중 생성", 1L);
+        ReflectionTestUtils.setField(topicB, "id", 20L);
+        Topic topicA = new Topic("먼저 생성", 1L);
+        ReflectionTestUtils.setField(topicA, "id", 10L);
+
+        when(islandRepository.findAll()).thenReturn(List.of(island));
+        when(scrapRepository.countByIslandId(1L)).thenReturn(5L);
+        when(topicRepository.findByIslandId(1L)).thenReturn(List.of(topicB, topicA));
+        when(mapCoordinateService.getCoordinate(island, 0, 1))
+            .thenReturn(new MapCoordinateService.Coordinate(0.0, 0.0));
+
+        List<IslandSummaryResponse> result = islandQueryService.findAll();
+
+        assertThat(result.get(0).topicIds()).containsExactly(10L, 20L);
+        assertThat(result.get(0).topicCount()).isEqualTo(2L);
+    }
+
+    @Test
     void findsIslandDetailWithScraps() {
         Island island = new Island("다이어트", new float[]{0.1f});
         ReflectionTestUtils.setField(island, "id", 1L);

@@ -303,7 +303,13 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
           // 섬을 원 하나가 아니라 지형+나무+건물 등을 조합해서 그린다
           // (client/src/islandGrowth/, docs/island_growth_visual.md).
           // islandId를 시드로 써서 같은 섬은 항상 같은 조합이 나온다.
-          const composed = composeIsland(island.id, island.tier, countrysideTerrains, countrysideAssetsByCategory);
+          const composed = composeIsland(
+            island.id,
+            island.tier,
+            island.topicIds,
+            countrysideTerrains,
+            countrysideAssetsByCategory,
+          );
           const Terrain = composed.terrain.Component;
 
           return (
