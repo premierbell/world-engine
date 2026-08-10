@@ -198,6 +198,53 @@ button.refresh:hover {
   background: none;
 }
 
+/* Island/Topic 이름 옆 ✏️/🗑️ - refresh 버튼과 같은 "배경 없는 아이콘"
+   스타일. */
+.icon-button {
+  background: none;
+  color: #666;
+  padding: 2px 4px;
+  font-size: 13px;
+}
+
+.icon-button:hover {
+  background: none;
+  color: #1a1a1a;
+}
+
+/* "정말 삭제" 확정 버튼 - 되돌릴 수 없는 동작이라 색으로 구분한다. */
+.danger-button {
+  background: #c0392b;
+}
+
+.danger-button:hover {
+  background: #96281b;
+}
+
+.island-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.island-name-row h2 {
+  margin: 0;
+}
+
+.island-name-edit,
+.topic-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.island-name-edit input,
+.topic-name-edit input {
+  flex: 1;
+}
+
 .result {
   margin: 10px 0 0;
   font-size: 13px;
@@ -379,6 +426,10 @@ button.refresh:hover {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .panel {

@@ -13,4 +13,6 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
     List<Scrap> findByIslandIdIsNull();
 
     List<Scrap> findByIslandIdIsNotNull();
+
+    List<Scrap> findByTopicId(Long topicId);
 }

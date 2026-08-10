@@ -38,4 +38,6 @@ public class Topic {
     public Long getIslandId() { return islandId; }
 
     public Instant getCreatedAt() { return createdAt; }
+
+    public void rename(String name) { this.name = name; }
 }

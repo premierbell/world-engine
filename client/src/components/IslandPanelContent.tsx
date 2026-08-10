@@ -165,7 +165,7 @@ export function IslandPanelContent({ islandId }: IslandPanelContentProps) {
         onChange={(event) => setSearchQuery(event.target.value)}
       />
 
-      <TopicList topics={filteredTopics} />
+      <TopicList topics={filteredTopics} islandId={islandId} />
 
       <div className="topic-create-form">
         <input
