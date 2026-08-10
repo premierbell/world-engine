@@ -6,6 +6,8 @@ import com.worldengine.scrap.repository.ScrapRepository;
 import com.worldengine.topic.dto.TopicAddScrapsRequest;
 import com.worldengine.topic.dto.TopicCreateRequest;
 import com.worldengine.topic.dto.TopicCreateResponse;
+import com.worldengine.topic.dto.TopicRenameRequest;
+import com.worldengine.topic.dto.TopicRenameResponse;
 import com.worldengine.topic.entity.Topic;
 import com.worldengine.topic.repository.TopicRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -54,5 +56,36 @@ public class TopicService {
         scrapRepository.saveAll(scraps);
 
         return new TopicCreateResponse(topic.getId(), topic.getName(), topic.getIslandId(), scraps.size());
+    }
+
+    public TopicRenameResponse rename(Long topicId, TopicRenameRequest request) {
+        if (request.name() == null || request.name().isBlank()) {
+            throw new IllegalArgumentException("이름은 비어있을 수 없음");
+        }
+
+        Topic topic = topicRepository.findById(topicId)
+            .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 Topic: " + topicId));
+
+        topic.rename(request.name());
+        topicRepository.save(topic);
+
+        return new TopicRenameResponse(topic.getId(), topic.getName());
+    }
+
+    /**
+     * Topic을 지워도 스크랩은 안 지운다 - topicId만 비워서 Island 안에서
+     * "아직 Topic으로 안 나뉜" 상태로 되돌린다(Island 삭제 때와 같은 원칙).
+     */
+    public void delete(Long topicId) {
+        topicRepository.findById(topicId)
+            .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 Topic: " + topicId));
+
+        List<Scrap> scraps = scrapRepository.findByTopicId(topicId);
+        for (Scrap scrap : scraps) {
+            scrap.assignTopic(null);
+        }
+        scrapRepository.saveAll(scraps);
+
+        topicRepository.deleteById(topicId);
     }
 }
