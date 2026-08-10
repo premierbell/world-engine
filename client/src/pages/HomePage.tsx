@@ -112,7 +112,13 @@ export function HomePage() {
 
   const selectedIsland = islands?.find((island) => island.id === selectedIslandId) ?? null;
 
+  // 스크랩 추가 패널이 Island 상세 패널과 같은 자리(position="right"
+  // 기본값)를 쓴다(docs/map_home_redesign.md "임시 규칙" - 좌/우/상단
+  // 3자리뿐) - 섬을 클릭하면 스크랩 추가는 닫는다. 목록 패널(left)은
+  // 이 충돌과 무관해서 "목록 보면서 섬 클릭 → 상세 보기" 조합은
+  // 그대로 동시에 열려 있을 수 있다.
   const handleIslandClick = (islandId: number) => {
+    setIsScrapPanelOpen(false);
     navigate(`/islands/${islandId}`);
   };
 
@@ -120,16 +126,8 @@ export function HomePage() {
     navigate('/');
   };
 
-  // 목록/스크랩 추가 패널은 둘 다 position="left"라 CSS 자리가
-  // 같다(docs/map_home_redesign.md "임시 규칙" - 좌/우/상단 3자리뿐,
-  // 같은 자리를 쓰는 패널은 동시에 열리면 겹친다) - 한쪽을 열 때
-  // 다른 쪽은 확실히 닫아서 겹침을 막는다.
-  const openListPanel = () => {
-    setIsScrapPanelOpen(false);
-    setIsListPanelOpen(true);
-  };
   const openScrapPanel = () => {
-    setIsListPanelOpen(false);
+    navigate('/');
     setIsScrapPanelOpen(true);
   };
 
@@ -164,7 +162,7 @@ export function HomePage() {
         <PendingList onSelect={handlePendingSelect} />
         <RecentScraps />
       </Panel>
-      <Panel position="left" isOpen={isScrapPanelOpen} onClose={() => setIsScrapPanelOpen(false)} title="스크랩 추가">
+      <Panel isOpen={isScrapPanelOpen} onClose={() => setIsScrapPanelOpen(false)} title="스크랩 추가">
         <ScrapForm onSubmit={handleScrapSubmit} />
         <p className="result">{statusMessage}</p>
         {recommendations !== null && (
@@ -181,7 +179,7 @@ export function HomePage() {
       <button
         type="button"
         className={`fab fab-list${fabClassName}`}
-        onClick={openListPanel}
+        onClick={() => setIsListPanelOpen(true)}
         aria-label="목록"
       >
         📋
