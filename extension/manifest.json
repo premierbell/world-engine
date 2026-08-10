@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "World Engine 스크랩",
+  "version": "1.0.0",
+  "description": "지금 보고 있는 페이지를 World Engine으로 바로 스크랩합니다.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "World Engine 스크랩"
+  },
+  "permissions": ["activeTab"],
+  "host_permissions": ["http://localhost:8080/*"]
+}
