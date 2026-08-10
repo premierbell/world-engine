@@ -39,6 +39,7 @@ export function HomePage() {
 
   const [isScrapPanelOpen, setIsScrapPanelOpen] = useState(false);
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
+  const [isListPanelOpen, setIsListPanelOpen] = useState(false);
   const [currentScrapId, setCurrentScrapId] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<IslandRecommendation[] | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -119,11 +120,24 @@ export function HomePage() {
     navigate('/');
   };
 
+  // 목록/스크랩 추가 패널은 둘 다 position="left"라 CSS 자리가
+  // 같다(docs/map_home_redesign.md "임시 규칙" - 좌/우/상단 3자리뿐,
+  // 같은 자리를 쓰는 패널은 동시에 열리면 겹친다) - 한쪽을 열 때
+  // 다른 쪽은 확실히 닫아서 겹침을 막는다.
+  const openListPanel = () => {
+    setIsScrapPanelOpen(false);
+    setIsListPanelOpen(true);
+  };
+  const openScrapPanel = () => {
+    setIsListPanelOpen(false);
+    setIsScrapPanelOpen(true);
+  };
+
   // 모바일에서는 패널이 Bottom Sheet로 화면 하단을 차지해서 FAB과
   // 겹친다(데스크톱은 패널이 좌/우/상단에 있어서 하단 중앙 FAB과
   // 안 겹침) - "패널 열림" 자체는 여기서 계산하고, 실제로 숨길지는
   // CSS 미디어쿼리 안에서만 결정해서 데스크톱은 영향 없게 한다.
-  const anyPanelOpen = selectedIslandId !== null || isScrapPanelOpen || isSearchPanelOpen;
+  const anyPanelOpen = selectedIslandId !== null || isScrapPanelOpen || isSearchPanelOpen || isListPanelOpen;
   const fabClassName = anyPanelOpen ? ' fab-hide-when-panel-open' : '';
 
   return (
@@ -138,13 +152,17 @@ export function HomePage() {
           onBackgroundClick={handleClosePanel}
         />
       </main>
-      <aside className="sidebar">
+      <Panel isOpen={selectedIslandId !== null} onClose={handleClosePanel} title={selectedIsland?.name ?? ''}>
+        {selectedIslandId !== null && <IslandPanelContent islandId={selectedIslandId} />}
+      </Panel>
+      {/* Islands/정리할 스크랩/최근 Scraps - 예전엔 상시 노출 사이드바였는데,
+          지도 옆에 항상 고정 폭을 차지해서 데스크톱 지도 영역이 좁아지는
+          문제가 있었다. 스크랩 추가/검색과 같은 온디맨드 패널로 통일 -
+          기본은 지도만 보이고, 필요할 때 "목록" 버튼으로 불러온다. */}
+      <Panel position="left" isOpen={isListPanelOpen} onClose={() => setIsListPanelOpen(false)} title="목록">
         <IslandList />
         <PendingList onSelect={handlePendingSelect} />
         <RecentScraps />
-      </aside>
-      <Panel isOpen={selectedIslandId !== null} onClose={handleClosePanel} title={selectedIsland?.name ?? ''}>
-        {selectedIslandId !== null && <IslandPanelContent islandId={selectedIslandId} />}
       </Panel>
       <Panel position="left" isOpen={isScrapPanelOpen} onClose={() => setIsScrapPanelOpen(false)} title="스크랩 추가">
         <ScrapForm onSubmit={handleScrapSubmit} />
@@ -162,10 +180,13 @@ export function HomePage() {
       </Panel>
       <button
         type="button"
-        className={`fab fab-add${fabClassName}`}
-        onClick={() => setIsScrapPanelOpen(true)}
-        aria-label="스크랩 추가"
+        className={`fab fab-list${fabClassName}`}
+        onClick={openListPanel}
+        aria-label="목록"
       >
+        📋
+      </button>
+      <button type="button" className={`fab fab-add${fabClassName}`} onClick={openScrapPanel} aria-label="스크랩 추가">
         +
       </button>
       <button
