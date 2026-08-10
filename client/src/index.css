@@ -387,6 +387,111 @@ button.refresh:hover {
   color: #888;
 }
 
+/* 연대기(IslandChronicle) - 섬의 성장을 그래프 대신 그 시점의 실제
+   섬 그림(ComposedIslandView)으로 훑어보는 컴포넌트. */
+.chronicle {
+  margin-bottom: 16px;
+}
+
+.chronicle h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.chronicle-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: #f7f7f5;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.chronicle-caption {
+  margin: 0;
+  font-size: 12px;
+  color: #444;
+  text-align: center;
+  min-height: 32px;
+}
+
+.chronicle-controls {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.chronicle-controls button {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.chronicle-controls button:disabled {
+  background: #ccc;
+  cursor: default;
+}
+
+.chronicle-track {
+  position: relative;
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 14px 6px 4px;
+}
+
+.chronicle-track::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 20px;
+  height: 2px;
+  background: #ddd;
+}
+
+.chronicle-milestone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 60px;
+}
+
+.chronicle-milestone .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ccc;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #ddd;
+}
+
+.chronicle-milestone.active .dot {
+  background: #2b6cb0;
+  box-shadow: 0 0 0 1px #2b6cb0;
+}
+
+.chronicle-milestone .milestone-label {
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.chronicle-milestone.active .milestone-label {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
 #island-detail-scraps li {
   display: flex;
   align-items: center;

@@ -7,6 +7,7 @@ import { useIsland } from '../hooks/useIsland';
 import type { ScrapSummary } from '../types/scrap';
 import type { TopicCandidateResponse } from '../types/topic';
 import { ErrorCard } from './ErrorCard';
+import { IslandChronicle } from './IslandChronicle';
 import { IslandHeader } from './IslandHeader';
 import { LoadingCard } from './LoadingCard';
 import { ScrapList } from './ScrapList';
@@ -145,6 +146,8 @@ export function IslandPanelContent({ islandId }: IslandPanelContentProps) {
   return (
     <>
       <IslandHeader island={island} />
+
+      <IslandChronicle island={island} />
 
       <TopicCandidates
         status={topicCandidatesStatus}

@@ -4,6 +4,7 @@ export interface TopicSummary {
   id: number;
   name: string;
   scraps: ScrapSummary[];
+  createdAt: string;
 }
 
 export interface TopicCreateResponse {

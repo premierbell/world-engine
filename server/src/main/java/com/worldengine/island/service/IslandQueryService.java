@@ -80,7 +80,8 @@ public class IslandQueryService {
                 islandScraps.stream()
                     .filter(s -> topic.getId().equals(s.getTopicId()))
                     .map(this::toSummary)
-                    .toList()))
+                    .toList(),
+                topic.getCreatedAt()))
             .toList();
 
         return new IslandDetailResponse(
