@@ -25,6 +25,7 @@ golden_dataset/   회귀 테스트용 라벨링 데이터
 prototype/        V0, Python (알고리즘 검증 전용, DB/UI 없음)
 server/           V1부터, Spring Boot(Java 21) API(`/api/**`) + client 빌드 산출물 서빙
 client/           V2부터, React(Vite) + TypeScript - 프런트엔드 소스, `server/src/main/resources/static/`은 빌드 결과물이라 커밋 안 함
+extension/        원클릭 스크랩용 Chrome 확장(Manifest V3) - 새 API 없이 기존 /api/scraps 등 재사용, 로컬 서버 전용
 ```
 
 ## Prototype (V0, Python)
