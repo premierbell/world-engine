@@ -4,9 +4,10 @@ import { useCollapsible } from '../hooks/useCollapsible';
 
 interface PendingListProps {
   onSelect: (scrap: ScrapSummary) => void;
+  onStartReview: () => void;
 }
 
-export function PendingList({ onSelect }: PendingListProps) {
+export function PendingList({ onSelect, onStartReview }: PendingListProps) {
   const { data: scraps, refetch } = usePendingScraps();
   // 기본 펼침 - "아직 안 정리했다"는 리마인더 역할이라 접혀서 안 보이면
   // 의미가 없다. 접혀 있어도 헤더의 개수 표시는 남는다.
@@ -25,6 +26,11 @@ export function PendingList({ onSelect }: PendingListProps) {
           ↻
         </button>
       </h2>
+      {open && scraps && scraps.length > 0 && (
+        <button type="button" className="pending-start-review" onClick={onStartReview}>
+          일괄 처리 시작
+        </button>
+      )}
       {open && (
         <ul id="pending-list" className="entity-list pending-list">
           {!scraps || scraps.length === 0 ? (

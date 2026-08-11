@@ -221,6 +221,70 @@ button.refresh:hover {
   background: #96281b;
 }
 
+.pending-start-review {
+  width: 100%;
+  margin: 4px 0 8px;
+}
+
+.pending-review {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pending-review-progress {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.pending-review-summary {
+  font-weight: 400;
+  color: #666;
+}
+
+.pending-review-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.pending-review-nav button {
+  flex: 1;
+  background: #edf2fa;
+  color: #1a1a1a;
+}
+
+.pending-review-nav button:hover {
+  background: #dbe6f7;
+}
+
+.pending-review-nav button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pending-review-title {
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;
+  margin: 4px 0;
+}
+
+.pending-review-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pending-review-exit {
+  margin-top: 12px;
+  background: #edf2fa;
+  color: #1a1a1a;
+}
+
+.pending-review-exit:hover {
+  background: #dbe6f7;
+}
+
 .island-name-row {
   display: flex;
   align-items: center;

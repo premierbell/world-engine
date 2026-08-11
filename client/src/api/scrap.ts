@@ -35,3 +35,7 @@ export function refreshRecommendations(id: number) {
     method: 'POST',
   });
 }
+
+export function deleteScrap(id: number) {
+  return apiFetch<void>(`/api/scraps/${id}`, { method: 'DELETE' });
+}

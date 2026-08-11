@@ -12,6 +12,7 @@ import com.worldengine.scrap.service.ScrapConfirmService;
 import com.worldengine.scrap.service.ScrapQueryService;
 import com.worldengine.scrap.service.ScrapService;
 import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,6 +54,11 @@ public class ScrapController {
     @PostMapping("/{id}/recommendations")
     public List<IslandRecommendation> refreshRecommendations(@PathVariable Long id) {
         return scrapService.refreshRecommendations(id);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        scrapService.delete(id);
     }
 
     @GetMapping("/stats")

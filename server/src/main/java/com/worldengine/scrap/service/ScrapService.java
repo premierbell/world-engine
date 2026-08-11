@@ -121,4 +121,10 @@ public class ScrapService {
 
         return recommendations;
     }
+
+    public void delete(Long scrapId) {
+        Scrap scrap = scrapRepository.findById(scrapId)
+            .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 스크랩: " + scrapId));
+        scrapRepository.delete(scrap);
+    }
 }
