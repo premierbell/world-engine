@@ -25,3 +25,10 @@ export function renameTopic(id: number, name: string) {
 export function deleteTopic(id: number) {
   return apiFetch<void>(`/api/topics/${id}`, { method: 'DELETE' });
 }
+
+export function suggestTopicName(scrapIds: number[]) {
+  return apiFetch<{ name: string }>('/api/topics/suggest-name', {
+    method: 'POST',
+    body: JSON.stringify({ scrapIds }),
+  });
+}

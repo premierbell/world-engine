@@ -520,6 +520,18 @@ button.refresh:hover {
   background: #dbe6f7;
 }
 
+.suggest-name-button {
+  margin-left: auto;
+  background: #edf2fa;
+  color: #1a1a1a;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.suggest-name-button:hover {
+  background: #dbe6f7;
+}
+
 .topic-candidate-card {
   border: 1px solid #e0e0dc;
   border-radius: 6px;
