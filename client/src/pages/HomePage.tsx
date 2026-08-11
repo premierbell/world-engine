@@ -14,7 +14,14 @@ import { useConfirmScrap } from '../hooks/useConfirmScrap';
 import { useCreateScrap } from '../hooks/useCreateScrap';
 import { useIslands } from '../hooks/useIslands';
 import { useRefreshRecommendations } from '../hooks/useRefreshRecommendations';
-import type { IslandRecommendation, ScrapSummary } from '../types/scrap';
+import type { IslandRecommendation, ScrapCreateResponse, ScrapSummary } from '../types/scrap';
+
+interface DuplicateNotice {
+  scrapId: number;
+  title: string | null;
+  islandId: number | null;
+  islandName: string | null;
+}
 
 const FAILURE_MESSAGES: Record<string, string> = {
   ROBOTS_BLOCKED: '사이트가 자동 접근을 차단했어요.',
@@ -44,29 +51,51 @@ export function HomePage() {
   const [recommendations, setRecommendations] = useState<IslandRecommendation[] | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
+  const [duplicateNotice, setDuplicateNotice] = useState<DuplicateNotice | null>(null);
+  const [lastSubmittedUrl, setLastSubmittedUrl] = useState('');
+  const [lastSubmittedContext, setLastSubmittedContext] = useState('');
 
   const createScrapMutation = useCreateScrap();
   const refreshRecommendationsMutation = useRefreshRecommendations();
   const confirmScrapMutation = useConfirmScrap();
 
+  // 중복 스크랩(POST /api/scraps가 duplicate:true를 준 경우)과 정상
+  // 생성 둘 다 결국 같은 방식으로 결과를 반영해야 해서(강제 저장으로
+  // 다시 제출한 결과도 포함) 공통 로직만 뽑음.
+  const applyCreateResult = (data: ScrapCreateResponse) => {
+    setCurrentScrapId(data.scrapId);
+    if (data.status === 'FAILED') {
+      const reason = (data.failureReason && FAILURE_MESSAGES[data.failureReason]) || '본문을 가져오지 못했어요.';
+      setStatusMessage(`${reason} (URL만 저장됨)`);
+    } else {
+      setStatusMessage(`제목: ${data.title ?? '(없음)'}\n상태: ${data.status}`);
+    }
+    setRecommendations(data.recommendations);
+  };
+
   const handleScrapSubmit = (url: string, userContext: string) => {
     setStatusMessage('스크랩하는 중...');
     setConfirmMessage('');
     setRecommendations(null);
+    setDuplicateNotice(null);
+    setLastSubmittedUrl(url);
+    setLastSubmittedContext(userContext);
 
     createScrapMutation.mutate(
       { url, userContext: userContext || undefined },
       {
         onSuccess: (data) => {
-          setCurrentScrapId(data.scrapId);
-          if (data.status === 'FAILED') {
-            const reason =
-              (data.failureReason && FAILURE_MESSAGES[data.failureReason]) || '본문을 가져오지 못했어요.';
-            setStatusMessage(`${reason} (URL만 저장됨)`);
-          } else {
-            setStatusMessage(`제목: ${data.title ?? '(없음)'}\n상태: ${data.status}`);
+          if (data.duplicate) {
+            setStatusMessage('');
+            setDuplicateNotice({
+              scrapId: data.scrapId,
+              title: data.title,
+              islandId: data.existingIslandId,
+              islandName: data.existingIslandName,
+            });
+            return;
           }
-          setRecommendations(data.recommendations);
+          applyCreateResult(data);
         },
         onError: (error) => {
           const status = error instanceof ApiError ? error.status : '?';
@@ -74,6 +103,32 @@ export function HomePage() {
         },
       },
     );
+  };
+
+  const handleForceSaveDuplicate = () => {
+    setDuplicateNotice(null);
+    setStatusMessage('스크랩하는 중...');
+
+    createScrapMutation.mutate(
+      { url: lastSubmittedUrl, userContext: lastSubmittedContext || undefined, force: true },
+      {
+        onSuccess: applyCreateResult,
+        onError: (error) => {
+          const status = error instanceof ApiError ? error.status : '?';
+          setStatusMessage(`실패 (HTTP ${status})`);
+        },
+      },
+    );
+  };
+
+  const handleViewDuplicateIsland = () => {
+    if (!duplicateNotice?.islandId) {
+      return;
+    }
+    const islandId = duplicateNotice.islandId;
+    setIsScrapPanelOpen(false);
+    setDuplicateNotice(null);
+    navigate(`/islands/${islandId}`);
   };
 
   const handlePendingSelect = (scrap: ScrapSummary) => {
@@ -165,6 +220,26 @@ export function HomePage() {
       <Panel isOpen={isScrapPanelOpen} onClose={() => setIsScrapPanelOpen(false)} title="스크랩 추가">
         <ScrapForm onSubmit={handleScrapSubmit} />
         <p className="result">{statusMessage}</p>
+        {duplicateNotice && (
+          <div className="duplicate-notice">
+            <p>
+              이미 스크랩한 URL이에요: "{duplicateNotice.title ?? '(제목 없음)'}"
+              {duplicateNotice.islandName
+                ? ` — ${duplicateNotice.islandName} 섬에 있음`
+                : ' — 아직 정리할 스크랩 상태'}
+            </p>
+            <div className="duplicate-notice-actions">
+              {duplicateNotice.islandId !== null && (
+                <button type="button" onClick={handleViewDuplicateIsland}>
+                  기존 스크랩 보기
+                </button>
+              )}
+              <button type="button" onClick={handleForceSaveDuplicate}>
+                그래도 저장
+              </button>
+            </div>
+          </div>
+        )}
         {recommendations !== null && (
           <RecommendPanel
             recommendations={recommendations}

@@ -16,10 +16,10 @@ export function fetchScrap(id: number) {
   return apiFetch<ScrapDetail>(`/api/scraps/${id}`);
 }
 
-export function createScrap(url: string, userContext?: string) {
+export function createScrap(url: string, userContext?: string, force?: boolean) {
   return apiFetch<ScrapCreateResponse>('/api/scraps', {
     method: 'POST',
-    body: JSON.stringify({ url, userContext: userContext || null }),
+    body: JSON.stringify({ url, userContext: userContext || null, force: force ?? null }),
   });
 }
 

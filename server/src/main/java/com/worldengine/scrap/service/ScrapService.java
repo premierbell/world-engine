@@ -2,6 +2,8 @@ package com.worldengine.scrap.service;
 
 import com.worldengine.extraction.model.ExtractionResult;
 import com.worldengine.extraction.service.ContentExtractionService;
+import com.worldengine.island.entity.Island;
+import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.recommendation.client.OpenAiEmbeddingClient;
 import com.worldengine.recommendation.service.IslandRecommendation;
 import com.worldengine.recommendation.service.RecommendationService;
@@ -10,6 +12,7 @@ import com.worldengine.scrap.entity.Scrap;
 import com.worldengine.scrap.repository.ScrapRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,21 +25,35 @@ public class ScrapService {
     private final OpenAiEmbeddingClient openAiEmbeddingClient;
     private final ScrapRepository scrapRepository;
     private final RecommendationService recommendationService;
+    private final IslandRepository islandRepository;
 
     public ScrapService(
         ContentExtractionService contentExtractionService,
         ScrapContentPreprocessor scrapContentPreprocessor,
         OpenAiEmbeddingClient openAiEmbeddingClient,
         ScrapRepository scrapRepository,
-        RecommendationService recommendationService) {
+        RecommendationService recommendationService,
+        IslandRepository islandRepository) {
         this.contentExtractionService = contentExtractionService;
         this.scrapContentPreprocessor = scrapContentPreprocessor;
         this.openAiEmbeddingClient = openAiEmbeddingClient;
         this.scrapRepository = scrapRepository;
         this.recommendationService = recommendationService;
+        this.islandRepository = islandRepository;
     }
 
     public ScrapCreateResponse createScrap(String url, String userContext) {
+        return createScrap(url, userContext, false);
+    }
+
+    public ScrapCreateResponse createScrap(String url, String userContext, boolean force) {
+        if (!force) {
+            Optional<Scrap> existing = scrapRepository.findByUrl(url);
+            if (existing.isPresent()) {
+                return duplicateResponse(existing.get());
+            }
+        }
+
         ExtractionResult extractionResult = contentExtractionService.extract(url);
         String truncatedContent = scrapContentPreprocessor.truncate(extractionResult.content());
 
@@ -67,7 +84,19 @@ public class ScrapService {
         Scrap saved = scrapRepository.save(scrap);
 
         return new ScrapCreateResponse(saved.getId(), saved.getTitle(),
-            extractionResult.status(), saved.getFailureReason(), recommendations);
+            extractionResult.status(), saved.getFailureReason(), recommendations,
+            false, null, null);
+    }
+
+    private ScrapCreateResponse duplicateResponse(Scrap existing) {
+        String islandName = null;
+        if (existing.getIslandId() != null) {
+            islandName = islandRepository.findById(existing.getIslandId())
+                .map(Island::getName)
+                .orElse(null);
+        }
+        return new ScrapCreateResponse(existing.getId(), existing.getTitle(), null, null, List.of(),
+            true, existing.getIslandId(), islandName);
     }
 
     public List<IslandRecommendation> refreshRecommendations(Long scrapId) {
