@@ -159,4 +159,16 @@ public class ScrapServiceTest {
         assertThat(response.duplicate()).isFalse();
         verify(scrapRepository, never()).findByUrl(any());
     }
+
+    @Test
+    void deletesScrap() {
+        Scrap scrap = new Scrap("https://example.com", "제목", "본문", "본문",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(scrap, "id", 1L);
+        when(scrapRepository.findById(1L)).thenReturn(Optional.of(scrap));
+
+        scrapService.delete(1L);
+
+        verify(scrapRepository).delete(scrap);
+    }
 }

@@ -6,6 +6,7 @@ import { IslandPanelContent } from '../components/IslandPanelContent';
 import { MapView } from '../components/MapView';
 import { Panel } from '../components/Panel';
 import { PendingList } from '../components/PendingList';
+import { PendingReview } from '../components/PendingReview';
 import { RecentScraps } from '../components/RecentScraps';
 import { RecommendPanel } from '../components/RecommendPanel';
 import { ScrapForm } from '../components/ScrapForm';
@@ -47,6 +48,7 @@ export function HomePage() {
   const [isScrapPanelOpen, setIsScrapPanelOpen] = useState(false);
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   const [isListPanelOpen, setIsListPanelOpen] = useState(false);
+  const [isPendingReviewOpen, setIsPendingReviewOpen] = useState(false);
   const [currentScrapId, setCurrentScrapId] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<IslandRecommendation[] | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -135,6 +137,11 @@ export function HomePage() {
     setCurrentScrapId(scrap.id);
     setStatusMessage(`다시 확인 중: ${scrap.title ?? scrap.url}`);
     setConfirmMessage('');
+    setDuplicateNotice(null);
+    // 결과(추천 목록)가 뜨는 자리가 "스크랩 추가" 패널 안이라, 그
+    // 패널이 안 열려 있으면 여기까지 와도 아무것도 안 보이던 기존
+    // 사각지대 - 목록에서 클릭하면 같이 열어준다.
+    setIsScrapPanelOpen(true);
 
     refreshRecommendationsMutation.mutate(scrap.id, {
       onSuccess: (data) => {
@@ -211,11 +218,25 @@ export function HomePage() {
       {/* Islands/정리할 스크랩/최근 Scraps - 예전엔 상시 노출 사이드바였는데,
           지도 옆에 항상 고정 폭을 차지해서 데스크톱 지도 영역이 좁아지는
           문제가 있었다. 스크랩 추가/검색과 같은 온디맨드 패널로 통일 -
-          기본은 지도만 보이고, 필요할 때 "목록" 버튼으로 불러온다. */}
-      <Panel position="left" isOpen={isListPanelOpen} onClose={() => setIsListPanelOpen(false)} title="목록">
-        <IslandList />
-        <PendingList onSelect={handlePendingSelect} />
-        <RecentScraps />
+          기본은 지도만 보이고, 필요할 때 "목록" 버튼으로 불러온다.
+          "일괄 처리 시작" 누르면 이 자리가 통째로 PendingReview로
+          바뀐다 - 오른쪽 패널은 Island 상세/스크랩 추가가 이미 쓰고
+          있어서 새 패널 자리를 안 늘리려고 이 슬롯을 재사용. */}
+      <Panel
+        position="left"
+        isOpen={isListPanelOpen}
+        onClose={() => setIsListPanelOpen(false)}
+        title={isPendingReviewOpen ? '정리할 스크랩 처리' : '목록'}
+      >
+        {isPendingReviewOpen ? (
+          <PendingReview onExit={() => setIsPendingReviewOpen(false)} />
+        ) : (
+          <>
+            <IslandList />
+            <PendingList onSelect={handlePendingSelect} onStartReview={() => setIsPendingReviewOpen(true)} />
+            <RecentScraps />
+          </>
+        )}
       </Panel>
       <Panel isOpen={isScrapPanelOpen} onClose={() => setIsScrapPanelOpen(false)} title="스크랩 추가">
         <ScrapForm onSubmit={handleScrapSubmit} />
