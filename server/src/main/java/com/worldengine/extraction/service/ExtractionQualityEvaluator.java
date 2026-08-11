@@ -48,7 +48,7 @@ public class ExtractionQualityEvaluator {
         if (content == null || content.trim().length() < minContentLength) {
             return false;
         }
-        return !looksLikeCommerceBoilerplate(content);
+        return !looksLikeCommerceBoilerplate(content) && !looksLikeLegalBoilerplate(content);
     }
 
     public boolean looksLikeLegalBoilerplate(String content) {

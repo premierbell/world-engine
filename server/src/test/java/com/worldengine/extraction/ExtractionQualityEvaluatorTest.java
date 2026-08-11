@@ -41,4 +41,13 @@ class ExtractionQualityEvaluatorTest {
             + "유지하는 것을 목표로 했습니다. 아키텍처는 헥사고날 구조를 참고했습니다.";
         assertThat(evaluator.isValid(content)).isTrue();
     }
+
+    @Test
+    void rejectsLegalBoilerplate() {
+        String content = "이 저작물은 CC BY-NC-SA 2.0 KR에 따라 이용할 수 있습니다. "
+            + "기여하신 문서의 저작권은 각 기여자에게 있으며, 각 기여자는 기여하신 부분의 "
+            + "저작권을 갖습니다. 나무위키는 백과사전이 아니며 검증되지 않았거나, 편향적이거나, "
+            + "잘못된 서술이 있을 수 있습니다.";
+        assertThat(evaluator.isValid(content)).isFalse();
+    }
 }
