@@ -4,6 +4,7 @@ import { useAddScrapsToTopic } from '../hooks/useAddScrapsToTopic';
 import { useCreateTopic } from '../hooks/useCreateTopic';
 import { useGenerateTopicCandidates } from '../hooks/useGenerateTopicCandidates';
 import { useIsland } from '../hooks/useIsland';
+import { useSuggestTopicName } from '../hooks/useSuggestTopicName';
 import type { ScrapSummary } from '../types/scrap';
 import type { TopicCandidateResponse } from '../types/topic';
 import { ErrorCard } from './ErrorCard';
@@ -47,6 +48,7 @@ export function IslandPanelContent({ islandId }: IslandPanelContentProps) {
   const generateCandidatesMutation = useGenerateTopicCandidates();
   const createTopicMutation = useCreateTopic();
   const addScrapsToTopicMutation = useAddScrapsToTopic(islandId);
+  const suggestNameMutation = useSuggestTopicName();
 
   if (isLoading) {
     return <LoadingCard />;
@@ -70,8 +72,11 @@ export function IslandPanelContent({ islandId }: IslandPanelContentProps) {
     });
   };
 
-  const handleFillCandidate = (scrapIds: number[]) => {
+  const handleFillCandidate = (scrapIds: number[], name?: string) => {
     setSelectedScrapIds((prev) => new Set([...prev, ...scrapIds]));
+    if (name) {
+      setTopicName(name);
+    }
   };
 
   const handleGenerateCandidates = () => {
@@ -111,6 +116,22 @@ export function IslandPanelContent({ islandId }: IslandPanelContentProps) {
         },
       },
     );
+  };
+
+  const handleSuggestName = () => {
+    if (selectedScrapIds.size === 0) {
+      setTopicCreateResult('이름을 제안받으려면 스크랩을 먼저 선택해주세요.');
+      return;
+    }
+    suggestNameMutation.mutate(Array.from(selectedScrapIds), {
+      onSuccess: (data) => {
+        setTopicName(data.name);
+        setTopicCreateResult('');
+      },
+      onError: (err) => {
+        setTopicCreateResult(`이름 제안 실패: ${err.message}`);
+      },
+    });
   };
 
   const handleAddToExistingTopic = (topicId: number, scrapIds: number[]) => {
@@ -177,6 +198,9 @@ export function IslandPanelContent({ islandId }: IslandPanelContentProps) {
           value={topicName}
           onChange={(event) => setTopicName(event.target.value)}
         />
+        <button type="button" onClick={handleSuggestName} disabled={suggestNameMutation.isPending}>
+          {suggestNameMutation.isPending ? '...' : 'AI 제안'}
+        </button>
         <button type="button" onClick={handleCreateTopic}>
           선택한 스크랩으로 Topic 생성
         </button>

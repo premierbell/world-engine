@@ -1,16 +1,9 @@
 package com.worldengine.recommendation.client;
 
-import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClient;
 
 @Component
 public class LlmPairwiseJudgeClient {
-
-    private static final int MAX_ATTEMPTS = 3;
-    private static final long RETRY_BACKOFF_MS = 2000;
 
     private static final String NEUTRAL_PROMPT = """
         다음 두 스크랩 요약이 얼마나 밀접하게 관련되어 있는지 0.0~1.0 사이의 점수로 평가하라. \
@@ -38,58 +31,21 @@ public class LlmPairwiseJudgeClient {
         스크랩 B: %s
         """;
 
-    private final RestClient restClient;
-    private final String model;
+    private final OpenAiChatClient chatClient;
 
-    public LlmPairwiseJudgeClient(
-        @Value("${openai.api-key}") String apiKey,
-        @Value("${openai.pairwise-judge-model}") String model) {
-        this.restClient = RestClient.builder()
-            .baseUrl("https://api.openai.com/v1")
-            .defaultHeader("Authorization", "Bearer " + apiKey)
-            .build();
-        this.model = model;
+    public LlmPairwiseJudgeClient(OpenAiChatClient chatClient) {
+        this.chatClient = chatClient;
     }
 
     public double score(String textA, String textB) {
-        return callScore(NEUTRAL_PROMPT.formatted(textA, textB));
+        return parseScore(chatClient.complete(NEUTRAL_PROMPT.formatted(textA, textB)));
     }
 
     public double scoreMechanism(String textA, String textB) {
-        return callScore(MECHANISM_PROMPT.formatted(textA, textB));
+        return parseScore(chatClient.complete(MECHANISM_PROMPT.formatted(textA, textB)));
     }
 
-    /**
-     * 병렬 호출을 도입하면서 실제로 OpenAI TPM(분당 토큰) rate limit(429)을
-     * 만난 뒤 추가함 - 순차 호출일 땐 호출 사이 지연이 우연히 스로틀링 역할을
-     * 해서 필요 없었다. 짧은 백오프로 몇 번만 재시도한다.
-     */
-    private double callScore(String prompt) {
-        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-            try {
-                return requestScore(prompt);
-            } catch (HttpClientErrorException.TooManyRequests e) {
-                if (attempt == MAX_ATTEMPTS) {
-                    throw e;
-                }
-                sleep(RETRY_BACKOFF_MS * attempt);
-            }
-        }
-        throw new IllegalStateException("재시도 로직 도달 불가 지점");
-    }
-
-    private double requestScore(String prompt) {
-        ChatResponse response = restClient.post()
-            .uri("/chat/completions")
-            .body(new ChatRequest(model, 0, List.of(new ChatMessage("user", prompt))))
-            .retrieve()
-            .body(ChatResponse.class);
-
-        if (response == null || response.choices().isEmpty()) {
-            throw new IllegalStateException("OpenAI chat completions 응답이 비어있음");
-        }
-
-        String raw = response.choices().get(0).message().content().trim();
+    private double parseScore(String raw) {
         try {
             double parsed = Double.parseDouble(raw);
             return Math.max(0.0, Math.min(1.0, parsed));
@@ -97,18 +53,4 @@ public class LlmPairwiseJudgeClient {
             return 0.5;
         }
     }
-
-    private void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("재시도 대기 중 인터럽트됨", e);
-        }
-    }
-
-    private record ChatRequest(String model, int temperature, List<ChatMessage> messages) {}
-    private record ChatMessage(String role, String content) {}
-    private record ChatResponse(List<Choice> choices) {}
-    private record Choice(ChatMessage message) {}
 }
