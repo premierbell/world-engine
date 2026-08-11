@@ -36,7 +36,8 @@ public class ScrapController {
 
     @PostMapping
     public ScrapCreateResponse createScrap(@RequestBody ScrapCreateRequest request) {
-        return scrapService.createScrap(request.url(), request.userContext());
+        boolean force = Boolean.TRUE.equals(request.force());
+        return scrapService.createScrap(request.url(), request.userContext(), force);
     }
 
     @PostMapping("/{id}/confirm")

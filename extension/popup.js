@@ -23,8 +23,14 @@ const recommendationsEl = document.getElementById('recommendations');
 const otherIslandSelect = document.getElementById('other-island-select');
 const newIslandInput = document.getElementById('new-island-name');
 const confirmMessageEl = document.getElementById('confirm-message');
+const duplicateNoticeEl = document.getElementById('duplicate-notice');
+const duplicateTextEl = document.getElementById('duplicate-text');
+const duplicateViewButton = document.getElementById('duplicate-view');
+const duplicateForceButton = document.getElementById('duplicate-force');
 
 let currentScrapId = null;
+let currentTabUrl = null;
+let currentDuplicateIslandId = null;
 
 async function apiFetch(path, options) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -101,35 +107,70 @@ async function confirmScrap(body) {
   }
 }
 
-async function captureCurrentTab() {
+function applyScrapResult(data, fallbackUrl) {
+  currentScrapId = data.scrapId;
+  statusEl.hidden = true;
+  duplicateNoticeEl.hidden = true;
+  resultEl.hidden = false;
+  titleEl.textContent = data.title || fallbackUrl;
+
+  if (data.status === 'FAILED') {
+    const reason = (data.failureReason && FAILURE_MESSAGES[data.failureReason]) || '본문을 가져오지 못했어요.';
+    confirmMessageEl.textContent = `${reason} (URL만 저장됨)`;
+  }
+
+  renderRecommendations(data.recommendations);
+  populateIslandSelect();
+}
+
+// client/src/pages/HomePage.tsx의 duplicate 처리와 같은 로직 - 이미
+// 있는 URL이면 새로 만들지 않고 기존 스크랩 정보만 보여준다("그래도
+// 저장" 누르면 force:true로 다시 호출).
+async function captureCurrentTab(force) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.url) {
     statusEl.textContent = '현재 탭의 URL을 가져올 수 없어요.';
     return;
   }
+  currentTabUrl = tab.url;
 
   try {
     const data = await apiFetch('/api/scraps', {
       method: 'POST',
-      body: JSON.stringify({ url: tab.url }),
+      body: JSON.stringify({ url: tab.url, force: force || null }),
     });
 
-    currentScrapId = data.scrapId;
-    statusEl.hidden = true;
-    resultEl.hidden = false;
-    titleEl.textContent = data.title || tab.url;
-
-    if (data.status === 'FAILED') {
-      const reason = (data.failureReason && FAILURE_MESSAGES[data.failureReason]) || '본문을 가져오지 못했어요.';
-      confirmMessageEl.textContent = `${reason} (URL만 저장됨)`;
+    if (data.duplicate) {
+      statusEl.hidden = true;
+      duplicateNoticeEl.hidden = false;
+      currentScrapId = data.scrapId;
+      currentDuplicateIslandId = data.existingIslandId;
+      duplicateTextEl.textContent = `이미 스크랩한 URL이에요: "${data.title || tab.url}"${
+        data.existingIslandName ? ` — ${data.existingIslandName} 섬에 있음` : ' — 아직 정리할 스크랩 상태'
+      }`;
+      duplicateViewButton.hidden = data.existingIslandId === null;
+      return;
     }
 
-    renderRecommendations(data.recommendations);
-    await populateIslandSelect();
+    applyScrapResult(data, tab.url);
   } catch (err) {
     statusEl.textContent = `스크랩 실패: ${err.message}`;
   }
 }
+
+duplicateViewButton.addEventListener('click', () => {
+  if (currentDuplicateIslandId === null || currentDuplicateIslandId === undefined) {
+    return;
+  }
+  chrome.tabs.create({ url: `http://localhost:5173/islands/${currentDuplicateIslandId}` });
+});
+
+duplicateForceButton.addEventListener('click', () => {
+  statusEl.hidden = false;
+  statusEl.textContent = '스크랩하는 중...';
+  duplicateNoticeEl.hidden = true;
+  captureCurrentTab(true);
+});
 
 document.getElementById('confirm-other').addEventListener('click', () => {
   const islandId = Number(otherIslandSelect.value);

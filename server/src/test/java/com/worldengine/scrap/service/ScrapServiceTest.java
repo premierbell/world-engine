@@ -12,6 +12,8 @@ import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.FallbackLevel;
 import com.worldengine.extraction.model.SourceType;
 import com.worldengine.extraction.service.ContentExtractionService;
+import com.worldengine.island.entity.Island;
+import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.recommendation.client.OpenAiEmbeddingClient;
 import com.worldengine.recommendation.service.IslandRecommendation;
 import com.worldengine.recommendation.service.RecommendationService;
@@ -42,6 +44,9 @@ public class ScrapServiceTest {
 
     @Mock
     private RecommendationService recommendationService;
+
+    @Mock
+    private IslandRepository islandRepository;
 
     @Spy
     private ScrapContentPreprocessor scrapContentPreprocessor = new ScrapContentPreprocessor(2000);
@@ -116,5 +121,42 @@ public class ScrapServiceTest {
 
         assertThatThrownBy(() -> scrapService.refreshRecommendations(1L))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void returnsDuplicateWithoutCreatingWhenUrlAlreadyExists() {
+        Scrap existing = new Scrap("https://example.com", "기존 제목", "본문", "본문",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(existing, "id", 10L);
+        existing.confirmIsland(3L);
+        when(scrapRepository.findByUrl("https://example.com")).thenReturn(Optional.of(existing));
+        when(islandRepository.findById(3L)).thenReturn(Optional.of(new Island("여행", new float[]{0.1f})));
+
+        ScrapCreateResponse response = scrapService.createScrap("https://example.com", null);
+
+        assertThat(response.duplicate()).isTrue();
+        assertThat(response.scrapId()).isEqualTo(10L);
+        assertThat(response.existingIslandId()).isEqualTo(3L);
+        assertThat(response.existingIslandName()).isEqualTo("여행");
+        verify(contentExtractionService, never()).extract(any());
+        verify(scrapRepository, never()).save(any());
+    }
+
+    @Test
+    void skipsDuplicateCheckWhenForced() {
+        ExtractionResult extractionResult = ExtractionResult.success("제목", "본문 내용", SourceType.ARTICLE);
+        when(contentExtractionService.extract("https://example.com")).thenReturn(extractionResult);
+        float[] embedding = {0.1f, 0.2f};
+        when(openAiEmbeddingClient.embed("본문 내용")).thenReturn(embedding);
+        Scrap saved = new Scrap("https://example.com", "제목", "본문 내용", "본문 내용",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, embedding);
+        ReflectionTestUtils.setField(saved, "id", 11L);
+        when(scrapRepository.save(any())).thenReturn(saved);
+        when(recommendationService.recommend(any(), any(), anyInt())).thenReturn(List.of());
+
+        ScrapCreateResponse response = scrapService.createScrap("https://example.com", null, true);
+
+        assertThat(response.duplicate()).isFalse();
+        verify(scrapRepository, never()).findByUrl(any());
     }
 }

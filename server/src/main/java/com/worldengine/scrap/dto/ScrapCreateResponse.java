@@ -10,5 +10,8 @@ public record ScrapCreateResponse(
     String title,
     ExtractionStatus status,
     FailureReason failureReason,
-    List<IslandRecommendation> recommendations
+    List<IslandRecommendation> recommendations,
+    boolean duplicate,
+    Long existingIslandId,
+    String existingIslandName
 ) {}
