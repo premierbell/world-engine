@@ -8,6 +8,7 @@ import { Panel } from '../components/Panel';
 import { PendingList } from '../components/PendingList';
 import { PendingReview } from '../components/PendingReview';
 import { RecentScraps } from '../components/RecentScraps';
+import { WorldExport } from '../components/WorldExport';
 import { RecommendPanel } from '../components/RecommendPanel';
 import { ScrapForm } from '../components/ScrapForm';
 import { SearchPanelContent } from '../components/SearchPanelContent';
@@ -235,6 +236,7 @@ export function HomePage() {
             <IslandList />
             <PendingList onSelect={handlePendingSelect} onStartReview={() => setIsPendingReviewOpen(true)} />
             <RecentScraps />
+            <WorldExport />
           </>
         )}
       </Panel>

@@ -226,6 +226,16 @@ button.refresh:hover {
   margin: 4px 0 8px;
 }
 
+.world-export-button {
+  width: 100%;
+  background: #edf2fa;
+  color: #1a1a1a;
+}
+
+.world-export-button:hover {
+  background: #dbe6f7;
+}
+
 .pending-review {
   display: flex;
   flex-direction: column;
