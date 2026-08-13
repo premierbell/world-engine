@@ -16,8 +16,10 @@ import com.worldengine.scrap.repository.ScrapRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class ScrapService {
 
@@ -62,7 +64,7 @@ public class ScrapService {
 
         ExtractionResult extractionResult = contentExtractionService.extract(url);
         String truncatedContent = scrapContentPreprocessor.truncate(extractionResult.content());
-        String summary = summarize(truncatedContent, extractionResult.fullPageText());
+        String summary = summarize(url, truncatedContent, extractionResult.fullPageText());
         boolean isBoilerplateOnly = truncatedContent != null && summary == null;
 
         float[] embedding = summary != null
@@ -112,7 +114,7 @@ public class ScrapService {
      * 흩어져 있어 readability4j가 반품정책만 고른 사례)를 구제하기 위함.
      * 정상 페이지는 1차에서 바로 끝나므로 AI 호출이 추가되지 않는다.
      */
-    private String summarize(String truncatedContent, String fullPageText) {
+    private String summarize(String url, String truncatedContent, String fullPageText) {
         if (truncatedContent == null) {
             return null;
         }
@@ -121,13 +123,23 @@ public class ScrapService {
             return result;
         }
 
+        log.info("1차 요약 NO_CONTENT - 전체 페이지 폴백 시도 - url={}", url);
+
         if (fullPageText == null) {
             return null;
         }
 
         String truncatedFullPage = scrapContentPreprocessor.truncateFullPage(fullPageText);
         String fallbackResult = contentSummaryClient.summarizeFullPage(truncatedFullPage);
-        return ContentSummaryClient.NO_CONTENT.equals(fallbackResult) ? null : fallbackResult;
+
+        if (ContentSummaryClient.NO_CONTENT.equals(fallbackResult)) {
+            log.info("전체 페이지 폴백도 NO_CONTENT - BOILERPLATE_ONLY로 확정 - url={}", url);
+            return null;
+        }
+
+        log.info("전체 페이지 폴백 성공 - url={}", url);
+
+        return fallbackResult;
     }
 
     private ScrapCreateResponse duplicateResponse(Scrap existing) {
