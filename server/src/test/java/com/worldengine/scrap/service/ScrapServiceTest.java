@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.worldengine.extraction.model.ExtractionResult;
+import com.worldengine.extraction.model.ExtractionStatus;
 import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.FallbackLevel;
 import com.worldengine.extraction.model.SourceType;
@@ -108,11 +109,14 @@ public class ScrapServiceTest {
         Scrap saved = new Scrap("https://example.com/boilerplate", "제목", "저작권 안내만 있음", null,
             SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, null);
         ReflectionTestUtils.setField(saved, "id", 12L);
+        saved.recordFailureReason(FailureReason.BOILERPLATE_ONLY);
         when(scrapRepository.save(any())).thenReturn(saved);
 
         ScrapCreateResponse response = scrapService.createScrap("https://example.com/boilerplate", null);
 
         assertThat(response.recommendations()).isEmpty();
+        assertThat(response.status()).isEqualTo(ExtractionStatus.FAILED);
+        assertThat(response.failureReason()).isEqualTo(FailureReason.BOILERPLATE_ONLY);
         verify(openAiEmbeddingClient, never()).embed(any());
     }
 

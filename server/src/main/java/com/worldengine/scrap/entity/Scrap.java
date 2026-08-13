@@ -54,6 +54,7 @@ public class Scrap {
 
     private Long recommendedIslandId;
 
+    @Enumerated(EnumType.STRING)
     private FailureReason failureReason;
 
     protected Scrap() {}

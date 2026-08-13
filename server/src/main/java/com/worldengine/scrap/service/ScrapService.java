@@ -1,6 +1,8 @@
 package com.worldengine.scrap.service;
 
 import com.worldengine.extraction.model.ExtractionResult;
+import com.worldengine.extraction.model.ExtractionStatus;
+import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.service.ContentExtractionService;
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
@@ -61,6 +63,7 @@ public class ScrapService {
         ExtractionResult extractionResult = contentExtractionService.extract(url);
         String truncatedContent = scrapContentPreprocessor.truncate(extractionResult.content());
         String summary = summarize(truncatedContent);
+        boolean isBoilerplateOnly = truncatedContent != null && summary == null;
 
         float[] embedding = summary != null
             ? openAiEmbeddingClient.embed(summary)
@@ -76,7 +79,7 @@ public class ScrapService {
             userContext,
             embedding
         );
-        scrap.recordFailureReason(extractionResult.failureReason());
+        scrap.recordFailureReason(isBoilerplateOnly ? FailureReason.BOILERPLATE_ONLY : extractionResult.failureReason());
 
         List<IslandRecommendation> recommendations = embedding != null
             ? recommendationService.recommend(summary, embedding, RECALL_SIZE)
@@ -88,8 +91,10 @@ public class ScrapService {
 
         Scrap saved = scrapRepository.save(scrap);
 
+        ExtractionStatus status = isBoilerplateOnly ? ExtractionStatus.FAILED : extractionResult.status();
+
         return new ScrapCreateResponse(saved.getId(), saved.getTitle(),
-            extractionResult.status(), saved.getFailureReason(), recommendations,
+            status, saved.getFailureReason(), recommendations,
             false, null, null);
     }
 
