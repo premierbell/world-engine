@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 public class ScrapContentPreprocessorTest {
 
-    private final ScrapContentPreprocessor preprocessor = new ScrapContentPreprocessor(10);
+    private final ScrapContentPreprocessor preprocessor = new ScrapContentPreprocessor(10, 20);
 
     @Test
     void returnsShortContentUnchanged() {

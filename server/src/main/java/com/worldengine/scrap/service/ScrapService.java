@@ -62,7 +62,7 @@ public class ScrapService {
 
         ExtractionResult extractionResult = contentExtractionService.extract(url);
         String truncatedContent = scrapContentPreprocessor.truncate(extractionResult.content());
-        String summary = summarize(truncatedContent);
+        String summary = summarize(truncatedContent, extractionResult.fullPageText());
         boolean isBoilerplateOnly = truncatedContent != null && summary == null;
 
         float[] embedding = summary != null
@@ -104,13 +104,30 @@ public class ScrapService {
      * 처리(embedding/추천도 자동으로 스킵됨, extractionResult.content()가
      * null일 때와 같은 경로) - 별도 "오염 의심" 플래그 없이 summary가
      * 비어있다는 것 자체가 신호가 된다.
+     *
+     * 1차(readability4j가 고른 좁은 범위)에서 NO_CONTENT가 나오면,
+     * fullPageText(페이지 전체 텍스트)가 있는 경우에 한해 2차 폴백을
+     * 시도한다 - readability4j가 본문 선택을 잘못했을 뿐 실제로는 페이지에
+     * 내용이 있는 경우(KT위즈샵 상품 페이지처럼 상품 정보가 표/목록 형태로
+     * 흩어져 있어 readability4j가 반품정책만 고른 사례)를 구제하기 위함.
+     * 정상 페이지는 1차에서 바로 끝나므로 AI 호출이 추가되지 않는다.
      */
-    private String summarize(String truncatedContent) {
+    private String summarize(String truncatedContent, String fullPageText) {
         if (truncatedContent == null) {
             return null;
         }
         String result = contentSummaryClient.summarize(truncatedContent);
-        return ContentSummaryClient.NO_CONTENT.equals(result) ? null : result;
+        if (!ContentSummaryClient.NO_CONTENT.equals(result)) {
+            return result;
+        }
+
+        if (fullPageText == null) {
+            return null;
+        }
+
+        String truncatedFullPage = scrapContentPreprocessor.truncateFullPage(fullPageText);
+        String fallbackResult = contentSummaryClient.summarizeFullPage(truncatedFullPage);
+        return ContentSummaryClient.NO_CONTENT.equals(fallbackResult) ? null : fallbackResult;
     }
 
     private ScrapCreateResponse duplicateResponse(Scrap existing) {
