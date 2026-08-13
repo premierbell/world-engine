@@ -67,7 +67,7 @@ public class NaverBlogExtractionStrategy implements ExtractionStrategy {
         if (mainContainer != null) {
             String content = mainContainer.text();
             if (!content.isBlank()) {
-                return ExtractionResult.success(document.title(), content.trim(), SourceType.NAVER_BLOG);
+                return ExtractionResult.success(extractTitle(document), content.trim(), SourceType.NAVER_BLOG);
             }
         }
 
@@ -85,6 +85,11 @@ public class NaverBlogExtractionStrategy implements ExtractionStrategy {
         return "https://blog.naver.com/PostView.naver?blogId=" + blogId + "&logNo=" + logNo;
     }
 
+    private String extractTitle(Document document) {
+        String ogTitle = document.select("meta[property=og:title]").attr("content");
+        return !ogTitle.isBlank() ? ogTitle : document.title();
+    }
+
     private ExtractionResult openGraphFallback(Document document) {
         String ogTitle = document.select("meta[property=og:title]").attr("content");
         String ogDescription = document.select("meta[property=og:description]").attr("content");
@@ -93,7 +98,7 @@ public class NaverBlogExtractionStrategy implements ExtractionStrategy {
             return ExtractionResult.failed(SourceType.NAVER_BLOG, FailureReason.EMPTY_CONTENT);
         }
 
-        String title = !ogTitle.isBlank() ? ogTitle : document.title();
+        String title = extractTitle(document);
         return ExtractionResult.openGraphOnly(title, ogDescription, SourceType.NAVER_BLOG);
     }
 }

@@ -112,7 +112,8 @@ public class ArticleExtractionStrategy implements ExtractionStrategy {
     }
 
     private String extractTitle(Document document) {
-        return document.title();
+        String ogTitle = document.select("meta[property=og:title]").attr("content");
+        return !ogTitle.isBlank() ? ogTitle : document.title();
     }
 
     private ExtractionResult openGraphFallback(Document document) {
