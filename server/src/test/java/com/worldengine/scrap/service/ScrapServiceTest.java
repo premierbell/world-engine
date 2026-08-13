@@ -14,6 +14,7 @@ import com.worldengine.extraction.model.SourceType;
 import com.worldengine.extraction.service.ContentExtractionService;
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
+import com.worldengine.recommendation.client.ContentSummaryClient;
 import com.worldengine.recommendation.client.OpenAiEmbeddingClient;
 import com.worldengine.recommendation.service.IslandRecommendation;
 import com.worldengine.recommendation.service.RecommendationService;
@@ -37,6 +38,9 @@ public class ScrapServiceTest {
     private ContentExtractionService contentExtractionService;
 
     @Mock
+    private ContentSummaryClient contentSummaryClient;
+
+    @Mock
     private OpenAiEmbeddingClient openAiEmbeddingClient;
 
     @Mock
@@ -58,6 +62,7 @@ public class ScrapServiceTest {
     void createsScrapAndReturnsRecommendationsWhenExtractionSucceeds() {
         ExtractionResult extractionResult = ExtractionResult.success("제목", "본문 내용", SourceType.ARTICLE);
         when(contentExtractionService.extract("https://example.com")).thenReturn(extractionResult);
+        when(contentSummaryClient.summarize("본문 내용")).thenReturn("본문 내용");
 
         float[] embedding = {0.1f, 0.2f};
         when(openAiEmbeddingClient.embed("본문 내용")).thenReturn(embedding);
@@ -89,8 +94,26 @@ public class ScrapServiceTest {
         ScrapCreateResponse response = scrapService.createScrap("https://example.com/bad", null);
 
         assertThat(response.recommendations()).isEmpty();
+        verify(contentSummaryClient, never()).summarize(any());
         verify(openAiEmbeddingClient, never()).embed(any());
         verify(recommendationService, never()).recommend(any(), any(), anyInt());
+    }
+
+    @Test
+    void treatsNoContentSummaryAsEmpty() {
+        ExtractionResult extractionResult = ExtractionResult.success("제목", "저작권 안내만 있음", SourceType.ARTICLE);
+        when(contentExtractionService.extract("https://example.com/boilerplate")).thenReturn(extractionResult);
+        when(contentSummaryClient.summarize("저작권 안내만 있음")).thenReturn("NO_CONTENT");
+
+        Scrap saved = new Scrap("https://example.com/boilerplate", "제목", "저작권 안내만 있음", null,
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, null);
+        ReflectionTestUtils.setField(saved, "id", 12L);
+        when(scrapRepository.save(any())).thenReturn(saved);
+
+        ScrapCreateResponse response = scrapService.createScrap("https://example.com/boilerplate", null);
+
+        assertThat(response.recommendations()).isEmpty();
+        verify(openAiEmbeddingClient, never()).embed(any());
     }
 
     @Test
@@ -146,6 +169,7 @@ public class ScrapServiceTest {
     void skipsDuplicateCheckWhenForced() {
         ExtractionResult extractionResult = ExtractionResult.success("제목", "본문 내용", SourceType.ARTICLE);
         when(contentExtractionService.extract("https://example.com")).thenReturn(extractionResult);
+        when(contentSummaryClient.summarize("본문 내용")).thenReturn("본문 내용");
         float[] embedding = {0.1f, 0.2f};
         when(openAiEmbeddingClient.embed("본문 내용")).thenReturn(embedding);
         Scrap saved = new Scrap("https://example.com", "제목", "본문 내용", "본문 내용",

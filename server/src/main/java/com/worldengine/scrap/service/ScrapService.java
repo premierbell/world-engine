@@ -4,6 +4,7 @@ import com.worldengine.extraction.model.ExtractionResult;
 import com.worldengine.extraction.service.ContentExtractionService;
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
+import com.worldengine.recommendation.client.ContentSummaryClient;
 import com.worldengine.recommendation.client.OpenAiEmbeddingClient;
 import com.worldengine.recommendation.service.IslandRecommendation;
 import com.worldengine.recommendation.service.RecommendationService;
@@ -22,6 +23,7 @@ public class ScrapService {
 
     private final ContentExtractionService contentExtractionService;
     private final ScrapContentPreprocessor scrapContentPreprocessor;
+    private final ContentSummaryClient contentSummaryClient;
     private final OpenAiEmbeddingClient openAiEmbeddingClient;
     private final ScrapRepository scrapRepository;
     private final RecommendationService recommendationService;
@@ -30,12 +32,14 @@ public class ScrapService {
     public ScrapService(
         ContentExtractionService contentExtractionService,
         ScrapContentPreprocessor scrapContentPreprocessor,
+        ContentSummaryClient contentSummaryClient,
         OpenAiEmbeddingClient openAiEmbeddingClient,
         ScrapRepository scrapRepository,
         RecommendationService recommendationService,
         IslandRepository islandRepository) {
         this.contentExtractionService = contentExtractionService;
         this.scrapContentPreprocessor = scrapContentPreprocessor;
+        this.contentSummaryClient = contentSummaryClient;
         this.openAiEmbeddingClient = openAiEmbeddingClient;
         this.scrapRepository = scrapRepository;
         this.recommendationService = recommendationService;
@@ -56,16 +60,17 @@ public class ScrapService {
 
         ExtractionResult extractionResult = contentExtractionService.extract(url);
         String truncatedContent = scrapContentPreprocessor.truncate(extractionResult.content());
+        String summary = summarize(truncatedContent);
 
-        float[] embedding = truncatedContent != null
-            ? openAiEmbeddingClient.embed(truncatedContent)
+        float[] embedding = summary != null
+            ? openAiEmbeddingClient.embed(summary)
             : null;
 
         Scrap scrap = new Scrap(
             url,
             extractionResult.title(),
             extractionResult.content(),
-            truncatedContent,
+            summary,
             extractionResult.sourceType(),
             extractionResult.fallbackLevel(),
             userContext,
@@ -74,7 +79,7 @@ public class ScrapService {
         scrap.recordFailureReason(extractionResult.failureReason());
 
         List<IslandRecommendation> recommendations = embedding != null
-            ? recommendationService.recommend(truncatedContent, embedding, RECALL_SIZE)
+            ? recommendationService.recommend(summary, embedding, RECALL_SIZE)
             : List.of();
 
         if (!recommendations.isEmpty()) {
@@ -86,6 +91,21 @@ public class ScrapService {
         return new ScrapCreateResponse(saved.getId(), saved.getTitle(),
             extractionResult.status(), saved.getFailureReason(), recommendations,
             false, null, null);
+    }
+
+    /**
+     * 원문이 저작권/약관/편집제한 안내 같은 사이트 운영 정책 문구뿐이면
+     * ContentSummaryClient가 NO_CONTENT를 반환함 - 이 경우 summary를 null로
+     * 처리(embedding/추천도 자동으로 스킵됨, extractionResult.content()가
+     * null일 때와 같은 경로) - 별도 "오염 의심" 플래그 없이 summary가
+     * 비어있다는 것 자체가 신호가 된다.
+     */
+    private String summarize(String truncatedContent) {
+        if (truncatedContent == null) {
+            return null;
+        }
+        String result = contentSummaryClient.summarize(truncatedContent);
+        return ContentSummaryClient.NO_CONTENT.equals(result) ? null : result;
     }
 
     private ScrapCreateResponse duplicateResponse(Scrap existing) {
