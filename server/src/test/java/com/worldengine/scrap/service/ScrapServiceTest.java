@@ -54,7 +54,7 @@ public class ScrapServiceTest {
     private IslandRepository islandRepository;
 
     @Spy
-    private ScrapContentPreprocessor scrapContentPreprocessor = new ScrapContentPreprocessor(2000);
+    private ScrapContentPreprocessor scrapContentPreprocessor = new ScrapContentPreprocessor(2000, 6000);
 
     @InjectMocks
     private ScrapService scrapService;
@@ -198,5 +198,32 @@ public class ScrapServiceTest {
         scrapService.delete(1L);
 
         verify(scrapRepository).delete(scrap);
+    }
+
+    @Test
+    void fallsBackToFullPageWhenNarrowContentIsBoilerplate() {
+        ExtractionResult extractionResult = new ExtractionResult(
+            ExtractionStatus.SUCCESS, "제목", "반품 정책 문구", null,
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, FailureReason.NONE,
+            "메뉴 반품 정책 문구 상품명 케이티위즈 유니폼 109000원"
+        );
+        when(contentExtractionService.extract("https://example.com/product")).thenReturn(extractionResult);
+        when(contentSummaryClient.summarize("반품 정책 문구")).thenReturn("NO_CONTENT");
+        when(contentSummaryClient.summarizeFullPage("메뉴 반품 정책 문구 상품명 케이티위즈 유니폼 109000원"))
+            .thenReturn("케이티위즈 유니폼, 109000원");
+
+        float[] embedding = {0.1f, 0.2f};
+        when(openAiEmbeddingClient.embed("케이티위즈 유니폼, 109000원")).thenReturn(embedding);
+
+        Scrap saved = new Scrap("https://example.com/product", "제목", "반품 정책 문구", "케이티위즈 유니폼, 109000원",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, embedding);
+        ReflectionTestUtils.setField(saved, "id", 20L);
+        when(scrapRepository.save(any())).thenReturn(saved);
+        when(recommendationService.recommend(any(), any(), anyInt())).thenReturn(List.of());
+
+        ScrapCreateResponse response = scrapService.createScrap("https://example.com/product", null);
+
+        assertThat(response.status()).isEqualTo(ExtractionStatus.SUCCESS);
+        verify(contentSummaryClient).summarizeFullPage("메뉴 반품 정책 문구 상품명 케이티위즈 유니폼 109000원");
     }
 }

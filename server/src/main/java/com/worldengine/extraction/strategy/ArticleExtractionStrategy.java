@@ -92,7 +92,8 @@ public class ArticleExtractionStrategy implements ExtractionStrategy {
 
         if (extractionQualityEvaluator.isValid(content)) {
             String title = extractTitle(document);
-            return ExtractionResult.success(title, content.trim(), SourceType.ARTICLE);
+            String fullPageText = document.body() != null ? document.body().text() : document.text();
+            return ExtractionResult.success(title, content.trim(), SourceType.ARTICLE, fullPageText);
         }
 
         return openGraphFallback(document);
