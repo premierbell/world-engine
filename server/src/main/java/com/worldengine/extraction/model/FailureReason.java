@@ -7,5 +7,6 @@ public enum FailureReason {
     TIMEOUT,
     UNSUPPORTED_SOURCE,
     EMPTY_CONTENT,
-    LOGIN_REQUIRED
+    LOGIN_REQUIRED,
+    BOILERPLATE_ONLY
 }

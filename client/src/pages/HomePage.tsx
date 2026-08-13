@@ -32,6 +32,7 @@ const FAILURE_MESSAGES: Record<string, string> = {
   UNSUPPORTED_SOURCE: '지원하지 않는 형식의 URL이에요.',
   EMPTY_CONTENT: '본문을 찾지 못했어요.',
   LOGIN_REQUIRED: '로그인이 필요한 페이지로 보여요.',
+  BOILERPLATE_ONLY: '실제 본문 대신 안내/정책 문구만 있는 것 같아요.',
 };
 
 export function HomePage() {
