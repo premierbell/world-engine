@@ -87,9 +87,14 @@ public class PlaywrightExtractionStrategy implements ExtractionStrategy {
         }
 
         if (extractionQualityEvaluator.isValid(content)) {
-            return ExtractionResult.success(document.title(), content.trim(), SourceType.ARTICLE);
+            return ExtractionResult.success(extractTitle(document), content.trim(), SourceType.ARTICLE);
         }
         return ExtractionResult.failed(SourceType.ARTICLE, FailureReason.EMPTY_CONTENT);
+    }
+
+    private String extractTitle(Document document) {
+        String ogTitle = document.select("meta[property=og:title]").attr("content");
+        return !ogTitle.isBlank() ? ogTitle : document.title();
     }
 
     private String extractMainContent(URI uri, Document document) {
