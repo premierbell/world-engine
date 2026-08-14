@@ -56,6 +56,11 @@ public class ScrapController {
         return scrapService.refreshRecommendations(id);
     }
 
+    @PostMapping("/{id}/resummarize")
+    public ScrapCreateResponse resummarize(@PathVariable Long id) {
+        return scrapService.resummarize(id);
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         scrapService.delete(id);
