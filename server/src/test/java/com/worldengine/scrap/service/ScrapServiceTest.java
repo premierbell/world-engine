@@ -201,6 +201,44 @@ public class ScrapServiceTest {
     }
 
     @Test
+    void resummarizesScrapUsingStoredContentOnly() {
+        Scrap scrap = new Scrap("https://example.com", "제목", "저장된 원문", "예전 요약",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.9f});
+        ReflectionTestUtils.setField(scrap, "id", 30L);
+        scrap.confirmIsland(7L);
+        when(scrapRepository.findById(30L)).thenReturn(Optional.of(scrap));
+        when(contentSummaryClient.summarize("저장된 원문")).thenReturn("새 요약");
+        float[] newEmbedding = {0.5f, 0.6f};
+        when(openAiEmbeddingClient.embed("새 요약")).thenReturn(newEmbedding);
+        when(scrapRepository.save(scrap)).thenReturn(scrap);
+
+        ScrapCreateResponse response = scrapService.resummarize(30L);
+
+        assertThat(response.status()).isEqualTo(ExtractionStatus.SUCCESS);
+        assertThat(scrap.getSummary()).isEqualTo("새 요약");
+        assertThat(scrap.getEmbedding()).isEqualTo(newEmbedding);
+        assertThat(scrap.getIslandId()).isEqualTo(7L);
+        verify(contentExtractionService, never()).extract(any());
+    }
+
+    @Test
+    void marksBoilerplateOnlyWhenResummarizeFindsNoContent() {
+        Scrap scrap = new Scrap("https://example.com/old", "제목", "저작권 안내만 있음", "예전 요약(사실 그냥 자른 것)",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.9f});
+        ReflectionTestUtils.setField(scrap, "id", 31L);
+        when(scrapRepository.findById(31L)).thenReturn(Optional.of(scrap));
+        when(contentSummaryClient.summarize("저작권 안내만 있음")).thenReturn("NO_CONTENT");
+        when(scrapRepository.save(scrap)).thenReturn(scrap);
+
+        ScrapCreateResponse response = scrapService.resummarize(31L);
+
+        assertThat(response.status()).isEqualTo(ExtractionStatus.FAILED);
+        assertThat(response.failureReason()).isEqualTo(FailureReason.BOILERPLATE_ONLY);
+        assertThat(scrap.getSummary()).isNull();
+        verify(openAiEmbeddingClient, never()).embed(any());
+    }
+
+    @Test
     void fallsBackToFullPageWhenNarrowContentIsBoilerplate() {
         ExtractionResult extractionResult = new ExtractionResult(
             ExtractionStatus.SUCCESS, "제목", "반품 정책 문구", null,

@@ -176,6 +176,33 @@ public class ScrapService {
         return recommendations;
     }
 
+    /**
+     * 이미 저장된 content(원문)를 그대로 재요약한다 - URL을 다시 안 가져오므로
+     * 생성 시각/섬·Topic 배정/wasCorrected 이력은 전혀 건드리지 않는다.
+     * fullPageText가 없으므로 1차 요약만 시도하고, 그마저 NO_CONTENT면
+     * BOILERPLATE_ONLY로 기록한다(2차 폴백은 URL 재추출이 필요해서 여기선 불가).
+     */
+    public ScrapCreateResponse resummarize(Long scrapId) {
+        Scrap scrap = scrapRepository.findById(scrapId)
+            .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 스크랩: " + scrapId));
+
+        String truncatedContent = scrapContentPreprocessor.truncate(scrap.getContent());
+        String summary = summarize(scrap.getUrl(), truncatedContent, null);
+        boolean isBoilerplateOnly = truncatedContent != null && summary == null;
+
+        float[] embedding = summary != null ? openAiEmbeddingClient.embed(summary) : null;
+
+        scrap.updateSummaryAndEmbedding(summary, embedding);
+        scrap.recordFailureReason(isBoilerplateOnly ? FailureReason.BOILERPLATE_ONLY : FailureReason.NONE);
+
+        Scrap saved = scrapRepository.save(scrap);
+
+        ExtractionStatus status = isBoilerplateOnly ? ExtractionStatus.FAILED : ExtractionStatus.SUCCESS;
+
+        return new ScrapCreateResponse(saved.getId(), saved.getTitle(), status, saved.getFailureReason(),
+            List.of(), false, null, null);
+    }
+
     public void delete(Long scrapId) {
         Scrap scrap = scrapRepository.findById(scrapId)
             .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 스크랩: " + scrapId));

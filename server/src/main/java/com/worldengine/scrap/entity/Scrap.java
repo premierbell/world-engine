@@ -129,6 +129,11 @@ public class Scrap {
 
     public void recordFailureReason(FailureReason failureReason) { this.failureReason = failureReason; }
 
+    public void updateSummaryAndEmbedding(String summary, float[] embedding) {
+        this.summary = summary;
+        this.embedding = embedding;
+    }
+
     private Long topicId;
 
     public Long getTopicId() { return topicId; }
