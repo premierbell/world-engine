@@ -51,3 +51,36 @@ export function Bush01() {
     </>
   );
 }
+
+// tree_01(활엽수)/tree_02(침엽수)와 또 다른 실루엣 - 휘어진 줄기 +
+// 위쪽에서 사방으로 뻗는 야자잎. 섬/해안 테마에 어울리는 세 번째
+// 나무 종류. 'medium' 등급, 줄기는 stroke 곡선이라 다른 나무들의
+// 사각 줄기와도 시각적으로 구분된다.
+export function Tree03() {
+  return (
+    <>
+      <ellipse cx={2} cy={1.5} rx={9} ry={2.5} fill={PALETTE.dropShadow} />
+      <path d="M 0,0 Q -3,-10 1,-20" stroke={PALETTE.trunk} strokeWidth={2.4} fill="none" />
+      <path d="M 1,-20 Q -10,-24 -14,-16" fill={PALETTE.foliageShadow} />
+      <path d="M 1,-20 Q -6,-28 -4,-34" fill={PALETTE.foliageShadow} />
+      <path d="M 1,-20 Q 1,-30 1,-36" fill={PALETTE.foliageLight} />
+      <path d="M 1,-20 Q 8,-27 10,-33" fill={PALETTE.foliageLight} />
+      <path d="M 1,-20 Q 10,-23 15,-15" fill={PALETTE.foliageLight} />
+    </>
+  );
+}
+
+// rock_01(둥근 바위 하나)과 다른 구성 - 큰 바위 옆에 작은 바위를
+// 곁들인 무리. nature 'small' anchor에 rock_01만 반복되지 않게
+// 종류를 하나 더한다.
+export function Rock02() {
+  return (
+    <>
+      <ellipse cx={2} cy={1} rx={9} ry={2.2} fill={PALETTE.dropShadow} />
+      <path d="M -8,0 Q -9,-7 -2,-9 Q 5,-11 8,-4 Q 9,0 5,1 Q -4,2 -8,0 Z" fill={PALETTE.rock} />
+      <path d="M 0,-9 Q 5,-11 8,-4 Q 9,0 5,1 L 0,-2 Z" fill={PALETTE.terrainShadow} />
+      <path d="M 6,1 Q 5,-4 10,-5 Q 14,-6 15,-2 Q 15,1 12,2 Q 8,2 6,1 Z" fill={PALETTE.rock} />
+      <path d="M 10,-5 Q 14,-6 15,-2 Q 15,1 12,2 L 10,-1 Z" fill={PALETTE.terrainShadow} />
+    </>
+  );
+}
