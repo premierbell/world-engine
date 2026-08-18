@@ -1,3 +1,26 @@
+/* 지도(client/src/islandGrowth/palette.ts)와 같은 색 언어를 UI 크롬
+   (카드/버튼/텍스트)에도 쓰기 위한 토큰 - Artifact 제안("World Engine —
+   바다와 사이드바 디자인 제안") 기준, palette.ts 색을 최대한 재사용해서
+   새로 만든 색은 최소화했다. 아직 테마 전환 구조까지 만든 건 아니고
+   팔레트 하나만 확정한 것 - 나중에 섬 테마(client/src/islandGrowth/)가
+   여러 개로 늘어나면 이 블록만 바꿔서 UI 전체가 같이 따라가도록 색을
+   흩어놓지 않고 한 곳에 모아둔다. */
+:root {
+  --bg: #eef2ec;
+  --paper: #faf5e8;
+  --paper-border: #d9c9a3;
+  --wash: #f2ecdb;
+  --wash-deep: #e9ddc0;
+  --ink: #3a3226;
+  --ink-soft: #6b5842;
+  --ink-faint: #9c9184;
+  --accent: #b5715a;
+  --accent-deep: #8a5646;
+  --accent-tint: #f1ded4;
+  --accent-tint-deep: #e6c7b8;
+  --shadow: rgba(43, 38, 32, 0.16);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -5,8 +28,8 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #f4f4f2;
-  color: #1a1a1a;
+  background: var(--bg);
+  color: var(--ink);
 }
 
 h1 {
@@ -18,7 +41,7 @@ h1 {
   display: inline-block;
   margin-bottom: 12px;
   font-size: 13px;
-  color: #2b6cb0;
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -50,7 +73,8 @@ h1 {
    반복되는 물결선 - world unit 좌표계(카메라 group 안)라 확대/축소·
    이동에 실제로 반응한다. stroke-width도 world unit이라 줌인하면
    화면상 더 두껍게, 줌아웃하면 더 가늘게 보인다. 계속 흐르는
-   애니메이션은 다음 과제 - 지금은 정지된 무늬만. */
+   애니메이션은 다음 과제 - 지금은 정지된 무늬만. 이 색은 이미 지도
+   전용으로 튜닝된 값이라(PR #121) 위 크롬 토큰과 별개로 둔다. */
 .wave-line {
   fill: none;
   stroke: rgba(234, 241, 236, 0.4);
@@ -94,7 +118,7 @@ h1 {
 
 .map-island text {
   font-size: 12px;
-  fill: #1a1a1a;
+  fill: var(--ink);
   pointer-events: none;
 }
 
@@ -127,7 +151,7 @@ h2 {
 .card-toggle .chevron {
   display: inline-block;
   width: 10px;
-  color: #999;
+  color: var(--ink-faint);
   font-size: 12px;
 }
 
@@ -152,8 +176,8 @@ h2 {
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e0e0dc;
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
   border-radius: 8px;
   padding: 18px;
   margin-bottom: 16px;
@@ -167,7 +191,7 @@ form {
 
 input {
   padding: 8px 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--paper-border);
   border-radius: 6px;
   font-size: 14px;
 }
@@ -176,25 +200,25 @@ button {
   padding: 8px 12px;
   border: none;
   border-radius: 6px;
-  background: #2b6cb0;
-  color: #fff;
+  background: var(--accent);
+  color: var(--paper);
   font-size: 14px;
   cursor: pointer;
 }
 
 button:hover {
-  background: #1e4e80;
+  background: var(--accent-deep);
 }
 
 button.refresh {
   background: none;
-  color: #666;
+  color: var(--ink-soft);
   padding: 0 4px;
   font-size: 14px;
 }
 
 button.refresh:hover {
-  color: #1a1a1a;
+  color: var(--ink);
   background: none;
 }
 
@@ -202,17 +226,18 @@ button.refresh:hover {
    스타일. */
 .icon-button {
   background: none;
-  color: #666;
+  color: var(--ink-soft);
   padding: 2px 4px;
   font-size: 13px;
 }
 
 .icon-button:hover {
   background: none;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
-/* "정말 삭제" 확정 버튼 - 되돌릴 수 없는 동작이라 색으로 구분한다. */
+/* "정말 삭제" 확정 버튼 - 되돌릴 수 없는 동작이라 색으로 구분한다.
+   위험 신호라 팔레트 톤과 무관하게 빨강 유지(스코프 밖). */
 .danger-button {
   background: #c0392b;
 }
@@ -228,12 +253,12 @@ button.refresh:hover {
 
 .world-export-button {
   width: 100%;
-  background: #edf2fa;
-  color: #1a1a1a;
+  background: var(--accent-tint);
+  color: var(--ink);
 }
 
 .world-export-button:hover {
-  background: #dbe6f7;
+  background: var(--accent-tint-deep);
 }
 
 .pending-review {
@@ -250,7 +275,7 @@ button.refresh:hover {
 
 .pending-review-summary {
   font-weight: 400;
-  color: #666;
+  color: var(--ink-soft);
 }
 
 .pending-review-nav {
@@ -260,12 +285,12 @@ button.refresh:hover {
 
 .pending-review-nav button {
   flex: 1;
-  background: #edf2fa;
-  color: #1a1a1a;
+  background: var(--accent-tint);
+  color: var(--ink);
 }
 
 .pending-review-nav button:hover {
-  background: #dbe6f7;
+  background: var(--accent-tint-deep);
 }
 
 .pending-review-nav button:disabled {
@@ -287,12 +312,12 @@ button.refresh:hover {
 
 .pending-review-exit {
   margin-top: 12px;
-  background: #edf2fa;
-  color: #1a1a1a;
+  background: var(--accent-tint);
+  color: var(--ink);
 }
 
 .pending-review-exit:hover {
-  background: #dbe6f7;
+  background: var(--accent-tint-deep);
 }
 
 .island-name-row {
@@ -322,10 +347,11 @@ button.refresh:hover {
 .result {
   margin: 10px 0 0;
   font-size: 13px;
-  color: #444;
+  color: var(--ink-soft);
   white-space: pre-wrap;
 }
 
+/* 중복 스크랩 안내 - 주의 신호라 팔레트 톤과 무관하게 노랑 유지(스코프 밖). */
 .duplicate-notice {
   margin: 10px 0 0;
   padding: 10px 12px;
@@ -353,12 +379,12 @@ button.refresh:hover {
 .recommend-list button {
   width: 100%;
   text-align: left;
-  background: #edf2fa;
-  color: #1a1a1a;
+  background: var(--accent-tint);
+  color: var(--ink);
 }
 
 .recommend-list button:hover {
-  background: #dbe6f7;
+  background: var(--accent-tint-deep);
 }
 
 .new-island {
@@ -385,18 +411,18 @@ button.refresh:hover {
 
 .entity-list li {
   padding: 6px 8px;
-  background: #f7f7f5;
+  background: var(--wash);
   border-radius: 6px;
   overflow-wrap: break-word;
 }
 
 .entity-list a {
-  color: #1a1a1a;
+  color: var(--ink);
   text-decoration: none;
 }
 
 .entity-list a:hover {
-  color: #2b6cb0;
+  color: var(--accent);
   text-decoration: underline;
 }
 
@@ -413,12 +439,12 @@ button.refresh:hover {
 .pending-list button {
   width: 100%;
   text-align: left;
-  background: #fdf3e0;
-  color: #1a1a1a;
+  background: var(--accent-tint);
+  color: var(--ink);
 }
 
 .pending-list button:hover {
-  background: #f9e6bf;
+  background: var(--accent-tint-deep);
 }
 
 #island-list li {
@@ -433,8 +459,8 @@ button.refresh:hover {
   text-align: left;
   padding: 8px 12px;
   border-radius: 6px;
-  background: #f7f7f5;
-  color: #1a1a1a;
+  background: var(--wash);
+  color: var(--ink);
   text-decoration: none;
   font-size: 14px;
   cursor: pointer;
@@ -442,7 +468,7 @@ button.refresh:hover {
 
 #island-list a:hover,
 #island-list button:hover {
-  background: #ececea;
+  background: var(--wash-deep);
 }
 
 .island-signals {
@@ -453,7 +479,7 @@ button.refresh:hover {
 
 .signal {
   flex: 1;
-  background: #f7f7f5;
+  background: var(--wash);
   border-radius: 6px;
   padding: 8px 12px;
 }
@@ -461,7 +487,7 @@ button.refresh:hover {
 .signal-label {
   display: block;
   font-size: 11px;
-  color: #666;
+  color: var(--ink-soft);
   margin-bottom: 2px;
 }
 
@@ -473,7 +499,7 @@ button.refresh:hover {
 .signal-note {
   margin: 0 0 12px;
   font-size: 12px;
-  color: #888;
+  color: var(--ink-faint);
 }
 
 /* 연대기(IslandChronicle) - 섬의 성장을 그래프 대신 그 시점의 실제
@@ -485,7 +511,7 @@ button.refresh:hover {
 .chronicle h2 {
   margin: 0 0 8px;
   font-size: 13px;
-  color: #666;
+  color: var(--ink-soft);
 }
 
 .chronicle-stage {
@@ -493,7 +519,7 @@ button.refresh:hover {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  background: #f7f7f5;
+  background: var(--wash);
   border-radius: 8px;
   padding: 12px;
 }
@@ -501,7 +527,7 @@ button.refresh:hover {
 .chronicle-caption {
   margin: 0;
   font-size: 12px;
-  color: #444;
+  color: var(--ink-soft);
   text-align: center;
   min-height: 32px;
 }
@@ -519,7 +545,7 @@ button.refresh:hover {
 }
 
 .chronicle-controls button:disabled {
-  background: #ccc;
+  background: var(--paper-border);
   cursor: default;
 }
 
@@ -538,7 +564,7 @@ button.refresh:hover {
   right: 12px;
   top: 20px;
   height: 2px;
-  background: #ddd;
+  background: var(--paper-border);
 }
 
 .chronicle-milestone {
@@ -559,25 +585,25 @@ button.refresh:hover {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ccc;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px #ddd;
+  background: var(--paper-border);
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--paper-border);
 }
 
 .chronicle-milestone.active .dot {
-  background: #2b6cb0;
-  box-shadow: 0 0 0 1px #2b6cb0;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .chronicle-milestone .milestone-label {
   font-size: 10px;
-  color: #666;
+  color: var(--ink-soft);
   text-align: center;
   line-height: 1.3;
 }
 
 .chronicle-milestone.active .milestone-label {
-  color: #1a1a1a;
+  color: var(--ink);
   font-weight: 600;
 }
 
@@ -599,30 +625,30 @@ button.refresh:hover {
 
 .fill-candidate-button {
   margin-top: 8px;
-  background: #edf2fa;
-  color: #1a1a1a;
+  background: var(--accent-tint);
+  color: var(--ink);
   font-size: 12px;
   padding: 6px 10px;
 }
 
 .fill-candidate-button:hover {
-  background: #dbe6f7;
+  background: var(--accent-tint-deep);
 }
 
 .suggest-name-button {
   margin-left: auto;
-  background: #edf2fa;
-  color: #1a1a1a;
+  background: var(--accent-tint);
+  color: var(--ink);
   font-size: 12px;
   padding: 4px 8px;
 }
 
 .suggest-name-button:hover {
-  background: #dbe6f7;
+  background: var(--accent-tint-deep);
 }
 
 .topic-candidate-card {
-  border: 1px solid #e0e0dc;
+  border: 1px solid var(--paper-border);
   border-radius: 6px;
   padding: 10px 12px;
   margin-bottom: 10px;
@@ -644,9 +670,9 @@ button.refresh:hover {
   right: 20px;
   bottom: 20px;
   width: 360px;
-  background: #fff;
+  background: var(--paper);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px var(--shadow);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -658,7 +684,7 @@ button.refresh:hover {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #e0e0dc;
+  border-bottom: 1px solid var(--paper-border);
   flex-shrink: 0;
 }
 
@@ -669,14 +695,14 @@ button.refresh:hover {
 
 .panel-close {
   background: none;
-  color: #666;
+  color: var(--ink-soft);
   padding: 4px 8px;
   font-size: 16px;
 }
 
 .panel-close:hover {
   background: none;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .panel-body {
@@ -708,19 +734,19 @@ button.refresh:hover {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #2b6cb0;
-  color: #fff;
+  background: var(--accent);
+  color: var(--paper);
   font-size: 24px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px var(--shadow);
   z-index: 101;
 }
 
 .fab:hover {
-  background: #1e4e80;
+  background: var(--accent-deep);
 }
 
 /* 셋 다 하단 중앙에 나란히 둔다(목록/추가/검색) - panel-left/
