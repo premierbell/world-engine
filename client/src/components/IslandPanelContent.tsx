@@ -14,7 +14,6 @@ import { LoadingCard } from './LoadingCard';
 import { ScrapList } from './ScrapList';
 import { TopicCandidates } from './TopicCandidates';
 import { TopicList } from './TopicList';
-import { TopicMapView } from './TopicMapView';
 
 interface IslandPanelContentProps {
   islandId: number;
@@ -178,8 +177,6 @@ export function IslandPanelContent({ islandId }: IslandPanelContentProps) {
         onFillCandidate={handleFillCandidate}
         onAddToExistingTopic={handleAddToExistingTopic}
       />
-
-      <TopicMapView topics={island.topics} />
 
       <input
         type="text"

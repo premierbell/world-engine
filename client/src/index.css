@@ -61,10 +61,6 @@ h1 {
   cursor: grab;
 }
 
-.map-view-topics {
-  max-width: 320px;
-}
-
 .map-camera {
   transition: transform 0.5s ease;
 }
