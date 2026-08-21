@@ -42,7 +42,7 @@ uv run run.py
 
 - Java 21
 - Docker (Postgres용 — `server/compose.yaml`을 Spring Boot가 자동으로 띄움)
-- `OPENAI_API_KEY` — `prototype/.env`에 이미 있음
+- `OPENAI_API_KEY` — [OpenAI Platform](https://platform.openai.com/api-keys)에서 발급 (임베딩 `text-embedding-3-small`, LLM 판단/요약 `gpt-4o-mini` 호출에 사용, 공식 SDK 없이 RestClient로 직접 연동)
 
 ### 실행
 
@@ -56,7 +56,7 @@ npm run build
 
 # 2. 백엔드 실행
 cd ../server
-set -a && source ../prototype/.env && set +a   # OPENAI_API_KEY를 환경변수로
+export OPENAI_API_KEY=발급받은_키   # 위 "준비물" 참고
 ./gradlew bootRun
 ```
 
