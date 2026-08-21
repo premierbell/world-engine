@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test;
 class LlmPairwiseJudgeClientLiveTest {
 
     private final LlmPairwiseJudgeClient client = new LlmPairwiseJudgeClient(
-        System.getenv("OPENAI_API_KEY"),
-        "gpt-4o-mini"
+        new OpenAiChatClient(System.getenv("OPENAI_API_KEY"), "gpt-4o-mini")
     );
 
     @Test

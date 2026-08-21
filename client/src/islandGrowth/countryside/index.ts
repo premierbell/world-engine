@@ -1,10 +1,11 @@
 import { Terrain01 } from './Terrain01';
 import { Terrain02 } from './Terrain02';
 import { Terrain03 } from './Terrain03';
-import { Bush01, Rock01, Tree01, Tree02 } from './Nature';
-import { Cottage01, HouseLarge01, HouseSmall01, HouseSmall02 } from './Buildings';
-import { Dock01, Road01 } from './Infrastructure';
-import { FlowerPot01, Well01 } from './Decoration';
+import { Terrain04 } from './Terrain04';
+import { Bush01, Rock01, Rock02, Tree01, Tree02, Tree03 } from './Nature';
+import { Cottage01, HouseLarge01, HouseLarge02, HouseSmall01, HouseSmall02, HouseSmall03 } from './Buildings';
+import { Dock01, Fence01, Road01 } from './Infrastructure';
+import { Bench01, FlowerPot01, Well01 } from './Decoration';
 import type { AssetCategory, ObjectAsset, TerrainDefinition } from '../types';
 
 // 컴포넌트 파일은 컴포넌트만 export하고(Fast Refresh 때문에 lint가
@@ -89,6 +90,28 @@ const terrain03: TerrainDefinition = {
   ],
 };
 
+// terrain_02의 anchor를 그대로 미러링(x: 180-x)해서 재사용 - 위
+// Terrain04.tsx 주석 참고.
+const terrain04: TerrainDefinition = {
+  id: 'countryside/terrain_04',
+  Component: Terrain04,
+  anchors: [
+    { x: 110, y: 96, size: 'medium', category: 'nature' },
+    { x: 50, y: 108, size: 'small', category: 'nature' },
+    { x: 130, y: 122, size: 'small', category: 'nature' },
+    { x: 100, y: 141, size: 'small', category: 'nature' },
+    { x: 70, y: 139, size: 'medium', category: 'nature' },
+    { x: 85, y: 136, size: 'large', category: 'building' },
+    { x: 116, y: 134, size: 'medium', category: 'building' },
+    { x: 58, y: 126, size: 'medium', category: 'building' },
+    { x: 40, y: 122, size: 'small', category: 'building' },
+    { x: 135, y: 134, size: 'small', category: 'infrastructure' },
+    { x: 30, y: 108, size: 'small', category: 'infrastructure' },
+    { x: 80, y: 148, size: 'small', category: 'decoration' },
+    { x: 125, y: 138, size: 'small', category: 'decoration' },
+  ],
+};
+
 const tree01: ObjectAsset = {
   id: 'countryside/nature_tree_01',
   category: 'nature',
@@ -115,6 +138,20 @@ const bush01: ObjectAsset = {
   category: 'nature',
   size: 'small',
   Component: Bush01,
+};
+
+const tree03: ObjectAsset = {
+  id: 'countryside/nature_tree_03',
+  category: 'nature',
+  size: 'medium',
+  Component: Tree03,
+};
+
+const rock02: ObjectAsset = {
+  id: 'countryside/nature_rock_02',
+  category: 'nature',
+  size: 'small',
+  Component: Rock02,
 };
 
 const houseSmall01: ObjectAsset = {
@@ -145,6 +182,20 @@ const cottage01: ObjectAsset = {
   Component: Cottage01,
 };
 
+const houseSmall03: ObjectAsset = {
+  id: 'countryside/building_house_small_03',
+  category: 'building',
+  size: 'small',
+  Component: HouseSmall03,
+};
+
+const houseLarge02: ObjectAsset = {
+  id: 'countryside/building_house_large_02',
+  category: 'building',
+  size: 'large',
+  Component: HouseLarge02,
+};
+
 const road01: ObjectAsset = {
   id: 'countryside/infra_road_01',
   category: 'infrastructure',
@@ -157,6 +208,13 @@ const dock01: ObjectAsset = {
   category: 'infrastructure',
   size: 'small',
   Component: Dock01,
+};
+
+const fence01: ObjectAsset = {
+  id: 'countryside/infra_fence_01',
+  category: 'infrastructure',
+  size: 'small',
+  Component: Fence01,
 };
 
 const well01: ObjectAsset = {
@@ -173,16 +231,26 @@ const flowerPot01: ObjectAsset = {
   Component: FlowerPot01,
 };
 
+const bench01: ObjectAsset = {
+  id: 'countryside/decoration_bench_01',
+  category: 'decoration',
+  size: 'small',
+  Component: Bench01,
+};
+
 // Phase 2 최소 세트(terrain 2 + nature 3 + building 3 + infrastructure 2)에
 // terrain_03/cottage_01(작은 건물)/bush_01(작은 나무)을 더함 -
 // docs/island_growth_visual.md 참고. decoration(well_01/flower_pot_01)은
 // Phase 2 최소 세트엔 없었고, City 티어가 약속만 하고 실제로는 채운
-// 적 없던 카테고리라 실사용 피드백 이후 추가.
-export const countrysideTerrains: TerrainDefinition[] = [terrain01, terrain02, terrain03];
+// 적 없던 카테고리라 실사용 피드백 이후 추가. terrain_04/tree_03/
+// rock_02/house_small_03/house_large_02/fence_01/bench_01은 "선택지가
+// 1개뿐이라 항상 같은 결과"인 자리(building large/small 등급이 특히
+// 심했다)를 보완하기 위해 다양성만 늘린 추가(2026-08 프런트 업데이트).
+export const countrysideTerrains: TerrainDefinition[] = [terrain01, terrain02, terrain03, terrain04];
 
 export const countrysideAssetsByCategory: Partial<Record<AssetCategory, ObjectAsset[]>> = {
-  nature: [tree01, tree02, rock01, bush01],
-  building: [houseSmall01, houseSmall02, houseLarge01, cottage01],
-  infrastructure: [road01, dock01],
-  decoration: [well01, flowerPot01],
+  nature: [tree01, tree02, tree03, rock01, rock02, bush01],
+  building: [houseSmall01, houseSmall02, houseLarge01, houseLarge02, cottage01, houseSmall03],
+  infrastructure: [road01, dock01, fence01],
+  decoration: [well01, flowerPot01, bench01],
 };

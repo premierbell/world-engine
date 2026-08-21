@@ -92,7 +92,8 @@ public class ArticleExtractionStrategy implements ExtractionStrategy {
 
         if (extractionQualityEvaluator.isValid(content)) {
             String title = extractTitle(document);
-            return ExtractionResult.success(title, content.trim(), SourceType.ARTICLE);
+            String fullPageText = document.body() != null ? document.body().text() : document.text();
+            return ExtractionResult.success(title, content.trim(), SourceType.ARTICLE, fullPageText);
         }
 
         return openGraphFallback(document);
@@ -111,7 +112,8 @@ public class ArticleExtractionStrategy implements ExtractionStrategy {
     }
 
     private String extractTitle(Document document) {
-        return document.title();
+        String ogTitle = document.select("meta[property=og:title]").attr("content");
+        return !ogTitle.isBlank() ? ogTitle : document.title();
     }
 
     private ExtractionResult openGraphFallback(Document document) {

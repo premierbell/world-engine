@@ -8,10 +8,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.worldengine.extraction.model.ExtractionResult;
+import com.worldengine.extraction.model.ExtractionStatus;
 import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.FallbackLevel;
 import com.worldengine.extraction.model.SourceType;
 import com.worldengine.extraction.service.ContentExtractionService;
+import com.worldengine.island.entity.Island;
+import com.worldengine.island.repository.IslandRepository;
+import com.worldengine.recommendation.client.ContentSummaryClient;
 import com.worldengine.recommendation.client.OpenAiEmbeddingClient;
 import com.worldengine.recommendation.service.IslandRecommendation;
 import com.worldengine.recommendation.service.RecommendationService;
@@ -35,6 +39,9 @@ public class ScrapServiceTest {
     private ContentExtractionService contentExtractionService;
 
     @Mock
+    private ContentSummaryClient contentSummaryClient;
+
+    @Mock
     private OpenAiEmbeddingClient openAiEmbeddingClient;
 
     @Mock
@@ -43,8 +50,11 @@ public class ScrapServiceTest {
     @Mock
     private RecommendationService recommendationService;
 
+    @Mock
+    private IslandRepository islandRepository;
+
     @Spy
-    private ScrapContentPreprocessor scrapContentPreprocessor = new ScrapContentPreprocessor(2000);
+    private ScrapContentPreprocessor scrapContentPreprocessor = new ScrapContentPreprocessor(2000, 6000);
 
     @InjectMocks
     private ScrapService scrapService;
@@ -53,6 +63,7 @@ public class ScrapServiceTest {
     void createsScrapAndReturnsRecommendationsWhenExtractionSucceeds() {
         ExtractionResult extractionResult = ExtractionResult.success("제목", "본문 내용", SourceType.ARTICLE);
         when(contentExtractionService.extract("https://example.com")).thenReturn(extractionResult);
+        when(contentSummaryClient.summarize("본문 내용")).thenReturn("본문 내용");
 
         float[] embedding = {0.1f, 0.2f};
         when(openAiEmbeddingClient.embed("본문 내용")).thenReturn(embedding);
@@ -84,8 +95,29 @@ public class ScrapServiceTest {
         ScrapCreateResponse response = scrapService.createScrap("https://example.com/bad", null);
 
         assertThat(response.recommendations()).isEmpty();
+        verify(contentSummaryClient, never()).summarize(any());
         verify(openAiEmbeddingClient, never()).embed(any());
         verify(recommendationService, never()).recommend(any(), any(), anyInt());
+    }
+
+    @Test
+    void treatsNoContentSummaryAsEmpty() {
+        ExtractionResult extractionResult = ExtractionResult.success("제목", "저작권 안내만 있음", SourceType.ARTICLE);
+        when(contentExtractionService.extract("https://example.com/boilerplate")).thenReturn(extractionResult);
+        when(contentSummaryClient.summarize("저작권 안내만 있음")).thenReturn("NO_CONTENT");
+
+        Scrap saved = new Scrap("https://example.com/boilerplate", "제목", "저작권 안내만 있음", null,
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, null);
+        ReflectionTestUtils.setField(saved, "id", 12L);
+        saved.recordFailureReason(FailureReason.BOILERPLATE_ONLY);
+        when(scrapRepository.save(any())).thenReturn(saved);
+
+        ScrapCreateResponse response = scrapService.createScrap("https://example.com/boilerplate", null);
+
+        assertThat(response.recommendations()).isEmpty();
+        assertThat(response.status()).isEqualTo(ExtractionStatus.FAILED);
+        assertThat(response.failureReason()).isEqualTo(FailureReason.BOILERPLATE_ONLY);
+        verify(openAiEmbeddingClient, never()).embed(any());
     }
 
     @Test
@@ -116,5 +148,120 @@ public class ScrapServiceTest {
 
         assertThatThrownBy(() -> scrapService.refreshRecommendations(1L))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void returnsDuplicateWithoutCreatingWhenUrlAlreadyExists() {
+        Scrap existing = new Scrap("https://example.com", "기존 제목", "본문", "본문",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(existing, "id", 10L);
+        existing.confirmIsland(3L);
+        when(scrapRepository.findByUrl("https://example.com")).thenReturn(Optional.of(existing));
+        when(islandRepository.findById(3L)).thenReturn(Optional.of(new Island("여행", new float[]{0.1f})));
+
+        ScrapCreateResponse response = scrapService.createScrap("https://example.com", null);
+
+        assertThat(response.duplicate()).isTrue();
+        assertThat(response.scrapId()).isEqualTo(10L);
+        assertThat(response.existingIslandId()).isEqualTo(3L);
+        assertThat(response.existingIslandName()).isEqualTo("여행");
+        verify(contentExtractionService, never()).extract(any());
+        verify(scrapRepository, never()).save(any());
+    }
+
+    @Test
+    void skipsDuplicateCheckWhenForced() {
+        ExtractionResult extractionResult = ExtractionResult.success("제목", "본문 내용", SourceType.ARTICLE);
+        when(contentExtractionService.extract("https://example.com")).thenReturn(extractionResult);
+        when(contentSummaryClient.summarize("본문 내용")).thenReturn("본문 내용");
+        float[] embedding = {0.1f, 0.2f};
+        when(openAiEmbeddingClient.embed("본문 내용")).thenReturn(embedding);
+        Scrap saved = new Scrap("https://example.com", "제목", "본문 내용", "본문 내용",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, embedding);
+        ReflectionTestUtils.setField(saved, "id", 11L);
+        when(scrapRepository.save(any())).thenReturn(saved);
+        when(recommendationService.recommend(any(), any(), anyInt())).thenReturn(List.of());
+
+        ScrapCreateResponse response = scrapService.createScrap("https://example.com", null, true);
+
+        assertThat(response.duplicate()).isFalse();
+        verify(scrapRepository, never()).findByUrl(any());
+    }
+
+    @Test
+    void deletesScrap() {
+        Scrap scrap = new Scrap("https://example.com", "제목", "본문", "본문",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(scrap, "id", 1L);
+        when(scrapRepository.findById(1L)).thenReturn(Optional.of(scrap));
+
+        scrapService.delete(1L);
+
+        verify(scrapRepository).delete(scrap);
+    }
+
+    @Test
+    void resummarizesScrapUsingStoredContentOnly() {
+        Scrap scrap = new Scrap("https://example.com", "제목", "저장된 원문", "예전 요약",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.9f});
+        ReflectionTestUtils.setField(scrap, "id", 30L);
+        scrap.confirmIsland(7L);
+        when(scrapRepository.findById(30L)).thenReturn(Optional.of(scrap));
+        when(contentSummaryClient.summarize("저장된 원문")).thenReturn("새 요약");
+        float[] newEmbedding = {0.5f, 0.6f};
+        when(openAiEmbeddingClient.embed("새 요약")).thenReturn(newEmbedding);
+        when(scrapRepository.save(scrap)).thenReturn(scrap);
+
+        ScrapCreateResponse response = scrapService.resummarize(30L);
+
+        assertThat(response.status()).isEqualTo(ExtractionStatus.SUCCESS);
+        assertThat(scrap.getSummary()).isEqualTo("새 요약");
+        assertThat(scrap.getEmbedding()).isEqualTo(newEmbedding);
+        assertThat(scrap.getIslandId()).isEqualTo(7L);
+        verify(contentExtractionService, never()).extract(any());
+    }
+
+    @Test
+    void marksBoilerplateOnlyWhenResummarizeFindsNoContent() {
+        Scrap scrap = new Scrap("https://example.com/old", "제목", "저작권 안내만 있음", "예전 요약(사실 그냥 자른 것)",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.9f});
+        ReflectionTestUtils.setField(scrap, "id", 31L);
+        when(scrapRepository.findById(31L)).thenReturn(Optional.of(scrap));
+        when(contentSummaryClient.summarize("저작권 안내만 있음")).thenReturn("NO_CONTENT");
+        when(scrapRepository.save(scrap)).thenReturn(scrap);
+
+        ScrapCreateResponse response = scrapService.resummarize(31L);
+
+        assertThat(response.status()).isEqualTo(ExtractionStatus.FAILED);
+        assertThat(response.failureReason()).isEqualTo(FailureReason.BOILERPLATE_ONLY);
+        assertThat(scrap.getSummary()).isNull();
+        verify(openAiEmbeddingClient, never()).embed(any());
+    }
+
+    @Test
+    void fallsBackToFullPageWhenNarrowContentIsBoilerplate() {
+        ExtractionResult extractionResult = new ExtractionResult(
+            ExtractionStatus.SUCCESS, "제목", "반품 정책 문구", null,
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, FailureReason.NONE,
+            "메뉴 반품 정책 문구 상품명 케이티위즈 유니폼 109000원"
+        );
+        when(contentExtractionService.extract("https://example.com/product")).thenReturn(extractionResult);
+        when(contentSummaryClient.summarize("반품 정책 문구")).thenReturn("NO_CONTENT");
+        when(contentSummaryClient.summarizeFullPage("메뉴 반품 정책 문구 상품명 케이티위즈 유니폼 109000원"))
+            .thenReturn("케이티위즈 유니폼, 109000원");
+
+        float[] embedding = {0.1f, 0.2f};
+        when(openAiEmbeddingClient.embed("케이티위즈 유니폼, 109000원")).thenReturn(embedding);
+
+        Scrap saved = new Scrap("https://example.com/product", "제목", "반품 정책 문구", "케이티위즈 유니폼, 109000원",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, embedding);
+        ReflectionTestUtils.setField(saved, "id", 20L);
+        when(scrapRepository.save(any())).thenReturn(saved);
+        when(recommendationService.recommend(any(), any(), anyInt())).thenReturn(List.of());
+
+        ScrapCreateResponse response = scrapService.createScrap("https://example.com/product", null);
+
+        assertThat(response.status()).isEqualTo(ExtractionStatus.SUCCESS);
+        verify(contentSummaryClient).summarizeFullPage("메뉴 반품 정책 문구 상품명 케이티위즈 유니폼 109000원");
     }
 }

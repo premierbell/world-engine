@@ -54,6 +54,7 @@ public class Scrap {
 
     private Long recommendedIslandId;
 
+    @Enumerated(EnumType.STRING)
     private FailureReason failureReason;
 
     protected Scrap() {}
@@ -127,6 +128,11 @@ public class Scrap {
     }
 
     public void recordFailureReason(FailureReason failureReason) { this.failureReason = failureReason; }
+
+    public void updateSummaryAndEmbedding(String summary, float[] embedding) {
+        this.summary = summary;
+        this.embedding = embedding;
+    }
 
     private Long topicId;
 

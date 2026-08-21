@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
-import type { GrowthTier, IslandSummary } from '../types/island';
+import { formatTier } from '../types/island';
+import type { IslandSummary } from '../types/island';
 import { composeIsland, OBJECT_SCALE } from '../islandGrowth/compose';
 import { countrysideAssetsByCategory, countrysideTerrains } from '../islandGrowth/countryside';
 
@@ -43,21 +44,6 @@ const CLICK_DRAG_THRESHOLD_PX = 6; // 화면 픽셀 기준 - 이 이상 움직�
 const TERRAIN_CENTER_X = 93;
 const TERRAIN_CENTER_Y = 113;
 const TERRAIN_HALF_EXTENT = 61;
-
-// Growth Point(scrapCount)를 사람이 체감할 수 있는 이름으로 보여준다 -
-// 원 크기는 그대로 두고 라벨에 티어 이름만 덧붙인다("성장은 체감
-// 가능해야 한다", docs/vision.md 제품 원칙 4번). 경계값 자체는 서버의
-// GrowthTier.fromScrapCount가 정하고, 여기서는 표시 이름만 맡는다.
-const TIER_LABELS: Record<GrowthTier, string> = {
-  SEED: 'Seed',
-  ISLET: 'Islet',
-  VILLAGE: 'Village',
-  CITY: 'City',
-};
-
-function formatTier(tier: GrowthTier): string {
-  return TIER_LABELS[tier];
-}
 
 function computeBounds(islands: IslandSummary[]): WorldBounds {
   return {
@@ -295,20 +281,30 @@ export function MapView({ islands, onIslandClick, selectedIslandId = null, onBac
           <stop offset="46%" stopColor="#5c8188" />
           <stop offset="100%" stopColor="#3d5c63" />
         </radialGradient>
+        {/* 물결 타일 - world unit 기준(userSpaceOnUse)이라 카메라
+            group 안에 두면 확대/축소·이동에 실제로 반응한다(줌 아웃할수록
+            타일이 더 촘촘하게 반복되어 보이고, 줌 인하면 파도 하나하나가
+            커 보임). 계속 흐르듯 움직이는 애니메이션은 다음 과제 -
+            지금은 "줌에 따라 다르게 보인다"까지만.
+            각 곡선은 타일 경계(x=0/110/220)에서 접선이 정확히 수평이
+            되도록(cubic Bezier 제어점 y를 시작/끝점과 같게) 만들었다 -
+            그래야 타일이 옆으로 반복될 때 이음매가 안 끊겨 보인다. */}
+        <pattern id="map-waves" width={220} height={110} patternUnits="userSpaceOnUse">
+          <path className="wave-line" d="M 0,30 C 55,30 55,45 110,45 C 165,45 165,30 220,30" />
+          <path className="wave-line" d="M 0,85 C 55,85 55,100 110,100 C 165,100 165,85 220,85" />
+        </pattern>
       </defs>
-      {/* 바다 배경 - 카메라(pan/zoom) group 밖에 둬서 섬이 아니라 화면
-          자체를 채우는 배경으로 고정한다(섬 좌표는 임의의 world unit이라
-          카메라를 따라가면 배경도 같이 움직여 오히려 어색하다). */}
-      <rect x={0} y={0} width={SIZE} height={SIZE} fill="url(#map-ocean)" />
-      <g className="map-waves" aria-hidden="true">
-        <path className="wave-line" d="M -20 90 Q 130 65 280 90 T 580 90 T 880 90" />
-        <path className="wave-line" d="M -20 260 Q 140 235 300 260 T 620 260 T 940 260" />
-        <path className="wave-line" d="M -20 430 Q 130 405 280 430 T 580 430 T 880 430" />
-      </g>
       <g
         className={`map-camera${manualCamera ? ' map-camera--manual' : ''}`}
         style={{ transform: `translate(${translateX}px, ${translateY}px) scale(${zoom})`, transformOrigin: '0 0' }}
       >
+        {/* 바다 배경 - world unit 좌표계라 카메라 group 안에 둬서 섬과
+            같이 확대/축소·이동된다(예전엔 화면 고정 배경이라 줌을
+            해도 파도 무늬가 똑같아 보이는 문제가 있었음). 섬이 아무리
+            멀리 배치돼도 항상 화면을 덮도록 넉넉히 큰 사각형 하나로
+            깔아둔다 - 세계가 이 범위를 넘어설 만큼 커지면 그때 키운다. */}
+        <rect x={-6000} y={-6000} width={12000} height={12000} fill="url(#map-ocean)" />
+        <rect x={-6000} y={-6000} width={12000} height={12000} fill="url(#map-waves)" aria-hidden="true" />
         {islands.map((island) => {
           const x = CENTER + island.x;
           const y = CENTER + island.y;

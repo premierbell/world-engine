@@ -28,3 +28,18 @@ export function FlowerPot01() {
     </>
   );
 }
+
+// well_01/flower_pot_01과 다른 낮고 긴 실루엣 - 벤치. decoration
+// 카테고리 종류를 하나 더한다. 다른 decoration과 마찬가지로 건물보다
+// 확실히 낮게 유지한다("건물=Topic" 신호가 흐려지지 않게).
+export function Bench01() {
+  return (
+    <>
+      <ellipse cx={2} cy={1} rx={9} ry={2} fill={PALETTE.dropShadow} />
+      <rect x={-8} y={-6} width={16} height={2} fill={PALETTE.infraLight} />
+      <rect x={-8} y={-4} width={16} height={1.5} fill={PALETTE.infraShadow} />
+      <rect x={-7} y={-4} width={1.5} height={5} fill={PALETTE.trunk} />
+      <rect x={5.5} y={-4} width={1.5} height={5} fill={PALETTE.trunk} />
+    </>
+  );
+}

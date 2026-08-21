@@ -7,6 +7,17 @@ AI는 이해하고, 알고리즘은 결정한다.
 
 전체 비전(세계 구조, 성장 지표, 제품 원칙)은 `docs/vision.md` 참고.
 
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/map-overview.jpg" alt="여러 섬이 떠 있는 전체 지도"></td>
+<td width="50%"><img src="docs/assets/island-closeup.png" alt="섬 하나를 확대한 모습 - 건물과 나무"></td>
+</tr>
+<tr>
+<td>스크랩이 쌓일수록 섬(Island)이 늘고 성장한다.</td>
+<td>섬 안에서는 Topic이 건물로 분화된다.</td>
+</tr>
+</table>
+
 ## Roadmap
 
 - [x] V0 — Validation (Python, `prototype/`) — 임베딩/Cosine 유사도/threshold 분류/Label 생성/Growth Point 전부 검증 완료. 결론(Finding P2-002/P2-003): 완전 자동 분류는 현재 기술로 불가능, "AI 추천 + 사용자 확인" 구조로 V1 설계.
@@ -25,6 +36,7 @@ golden_dataset/   회귀 테스트용 라벨링 데이터
 prototype/        V0, Python (알고리즘 검증 전용, DB/UI 없음)
 server/           V1부터, Spring Boot(Java 21) API(`/api/**`) + client 빌드 산출물 서빙
 client/           V2부터, React(Vite) + TypeScript - 프런트엔드 소스, `server/src/main/resources/static/`은 빌드 결과물이라 커밋 안 함
+extension/        원클릭 스크랩용 Chrome 확장(Manifest V3) - 새 API 없이 기존 /api/scraps 등 재사용, 로컬 서버 전용
 ```
 
 ## Prototype (V0, Python)
@@ -41,7 +53,7 @@ uv run run.py
 
 - Java 21
 - Docker (Postgres용 — `server/compose.yaml`을 Spring Boot가 자동으로 띄움)
-- `OPENAI_API_KEY` — `prototype/.env`에 이미 있음
+- `OPENAI_API_KEY` — [OpenAI Platform](https://platform.openai.com/api-keys)에서 발급 (임베딩 `text-embedding-3-small`, LLM 판단/요약 `gpt-4o-mini` 호출에 사용, 공식 SDK 없이 RestClient로 직접 연동)
 
 ### 실행
 
@@ -55,7 +67,7 @@ npm run build
 
 # 2. 백엔드 실행
 cd ../server
-set -a && source ../prototype/.env && set +a   # OPENAI_API_KEY를 환경변수로
+export OPENAI_API_KEY=발급받은_키   # 위 "준비물" 참고
 ./gradlew bootRun
 ```
 

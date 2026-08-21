@@ -58,10 +58,13 @@ export interface IslandRecommendation {
 
 export interface ScrapCreateResponse {
   scrapId: number;
-  title: string;
-  status: ExtractionStatus;
+  title: string | null;
+  status: ExtractionStatus | null;
   failureReason: FailureReason | null;
   recommendations: IslandRecommendation[];
+  duplicate: boolean;
+  existingIslandId: number | null;
+  existingIslandName: string | null;
 }
 
 export interface ScrapConfirmResponse {
