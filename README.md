@@ -7,6 +7,17 @@ AI는 이해하고, 알고리즘은 결정한다.
 
 전체 비전(세계 구조, 성장 지표, 제품 원칙)은 `docs/vision.md` 참고.
 
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/map-overview.jpg" alt="여러 섬이 떠 있는 전체 지도"></td>
+<td width="50%"><img src="docs/assets/island-closeup.png" alt="섬 하나를 확대한 모습 - 건물과 나무"></td>
+</tr>
+<tr>
+<td>스크랩이 쌓일수록 섬(Island)이 늘고 성장한다.</td>
+<td>섬 안에서는 Topic이 건물로 분화된다.</td>
+</tr>
+</table>
+
 ## Roadmap
 
 - [x] V0 — Validation (Python, `prototype/`) — 임베딩/Cosine 유사도/threshold 분류/Label 생성/Growth Point 전부 검증 완료. 결론(Finding P2-002/P2-003): 완전 자동 분류는 현재 기술로 불가능, "AI 추천 + 사용자 확인" 구조로 V1 설계.
