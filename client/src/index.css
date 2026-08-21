@@ -65,6 +65,15 @@ h1 {
   max-width: 320px;
 }
 
+/* TopicMapView - B안(건물이 실제 지도 섬 위에서 Topic을 표현)이
+   MapView.tsx에만 적용되고 이 안쪽 미니 Topic 버블(섬 상세 패널)은
+   그 작업 범위 밖이라 fill 지정이 없어서 SVG 기본값(검은색)으로
+   보이고 있었다 - 지형 대신 원으로 표현하는 건 그대로 두고 색만
+   팔레트 토큰에 맞춘다. */
+.map-view-topics circle {
+  fill: var(--accent);
+}
+
 .map-camera {
   transition: transform 0.5s ease;
 }
