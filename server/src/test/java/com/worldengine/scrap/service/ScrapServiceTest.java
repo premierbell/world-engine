@@ -15,6 +15,7 @@ import com.worldengine.extraction.model.SourceType;
 import com.worldengine.extraction.service.ContentExtractionService;
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
+import com.worldengine.island.service.IslandEmbeddingService;
 import com.worldengine.recommendation.client.ContentSummaryClient;
 import com.worldengine.recommendation.client.OpenAiEmbeddingClient;
 import com.worldengine.recommendation.service.IslandRecommendation;
@@ -52,6 +53,9 @@ public class ScrapServiceTest {
 
     @Mock
     private IslandRepository islandRepository;
+
+    @Mock
+    private IslandEmbeddingService islandEmbeddingService;
 
     @Spy
     private ScrapContentPreprocessor scrapContentPreprocessor = new ScrapContentPreprocessor(2000, 6000);
@@ -198,6 +202,21 @@ public class ScrapServiceTest {
         scrapService.delete(1L);
 
         verify(scrapRepository).delete(scrap);
+        verify(islandEmbeddingService, never()).refresh(any());
+    }
+
+    @Test
+    void refreshesIslandEmbeddingAfterDeletingConfirmedScrap() {
+        Scrap scrap = new Scrap("https://example.com", "제목", "본문", "본문",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.1f});
+        ReflectionTestUtils.setField(scrap, "id", 1L);
+        scrap.confirmIsland(7L);
+        when(scrapRepository.findById(1L)).thenReturn(Optional.of(scrap));
+
+        scrapService.delete(1L);
+
+        verify(scrapRepository).delete(scrap);
+        verify(islandEmbeddingService).refresh(7L);
     }
 
     @Test
@@ -219,6 +238,7 @@ public class ScrapServiceTest {
         assertThat(scrap.getEmbedding()).isEqualTo(newEmbedding);
         assertThat(scrap.getIslandId()).isEqualTo(7L);
         verify(contentExtractionService, never()).extract(any());
+        verify(islandEmbeddingService).refresh(7L);
     }
 
     @Test
@@ -236,6 +256,7 @@ public class ScrapServiceTest {
         assertThat(response.failureReason()).isEqualTo(FailureReason.BOILERPLATE_ONLY);
         assertThat(scrap.getSummary()).isNull();
         verify(openAiEmbeddingClient, never()).embed(any());
+        verify(islandEmbeddingService, never()).refresh(any());
     }
 
     @Test

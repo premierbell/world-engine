@@ -6,6 +6,7 @@ import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.service.ContentExtractionService;
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
+import com.worldengine.island.service.IslandEmbeddingService;
 import com.worldengine.recommendation.client.ContentSummaryClient;
 import com.worldengine.recommendation.client.OpenAiEmbeddingClient;
 import com.worldengine.recommendation.service.IslandRecommendation;
@@ -32,6 +33,7 @@ public class ScrapService {
     private final ScrapRepository scrapRepository;
     private final RecommendationService recommendationService;
     private final IslandRepository islandRepository;
+    private final IslandEmbeddingService islandEmbeddingService;
 
     public ScrapService(
         ContentExtractionService contentExtractionService,
@@ -40,7 +42,8 @@ public class ScrapService {
         OpenAiEmbeddingClient openAiEmbeddingClient,
         ScrapRepository scrapRepository,
         RecommendationService recommendationService,
-        IslandRepository islandRepository) {
+        IslandRepository islandRepository,
+        IslandEmbeddingService islandEmbeddingService) {
         this.contentExtractionService = contentExtractionService;
         this.scrapContentPreprocessor = scrapContentPreprocessor;
         this.contentSummaryClient = contentSummaryClient;
@@ -48,6 +51,7 @@ public class ScrapService {
         this.scrapRepository = scrapRepository;
         this.recommendationService = recommendationService;
         this.islandRepository = islandRepository;
+        this.islandEmbeddingService = islandEmbeddingService;
     }
 
     public ScrapCreateResponse createScrap(String url, String userContext) {
@@ -197,6 +201,12 @@ public class ScrapService {
 
         Scrap saved = scrapRepository.save(scrap);
 
+        // 임베딩이 바뀌었으니 소속 섬의 대표 벡터도 다시 계산 - 이게 빠져 있어서
+        // AI 요약 백필(PR #139) 이후 섬 벡터가 낡은 채로 남아 있었다
+        if (saved.getIslandId() != null) {
+            islandEmbeddingService.refresh(saved.getIslandId());
+        }
+
         ExtractionStatus status = isBoilerplateOnly ? ExtractionStatus.FAILED : ExtractionStatus.SUCCESS;
 
         return new ScrapCreateResponse(saved.getId(), saved.getTitle(), status, saved.getFailureReason(),
@@ -206,6 +216,12 @@ public class ScrapService {
     public void delete(Long scrapId) {
         Scrap scrap = scrapRepository.findById(scrapId)
             .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 스크랩: " + scrapId));
+        Long islandId = scrap.getIslandId();
+
         scrapRepository.delete(scrap);
+
+        if (islandId != null) {
+            islandEmbeddingService.refresh(islandId);
+        }
     }
 }
