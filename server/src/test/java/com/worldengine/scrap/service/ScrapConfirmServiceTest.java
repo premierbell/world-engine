@@ -3,11 +3,13 @@ package com.worldengine.scrap.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.island.service.IslandCoordinateService;
+import com.worldengine.island.service.IslandEmbeddingService;
 import com.worldengine.island.service.MapCoordinateService;
 import com.worldengine.scrap.dto.ScrapConfirmResponse;
 import com.worldengine.scrap.entity.Scrap;
@@ -33,6 +35,9 @@ class ScrapConfirmServiceTest {
     @Mock
     private IslandCoordinateService islandCoordinateService;
 
+    @Mock
+    private IslandEmbeddingService islandEmbeddingService;
+
     @InjectMocks
     private ScrapConfirmService scrapConfirmService;
 
@@ -52,6 +57,7 @@ class ScrapConfirmServiceTest {
 
         assertThat(response.islandId()).isEqualTo(10L);
         assertThat(scrap.getIslandId()).isEqualTo(10L);
+        verify(islandEmbeddingService).refresh(10L);
     }
 
     @Test
@@ -74,6 +80,7 @@ class ScrapConfirmServiceTest {
 
         assertThat(response.islandName()).isEqualTo("새로운 섬");
         assertThat(response.islandId()).isEqualTo(20L);
+        verify(islandEmbeddingService).refresh(20L);
     }
 
     @Test
@@ -93,6 +100,25 @@ class ScrapConfirmServiceTest {
 
         assertThatThrownBy(() -> scrapConfirmService.confirm(99L, 10L, null))
             .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void refreshesBothIslandsWhenScrapMovesToAnotherIsland() {
+        Scrap scrap = new Scrap("https://example.com", "제목", "본문", "본문",
+            null, null, null, new float[]{0.1f, 0.2f});
+        ReflectionTestUtils.setField(scrap, "id", 1L);
+        scrap.confirmIsland(5L);
+        Island target = new Island("다이어트", new float[]{0.3f, 0.4f});
+        ReflectionTestUtils.setField(target, "id", 10L);
+
+        when(scrapRepository.findById(1L)).thenReturn(Optional.of(scrap));
+        when(islandRepository.findById(10L)).thenReturn(Optional.of(target));
+        when(scrapRepository.save(any())).thenReturn(scrap);
+
+        scrapConfirmService.confirm(1L, 10L, null);
+
+        verify(islandEmbeddingService).refresh(10L);
+        verify(islandEmbeddingService).refresh(5L);
     }
 
 }

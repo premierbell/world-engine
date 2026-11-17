@@ -55,4 +55,6 @@ public class Island {
     }
 
     public void rename(String name) { this.name = name; }
+
+    public void updateEmbedding(float[] embedding) { this.embedding = embedding; }
 }
