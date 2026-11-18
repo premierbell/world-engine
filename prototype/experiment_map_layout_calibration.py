@@ -47,6 +47,9 @@ RADIUS_STEP = 60
 MAX_RADIUS_EXPANSIONS = 20
 FIXED_HIGH, FIXED_LOW = 0.95, 0.75
 RANDOM_LAYOUTS = 1000
+# 충돌 판정 여유값 - 최소 반경(120)으로 놓으면 후보와 anchor 거리가 정확히 120이라, 반올림 오차로 같은 자리가
+# 빈자리/막힘으로 갈렸다(Java·Python 대조에서 발견). Java NearestNeighborCoordinateStrategy와 같은 값
+COLLISION_EPSILON = 1e-6
 
 
 def java_float_array_hash(vector):
@@ -102,7 +105,7 @@ def place(raw_vectors, variant):
             for i in range(DIRECTION_COUNT):
                 angle = angle0 + 2 * math.pi * i / DIRECTION_COUNT
                 candidate = coords[anchor] + r * np.array([math.cos(angle), math.sin(angle)])
-                if np.all(np.linalg.norm(coords - candidate, axis=1) >= MIN_DISTANCE):
+                if np.all(np.linalg.norm(coords - candidate, axis=1) >= MIN_DISTANCE - COLLISION_EPSILON):
                     spot = candidate
                     break
             if spot is not None:
@@ -119,7 +122,7 @@ def _search_spot(coords, anchor, r, angle0):
         for i in range(DIRECTION_COUNT):
             angle = angle0 + 2 * math.pi * i / DIRECTION_COUNT
             candidate = coords[anchor] + r * np.array([math.cos(angle), math.sin(angle)])
-            if np.all(np.linalg.norm(coords - candidate, axis=1) >= MIN_DISTANCE):
+            if np.all(np.linalg.norm(coords - candidate, axis=1) >= MIN_DISTANCE - COLLISION_EPSILON):
                 return candidate
         r += RADIUS_STEP
     return coords[anchor] + np.array([r, 0.0])
