@@ -71,7 +71,7 @@ export OPENAI_API_KEY=발급받은_키   # 위 "준비물" 참고
 ./gradlew bootRun
 ```
 
-Docker가 떠 있으면 `compose.yaml`의 Postgres 컨테이너를 Spring Boot가 자동으로 시작한다. `spring.jpa.hibernate.ddl-auto=update`라 스키마는 Entity 기준으로 자동 반영되고, 기존 데이터는 보존된다(Flyway/Liquibase 같은 정식 마이그레이션은 아직 안 씀 — 스키마 이력 관리가 필요해지면 그때 도입 검토).
+Docker가 떠 있으면 `compose.yaml`의 Postgres 컨테이너를 Spring Boot가 자동으로 시작한다. 스키마는 Flyway가 `server/src/main/resources/db/migration`의 버전 파일(`V1__baseline.sql`, `V2__...`)로 관리하고, Hibernate는 Entity와 스키마가 맞는지 검사만 한다(`ddl-auto=validate`). Entity를 바꾸면 같은 PR에 새 버전 파일을 추가해야 하고, 빠뜨리면 `FlywayMigrationTest`(Testcontainers Postgres)가 CI에서 실패한다.
 
 떠 있는 상태에서 `http://localhost:8080`으로 들어가면 스크랩 → AI 추천 → Island 확정 → Topic 생성까지 실제로 클릭해볼 수 있다. API는 `/api/**`, 나머지 경로는 React SPA(`client/`)가 처리한다.
 

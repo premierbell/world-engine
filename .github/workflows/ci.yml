@@ -1,7 +1,8 @@
 name: CI
 
 # develop/main으로 가는 PR과 두 브랜치에 push될 때 서버 테스트와 클라이언트 빌드를 검증한다.
-# 기본 서버 테스트는 H2와 Mock만 써서 OpenAI 키나 Docker가 필요 없다.
+# 기본 서버 테스트는 H2와 Mock만 써서 OpenAI 키가 필요 없다. 예외로 FlywayMigrationTest는 Testcontainers Postgres를
+# 띄워 마이그레이션과 Entity가 맞는지 검증한다(GitHub Actions 러너에는 Docker가 있음, 로컬에 Docker가 없으면 건너뜀).
 # 외부 네트워크(live)·대용량 측정(benchmark) 태그 테스트는 build.gradle.kts의 test 태스크에서 이미 제외된다.
 on:
   pull_request:
