@@ -18,9 +18,10 @@ public class OpenAiEmbeddingClient {
 
     public OpenAiEmbeddingClient(
         @Value("${openai.api-key}") String apiKey,
+        @Value("${openai.base-url}") String baseUrl,
         @Value("${openai.embedding-model}") String model) {
         this.restClient = RestClient.builder()
-            .baseUrl("https://api.openai.com/v1")
+            .baseUrl(baseUrl)
             .defaultHeader("Authorization", "Bearer " + apiKey)
             .build();
         this.model = model;

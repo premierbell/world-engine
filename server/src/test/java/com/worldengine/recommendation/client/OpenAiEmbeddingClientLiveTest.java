@@ -11,6 +11,7 @@ class OpenAiEmbeddingClientLiveTest {
 
     private final OpenAiEmbeddingClient client = new OpenAiEmbeddingClient(
         System.getenv("OPENAI_API_KEY"),
+        "https://api.openai.com/v1",
         "text-embedding-3-small"
     );
 
