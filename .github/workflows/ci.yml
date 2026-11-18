@@ -37,12 +37,16 @@ jobs:
       - name: Test
         run: ./gradlew test --no-daemon
 
+      # 성공해도 올린다 - 로그만으로는 Docker가 필요한 테스트(FlywayMigrationTest)가 실행됐는지 건너뛰었는지 알 수 없다
       - name: Upload test reports
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: server-test-reports
-          path: server/build/reports/tests/test
+          path: |
+            server/build/reports/tests/test
+            server/build/test-results/test
+          retention-days: 14
 
   client:
     name: Client lint & build (Node 24)
