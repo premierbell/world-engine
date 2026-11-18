@@ -25,9 +25,10 @@ public class OpenAiChatClient {
 
     public OpenAiChatClient(
         @Value("${openai.api-key}") String apiKey,
+        @Value("${openai.base-url}") String baseUrl,
         @Value("${openai.chat-model}") String model) {
         this.restClient = RestClient.builder()
-            .baseUrl("https://api.openai.com/v1")
+            .baseUrl(baseUrl)
             .defaultHeader("Authorization", "Bearer " + apiKey)
             .build();
         this.model = model;
