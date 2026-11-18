@@ -3,6 +3,7 @@ package com.worldengine.scrap.dto;
 import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.FallbackLevel;
 import com.worldengine.extraction.model.SourceType;
+import com.worldengine.scrap.model.PendingAiStep;
 import java.time.Instant;
 
 public record ScrapDetailResponse(
@@ -13,6 +14,7 @@ public record ScrapDetailResponse(
     SourceType sourceType,
     FallbackLevel fallbackLevel,
     FailureReason failureReason,
+    PendingAiStep pendingAiStep,
     String userContext,
     Long islandId,
     Long recommendedIslandId,

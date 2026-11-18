@@ -4826,3 +4826,43 @@ OpenAI 클라이언트 2개에는 타임아웃 설정이 없고, 재시도는 42
 
 ### Decision
 - B(본문 먼저 저장 + AI 단계 실패 시 '요약 대기' 상태)로 기준 1을 다룸
+
+## 개선 B - OpenAI 장애 시 본문 보존 + '요약/추천 대기' 상태 (2026-11-18)
+
+장애 측정의 결정 B. 기준 1(어떤 OpenAI 장애에서도 본문 보존)을 다룸.
+
+### Setup
+- `Scrap.pendingAiStep`(nullable enum `SUMMARY`/`RECOMMENDATION`, null = 대기 없음 → 기존 82건 마이그레이션 불필요)
+- `ScrapService.createScrap`: 요약·임베딩 단계와 추천 판정 단계에서 `RestClientException`(HTTP 오류·타임아웃)만 잡고,
+  실패한 단계를 표시한 뒤 저장. 그 밖의 예외(코드 버그)는 숨기지 않음. 장애로 요약이 빈 경우를 BOILERPLATE_ONLY로
+  잘못 기록하지 않도록 조건 분리
+- 복구는 기존 엔드포인트 재사용: `resummarize`(성공 시 미확정이면 RECOMMENDATION으로, 확정이면 해제),
+  `refreshRecommendations`(성공 시 해제)
+- 프론트: 홈 화면에 대기 안내 + [요약 다시 시도]/[추천 다시 받기] 버튼, 대기 중엔 빈 추천 패널을 숨김
+- 단위 테스트 `ScrapServiceTest` +8개(장애 단계별 보존, 코드 버그 미은폐, 복구 후 상태 전이)
+
+### Result (`OpenAiFailureMeasureTest`, 개선 전 → A → B)
+| 시나리오 | 개선 전 | A 후 | B 후 |
+|---|---|---|---|
+| 요약/임베딩 500, 429 지속 | 실패·유실 | 6초 실패·유실 | **6초, 저장 · SUMMARY 대기** |
+| 판정 500 | 실패·유실 | 6초 실패·유실 | **6초, 요약·임베딩까지 저장 · RECOMMENDATION 대기** |
+| 503 한 번 | 실패·유실 | 성공 | 성공 |
+| 요약 무응답 | 40초+ | 20초 실패·유실 | **20초, 저장 · SUMMARY 대기** |
+| 판정 무응답 | 40초+ | 20초 실패·유실 | **20초, 저장 · RECOMMENDATION 대기** |
+
+→ 사전 기준 3개 모두 통과(1 본문 보존 / 2 30초 내 종료 / 3 일시 장애 회복)
+
+실제 화면 확인(로컬 실제 DB + 실제 OpenAI, 확인용 스크랩은 삭제 후 82건 복원):
+- 서버를 OpenAI 접속 불가 주소로 띄워 스크랩 → "본문은 저장했어요. AI 요약에 실패했어요" + [요약 다시 시도] 표시,
+  DB에 본문 저장·`pending_ai_step=SUMMARY`
+- 정상 주소로 재시작 후 버튼 → 재요약 → 추천까지 이어져 추천 3건 표시, `pending_ai_step` 해제
+- example.com은 재요약에서 NO_CONTENT → BOILERPLATE_ONLY로 끝남(본문이 실제로 안내 문구뿐이라 정상 판정)
+
+### Observation
+**확인된 사실(Evidence)**
+- 서버 재시작 시 `ddl-auto=update`가 `pending_ai_step` 컬럼과 함께 **CHECK 제약**(`SUMMARY`/`RECOMMENDATION`)도 생성.
+  enum 값을 나중에 추가하면 PR #135(failureReason)처럼 DB를 직접 고쳐야 함 → 스키마를 코드로 관리(Flyway 등)할 근거
+
+**추정(Hypothesis, 미검증)**
+- 대기 상태는 사용자가 직접 버튼을 눌러야 복구됨. 정리 화면(목록)에는 아직 대기 표시가 없어서, 홈 화면을 벗어나면
+  대기 스크랩을 알아보기 어려움 - 실사용에서 대기가 쌓이면 자동 재시도나 목록 표시를 검토

@@ -126,7 +126,9 @@ class OpenAiFailureMeasureTest {
         try {
             ScrapCreateResponse response = future.get(HANG_CAP_SECONDS, TimeUnit.SECONDS);
             elapsed = String.valueOf(elapsedMillis(start));
-            outcome = "성공 (추천 %d건)".formatted(response.recommendations().size());
+            outcome = response.pendingAiStep() == null
+                ? "성공 (추천 %d건)".formatted(response.recommendations().size())
+                : "저장됨, %s 대기 (추천 %d건)".formatted(response.pendingAiStep(), response.recommendations().size());
         } catch (TimeoutException e) {
             elapsed = ">" + HANG_CAP_SECONDS * 1000;
             outcome = HANG_CAP_SECONDS + "초 동안 끝나지 않음";
