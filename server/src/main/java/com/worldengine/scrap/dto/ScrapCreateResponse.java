@@ -3,6 +3,7 @@ package com.worldengine.scrap.dto;
 import com.worldengine.extraction.model.ExtractionStatus;
 import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.recommendation.service.IslandRecommendation;
+import com.worldengine.scrap.model.PendingAiStep;
 import java.util.List;
 
 public record ScrapCreateResponse(
@@ -13,5 +14,6 @@ public record ScrapCreateResponse(
     List<IslandRecommendation> recommendations,
     boolean duplicate,
     Long existingIslandId,
-    String existingIslandName
+    String existingIslandName,
+    PendingAiStep pendingAiStep
 ) {}

@@ -16,7 +16,8 @@ import { useConfirmScrap } from '../hooks/useConfirmScrap';
 import { useCreateScrap } from '../hooks/useCreateScrap';
 import { useIslands } from '../hooks/useIslands';
 import { useRefreshRecommendations } from '../hooks/useRefreshRecommendations';
-import type { IslandRecommendation, ScrapCreateResponse, ScrapSummary } from '../types/scrap';
+import { useResummarizeScrap } from '../hooks/useResummarizeScrap';
+import type { IslandRecommendation, PendingAiStep, ScrapCreateResponse, ScrapSummary } from '../types/scrap';
 
 interface DuplicateNotice {
   scrapId: number;
@@ -33,6 +34,12 @@ const FAILURE_MESSAGES: Record<string, string> = {
   EMPTY_CONTENT: '본문을 찾지 못했어요.',
   LOGIN_REQUIRED: '로그인이 필요한 페이지로 보여요.',
   BOILERPLATE_ONLY: '실제 본문 대신 안내/정책 문구만 있는 것 같아요.',
+};
+
+// OpenAI 장애로 AI 단계만 남은 경우 - 본문은 이미 저장됨 (서버 PendingAiStep)
+const PENDING_MESSAGES: Record<PendingAiStep, string> = {
+  SUMMARY: '본문은 저장했어요. AI 요약에 실패했어요(OpenAI 오류 또는 응답 없음).',
+  RECOMMENDATION: '본문과 요약은 저장했어요. 섬 추천에 실패했어요(OpenAI 오류 또는 응답 없음).',
 };
 
 export function HomePage() {
@@ -56,29 +63,36 @@ export function HomePage() {
   const [statusMessage, setStatusMessage] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
   const [duplicateNotice, setDuplicateNotice] = useState<DuplicateNotice | null>(null);
+  const [pendingAiStep, setPendingAiStep] = useState<PendingAiStep | null>(null);
   const [lastSubmittedUrl, setLastSubmittedUrl] = useState('');
   const [lastSubmittedContext, setLastSubmittedContext] = useState('');
 
   const createScrapMutation = useCreateScrap();
   const refreshRecommendationsMutation = useRefreshRecommendations();
   const confirmScrapMutation = useConfirmScrap();
+  const resummarizeMutation = useResummarizeScrap();
 
   // 중복 스크랩(POST /api/scraps가 duplicate:true를 준 경우)과 정상
   // 생성 둘 다 결국 같은 방식으로 결과를 반영해야 해서(강제 저장으로
   // 다시 제출한 결과도 포함) 공통 로직만 뽑음.
   const applyCreateResult = (data: ScrapCreateResponse) => {
     setCurrentScrapId(data.scrapId);
+    setPendingAiStep(data.pendingAiStep);
     if (data.status === 'FAILED') {
       const reason = (data.failureReason && FAILURE_MESSAGES[data.failureReason]) || '본문을 가져오지 못했어요.';
       setStatusMessage(`${reason} (URL만 저장됨)`);
+    } else if (data.pendingAiStep) {
+      setStatusMessage(`제목: ${data.title ?? '(없음)'}\n${PENDING_MESSAGES[data.pendingAiStep]}`);
     } else {
       setStatusMessage(`제목: ${data.title ?? '(없음)'}\n상태: ${data.status}`);
     }
-    setRecommendations(data.recommendations);
+    // 대기 중이면 추천 패널을 숨긴다 - 빈 추천 목록은 "어울리는 섬 없음"으로 오해될 수 있음
+    setRecommendations(data.pendingAiStep ? null : data.recommendations);
   };
 
   const handleScrapSubmit = (url: string, userContext: string) => {
     setStatusMessage('스크랩하는 중...');
+    setPendingAiStep(null);
     setConfirmMessage('');
     setRecommendations(null);
     setDuplicateNotice(null);
@@ -138,6 +152,7 @@ export function HomePage() {
   const handlePendingSelect = (scrap: ScrapSummary) => {
     setCurrentScrapId(scrap.id);
     setStatusMessage(`다시 확인 중: ${scrap.title ?? scrap.url}`);
+    setPendingAiStep(null);
     setConfirmMessage('');
     setDuplicateNotice(null);
     // 결과(추천 목록)가 뜨는 자리가 "스크랩 추가" 패널 안이라, 그
@@ -151,6 +166,48 @@ export function HomePage() {
       },
       onError: (error) => {
         setStatusMessage(`추천 재계산 실패: ${error.message}`);
+      },
+    });
+  };
+
+  // OpenAI 장애로 남은 AI 단계를 다시 시도 - 요약이 남았으면 재요약 → (미확정이면) 추천까지 이어서
+  const handleRetryAi = () => {
+    if (!currentScrapId || !pendingAiStep) {
+      return;
+    }
+    const scrapId = currentScrapId;
+    setStatusMessage('AI 처리를 다시 시도하는 중...');
+
+    const loadRecommendations = () =>
+      refreshRecommendationsMutation.mutate(scrapId, {
+        onSuccess: (data) => {
+          setPendingAiStep(null);
+          setStatusMessage('AI 처리 완료');
+          setRecommendations(data);
+        },
+        onError: (error) => {
+          setPendingAiStep('RECOMMENDATION');
+          setStatusMessage(`${PENDING_MESSAGES.RECOMMENDATION} 다시 시도해 주세요. (${error.message})`);
+        },
+      });
+
+    if (pendingAiStep === 'RECOMMENDATION') {
+      loadRecommendations();
+      return;
+    }
+
+    resummarizeMutation.mutate(scrapId, {
+      onSuccess: (data) => {
+        if (data.pendingAiStep === 'RECOMMENDATION') {
+          loadRecommendations();
+          return;
+        }
+        setPendingAiStep(null);
+        setStatusMessage(data.status === 'FAILED' ? '요약할 실제 본문이 없어요(안내/정책 문구뿐).' : 'AI 처리 완료');
+        setRecommendations([]);
+      },
+      onError: (error) => {
+        setStatusMessage(`${PENDING_MESSAGES.SUMMARY} 다시 시도해 주세요. (${error.message})`);
       },
     });
   };
@@ -244,6 +301,15 @@ export function HomePage() {
       <Panel isOpen={isScrapPanelOpen} onClose={() => setIsScrapPanelOpen(false)} title="스크랩 추가">
         <ScrapForm onSubmit={handleScrapSubmit} />
         <p className="result">{statusMessage}</p>
+        {pendingAiStep && (
+          <button
+            type="button"
+            onClick={handleRetryAi}
+            disabled={resummarizeMutation.isPending || refreshRecommendationsMutation.isPending}
+          >
+            {pendingAiStep === 'SUMMARY' ? '요약 다시 시도' : '추천 다시 받기'}
+          </button>
+        )}
         {duplicateNotice && (
           <div className="duplicate-notice">
             <p>

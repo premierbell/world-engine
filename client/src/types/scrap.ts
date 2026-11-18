@@ -26,6 +26,9 @@ export type FailureReason =
 
 export type ExtractionStatus = 'SUCCESS' | 'PARTIAL' | 'FAILED';
 
+// OpenAI 장애로 끝내지 못한 AI 단계 (서버 PendingAiStep) - null이면 대기 없음
+export type PendingAiStep = 'SUMMARY' | 'RECOMMENDATION';
+
 export interface ScrapSummary {
   id: number;
   url: string;
@@ -43,6 +46,7 @@ export interface ScrapDetail {
   sourceType: SourceType;
   fallbackLevel: FallbackLevel;
   failureReason: FailureReason | null;
+  pendingAiStep: PendingAiStep | null;
   userContext: string | null;
   islandId: number | null;
   recommendedIslandId: number | null;
@@ -65,6 +69,7 @@ export interface ScrapCreateResponse {
   duplicate: boolean;
   existingIslandId: number | null;
   existingIslandName: string | null;
+  pendingAiStep: PendingAiStep | null;
 }
 
 export interface ScrapConfirmResponse {

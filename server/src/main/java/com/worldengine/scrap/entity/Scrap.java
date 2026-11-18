@@ -4,6 +4,7 @@ import com.worldengine.common.jpa.EmbeddingConverter;
 import com.worldengine.extraction.model.FailureReason;
 import com.worldengine.extraction.model.FallbackLevel;
 import com.worldengine.extraction.model.SourceType;
+import com.worldengine.scrap.model.PendingAiStep;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -56,6 +57,9 @@ public class Scrap {
 
     @Enumerated(EnumType.STRING)
     private FailureReason failureReason;
+
+    @Enumerated(EnumType.STRING)
+    private PendingAiStep pendingAiStep;
 
     protected Scrap() {}
 
@@ -120,6 +124,10 @@ public class Scrap {
     public Long getRecommendedIslandId() { return recommendedIslandId; }
 
     public FailureReason getFailureReason() { return failureReason; }
+
+    public PendingAiStep getPendingAiStep() { return pendingAiStep; }
+
+    public void recordPendingAiStep(PendingAiStep pendingAiStep) { this.pendingAiStep = pendingAiStep; }
 
     public void recordRecommendedIsland(Long islandId) { this.recommendedIslandId = islandId; }
 

@@ -66,6 +66,7 @@ public class ScrapQueryService {
             scrap.getSourceType(),
             scrap.getFallbackLevel(),
             scrap.getFailureReason(),
+            scrap.getPendingAiStep(),
             scrap.getUserContext(),
             scrap.getIslandId(),
             scrap.getRecommendedIslandId(),

@@ -39,3 +39,7 @@ export function refreshRecommendations(id: number) {
 export function deleteScrap(id: number) {
   return apiFetch<void>(`/api/scraps/${id}`, { method: 'DELETE' });
 }
+
+export function resummarizeScrap(id: number) {
+  return apiFetch<ScrapCreateResponse>(`/api/scraps/${id}/resummarize`, { method: 'POST' });
+}

@@ -13,12 +13,14 @@ import com.worldengine.recommendation.service.IslandRecommendation;
 import com.worldengine.recommendation.service.RecommendationService;
 import com.worldengine.scrap.dto.ScrapCreateResponse;
 import com.worldengine.scrap.entity.Scrap;
+import com.worldengine.scrap.model.PendingAiStep;
 import com.worldengine.scrap.repository.ScrapRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 @Slf4j
 @Service
@@ -68,12 +70,31 @@ public class ScrapService {
 
         ExtractionResult extractionResult = contentExtractionService.extract(url);
         String truncatedContent = scrapContentPreprocessor.truncate(extractionResult.content());
-        String summary = summarize(url, truncatedContent, extractionResult.fullPageText());
-        boolean isBoilerplateOnly = truncatedContent != null && summary == null;
 
-        float[] embedding = summary != null
-            ? openAiEmbeddingClient.embed(summary)
-            : null;
+        // OpenAI 장애로 AI 단계가 실패해도 추출한 본문은 버리지 않는다 - 실패한 단계만 표시하고 저장한다
+        // (experiments/v0_validation.md 2026-11-18 장애 측정: 장애 7개 전부 본문 유실).
+        // RestClientException(HTTP 오류·타임아웃)만 잡는다 - 그 밖의 예외는 코드 버그라 숨기지 않는다.
+        PendingAiStep pendingAiStep = null;
+        String summary = null;
+        float[] embedding = null;
+        try {
+            summary = summarize(url, truncatedContent, extractionResult.fullPageText());
+            embedding = summary != null ? openAiEmbeddingClient.embed(summary) : null;
+        } catch (RestClientException e) {
+            log.warn("AI 요약/임베딩 실패 - 본문만 저장하고 요약 대기로 표시 - url={}", url, e);
+            pendingAiStep = PendingAiStep.SUMMARY;
+        }
+        boolean isBoilerplateOnly = pendingAiStep == null && truncatedContent != null && summary == null;
+
+        List<IslandRecommendation> recommendations = List.of();
+        if (embedding != null) {
+            try {
+                recommendations = recommendationService.recommend(summary, embedding, RECALL_SIZE);
+            } catch (RestClientException e) {
+                log.warn("추천 판정 실패 - 요약·임베딩까지 저장하고 추천 대기로 표시 - url={}", url, e);
+                pendingAiStep = PendingAiStep.RECOMMENDATION;
+            }
+        }
 
         Scrap scrap = new Scrap(
             url,
@@ -86,10 +107,7 @@ public class ScrapService {
             embedding
         );
         scrap.recordFailureReason(isBoilerplateOnly ? FailureReason.BOILERPLATE_ONLY : extractionResult.failureReason());
-
-        List<IslandRecommendation> recommendations = embedding != null
-            ? recommendationService.recommend(summary, embedding, RECALL_SIZE)
-            : List.of();
+        scrap.recordPendingAiStep(pendingAiStep);
 
         if (!recommendations.isEmpty()) {
             scrap.recordRecommendedIsland(recommendations.get(0).islandId());
@@ -101,7 +119,7 @@ public class ScrapService {
 
         return new ScrapCreateResponse(saved.getId(), saved.getTitle(),
             status, saved.getFailureReason(), recommendations,
-            false, null, null);
+            false, null, null, saved.getPendingAiStep());
     }
 
     /**
@@ -154,7 +172,7 @@ public class ScrapService {
                 .orElse(null);
         }
         return new ScrapCreateResponse(existing.getId(), existing.getTitle(), null, null, List.of(),
-            true, existing.getIslandId(), islandName);
+            true, existing.getIslandId(), islandName, existing.getPendingAiStep());
     }
 
     public List<IslandRecommendation> refreshRecommendations(Long scrapId) {
@@ -174,8 +192,9 @@ public class ScrapService {
 
         if (!recommendations.isEmpty()) {
             scrap.recordRecommendedIsland(recommendations.get(0).islandId());
-            scrapRepository.save(scrap);
         }
+        scrap.recordPendingAiStep(null);
+        scrapRepository.save(scrap);
 
         return recommendations;
     }
@@ -199,6 +218,10 @@ public class ScrapService {
         scrap.updateSummaryAndEmbedding(summary, embedding);
         scrap.recordFailureReason(isBoilerplateOnly ? FailureReason.BOILERPLATE_ONLY : FailureReason.NONE);
 
+        // 요약이 복구됐다. 미확정 스크랩은 새 임베딩으로 추천을 다시 받아야 하므로 추천 대기로 넘긴다.
+        boolean needsRecommendation = scrap.getIslandId() == null && embedding != null;
+        scrap.recordPendingAiStep(needsRecommendation ? PendingAiStep.RECOMMENDATION : null);
+
         Scrap saved = scrapRepository.save(scrap);
 
         // 임베딩이 바뀌었으니 소속 섬의 대표 벡터도 다시 계산 - 이게 빠져 있어서
@@ -210,7 +233,7 @@ public class ScrapService {
         ExtractionStatus status = isBoilerplateOnly ? ExtractionStatus.FAILED : ExtractionStatus.SUCCESS;
 
         return new ScrapCreateResponse(saved.getId(), saved.getTitle(), status, saved.getFailureReason(),
-            List.of(), false, null, null);
+            List.of(), false, null, null, saved.getPendingAiStep());
     }
 
     public void delete(Long scrapId) {
