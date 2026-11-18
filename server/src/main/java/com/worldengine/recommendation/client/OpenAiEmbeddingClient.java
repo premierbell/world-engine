@@ -1,5 +1,6 @@
 package com.worldengine.recommendation.client;
 
+import java.time.Duration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,8 @@ import org.springframework.web.client.RestClient;
 @Component
 public class OpenAiEmbeddingClient {
 
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
+
     private final RestClient restClient;
     private final String model;
 
@@ -21,6 +24,7 @@ public class OpenAiEmbeddingClient {
         @Value("${openai.base-url}") String baseUrl,
         @Value("${openai.embedding-model}") String model) {
         this.restClient = RestClient.builder()
+            .requestFactory(OpenAiCalls.requestFactory(READ_TIMEOUT))
             .baseUrl(baseUrl)
             .defaultHeader("Authorization", "Bearer " + apiKey)
             .build();
@@ -28,6 +32,10 @@ public class OpenAiEmbeddingClient {
     }
 
     public float[] embed(String text) {
+        return OpenAiCalls.withRetry(() -> request(text));
+    }
+
+    private float[] request(String text) {
         EmbeddingResponse response = restClient.post()
             .uri("/embeddings")
             .body(new EmbeddingRequest(model, text))
