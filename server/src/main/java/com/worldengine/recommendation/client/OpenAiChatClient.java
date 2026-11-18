@@ -1,13 +1,13 @@
 package com.worldengine.recommendation.client;
 
+import java.time.Duration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 /**
- * OpenAI Chat Completions 호출 공통 부분(RestClient 설정, 429 재시도) -
+ * OpenAI Chat Completions 호출 공통 부분(RestClient 설정, 타임아웃·재시도는 OpenAiCalls) -
  * LlmPairwiseJudgeClient(점수 채점)와 TopicNameSuggestionClient(이름
  * 제안) 둘 다 같은 채팅 API를 다른 프롬프트/파싱으로 쓰는 두 번째
  * 소비자가 생긴 시점에 공통부분만 추출(EmbeddingConverter를 common으로
@@ -17,8 +17,7 @@ import org.springframework.web.client.RestClient;
 @Component
 public class OpenAiChatClient {
 
-    private static final int MAX_ATTEMPTS = 3;
-    private static final long RETRY_BACKOFF_MS = 2000;
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(20);
 
     private final RestClient restClient;
     private final String model;
@@ -28,6 +27,7 @@ public class OpenAiChatClient {
         @Value("${openai.base-url}") String baseUrl,
         @Value("${openai.chat-model}") String model) {
         this.restClient = RestClient.builder()
+            .requestFactory(OpenAiCalls.requestFactory(READ_TIMEOUT))
             .baseUrl(baseUrl)
             .defaultHeader("Authorization", "Bearer " + apiKey)
             .build();
@@ -35,17 +35,7 @@ public class OpenAiChatClient {
     }
 
     public String complete(String prompt) {
-        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-            try {
-                return request(prompt);
-            } catch (HttpClientErrorException.TooManyRequests e) {
-                if (attempt == MAX_ATTEMPTS) {
-                    throw e;
-                }
-                sleep(RETRY_BACKOFF_MS * attempt);
-            }
-        }
-        throw new IllegalStateException("재시도 로직 도달 불가 지점");
+        return OpenAiCalls.withRetry(() -> request(prompt));
     }
 
     private String request(String prompt) {
@@ -60,15 +50,6 @@ public class OpenAiChatClient {
         }
 
         return response.choices().get(0).message().content().trim();
-    }
-
-    private void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("재시도 대기 중 인터럽트됨", e);
-        }
     }
 
     private record ChatRequest(String model, int temperature, List<ChatMessage> messages) {}
