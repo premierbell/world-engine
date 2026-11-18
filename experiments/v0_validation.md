@@ -4693,3 +4693,31 @@ Mechanism에 연결할지) - 오늘은 결정 안 하고 다음으로 미룸.
 
 ### Decision
 - 대기 - 후보: A) 필요한 컬럼만 조회 B) 섬 벡터 증분 갱신(O(1)) C) 둘 다
+
+## 개선 A - 섬 멤버를 필요한 컬럼만 조회(projection) (2026-11-18)
+
+바로 위 비용 분리 측정의 결정: C(A projection 먼저 → B 섬 벡터 증분 갱신). A를 먼저 따로 측정.
+
+### Setup
+- `ScrapRepository.findMemberVectorsByIslandId`: JPQL 생성자 표현식으로 id·summary·embedding만
+  `IslandMemberVector` record로 조회(엔티티/영속성 컨텍스트 없음, 본문 미전송, 임베딩 null은 쿼리에서 제외)
+- 적용: `RecommendationService` 대표 텍스트, `IslandEmbeddingService.refresh`
+- 쿼리 검증: `ScrapRepositoryTest`(@DataJpaTest)에 다른 섬/임베딩 없는 스크랩 제외 + float[] 변환 확인
+
+### Result
+- 비용 분리(1만 건, 가장 큰 섬 3,965건): 기존 JPA 1,518ms → **projection 571ms (−62%)**
+  - 예측(임베딩 전송 317 + 파싱 244 ≈ 561ms)과 거의 일치
+- 규모별(중앙값, PR #151 대비)
+
+| 스크랩 | 추천(LLM 제외) | 섬 벡터 재계산 |
+|---|---|---|
+| 1,000 | 229 → **94** | 166 → 65 |
+| 10,000 | 1,734 → 669 | 1,543 → 581 |
+| 50,000 | 8,108 → 3,193 | 7,792 → 2,998 |
+
+### Observation
+- 비용 분리 때 뺄셈으로 추정했던 "나머지 약 40% = JPA 엔티티 생성/스냅샷 부담"이 projection 결과로 뒷받침됨
+  (projection ≈ 임베딩 전송 + 파싱)
+- 1,000건 규모는 200ms 기준 이내가 됐지만, 여전히 멤버 수에 비례(약 0.14ms/건) → 1만 건부터 기준 초과
+- 다음: B(섬 벡터 증분 갱신)로 재계산을 멤버 수와 무관하게. 대표 텍스트의 멤버 수 비례는 B로 안 풀림
+  (섬 내부 최근접 멤버 검색 문제)

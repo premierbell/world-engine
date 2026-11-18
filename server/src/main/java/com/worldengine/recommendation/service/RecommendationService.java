@@ -5,7 +5,7 @@ import com.worldengine.island.repository.IslandRepository;
 import com.worldengine.recommendation.client.LlmPairwiseJudgeClient;
 import com.worldengine.recommendation.vector.CosineSimilarity;
 import com.worldengine.recommendation.vector.SimilarityResult;
-import com.worldengine.scrap.entity.Scrap;
+import com.worldengine.scrap.repository.IslandMemberVector;
 import com.worldengine.scrap.repository.ScrapRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -86,12 +86,10 @@ public class RecommendationService {
     }
 
     private String representativeText(Island island, float[] queryEmbedding) {
-        return scrapRepository.findByIslandId(island.getId()).stream()
-            .filter(scrap -> scrap.getEmbedding() != null
-                && scrap.getSummary() != null
-                && !scrap.getSummary().isBlank())
-            .max(Comparator.comparingDouble(scrap -> CosineSimilarity.similarity(queryEmbedding, scrap.getEmbedding())))
-            .map(Scrap::getSummary)
+        return scrapRepository.findMemberVectorsByIslandId(island.getId()).stream()
+            .filter(member -> member.summary() != null && !member.summary().isBlank())
+            .max(Comparator.comparingDouble(member -> CosineSimilarity.similarity(queryEmbedding, member.embedding())))
+            .map(IslandMemberVector::summary)
             .orElse(island.getName());
     }
 }
