@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.worldengine.extraction.model.FallbackLevel;
 import com.worldengine.extraction.model.SourceType;
 import com.worldengine.scrap.entity.Scrap;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -54,5 +55,26 @@ class ScrapRepositoryTest {
 
         assertThat(found.getEmbedding()).isNull();
         assertThat(found.getTitle()).isNull();
+    }
+
+    @Test
+    void findsMemberVectorsOfIslandExcludingScrapsWithoutEmbedding() {
+        Scrap withEmbedding = new Scrap("https://example.com/a", "제목A", "본문A", "요약A",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.1f, 0.2f});
+        withEmbedding.confirmIsland(1L);
+        Scrap withoutEmbedding = new Scrap("https://example.com/b", null, null, null,
+            SourceType.UNKNOWN, FallbackLevel.EXTRACTION_FAILED, null, null);
+        withoutEmbedding.confirmIsland(1L);
+        Scrap otherIsland = new Scrap("https://example.com/c", "제목C", "본문C", "요약C",
+            SourceType.ARTICLE, FallbackLevel.DIRECT_EXTRACTION, null, new float[]{0.3f, 0.4f});
+        otherIsland.confirmIsland(2L);
+        scrapRepository.saveAll(List.of(withEmbedding, withoutEmbedding, otherIsland));
+
+        List<IslandMemberVector> members = scrapRepository.findMemberVectorsByIslandId(1L);
+
+        assertThat(members).hasSize(1);
+        assertThat(members.get(0).id()).isEqualTo(withEmbedding.getId());
+        assertThat(members.get(0).summary()).isEqualTo("요약A");
+        assertThat(members.get(0).embedding()).containsExactly(0.1f, 0.2f);
     }
 }

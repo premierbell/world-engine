@@ -2,7 +2,7 @@ package com.worldengine.island.service;
 
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
-import com.worldengine.scrap.entity.Scrap;
+import com.worldengine.scrap.repository.IslandMemberVector;
 import com.worldengine.scrap.repository.ScrapRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
@@ -37,9 +37,8 @@ public class IslandEmbeddingService {
         Island island = islandRepository.findById(islandId)
             .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 Island: " + islandId));
 
-        List<float[]> memberEmbeddings = scrapRepository.findByIslandId(islandId).stream()
-            .map(Scrap::getEmbedding)
-            .filter(embedding -> embedding != null)
+        List<float[]> memberEmbeddings = scrapRepository.findMemberVectorsByIslandId(islandId).stream()
+            .map(IslandMemberVector::embedding)
             .toList();
 
         if (memberEmbeddings.isEmpty()) {

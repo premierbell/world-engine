@@ -48,8 +48,8 @@ class RecommendationServiceTest {
         ReflectionTestUtils.setField(backend, "id", 2L);
 
         float[] scrapEmbedding = {0.1f, 0.2f};
-        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of());
-        when(scrapRepository.findByIslandId(2L)).thenReturn(List.of());
+        when(scrapRepository.findMemberVectorsByIslandId(1L)).thenReturn(List.of());
+        when(scrapRepository.findMemberVectorsByIslandId(2L)).thenReturn(List.of());
         when(islandRecallService.recall(scrapEmbedding, 2)).thenReturn(List.of(
             new SimilarityResult("1", 0.9),
             new SimilarityResult("2", 0.8)
@@ -119,7 +119,7 @@ class RecommendationServiceTest {
             long id = i + 1;
             ReflectionTestUtils.setField(islands.get(i), "id", id);
             when(islandRepository.findById(id)).thenReturn(Optional.of(islands.get(i)));
-            when(scrapRepository.findByIslandId(id)).thenReturn(List.of());
+            when(scrapRepository.findMemberVectorsByIslandId(id)).thenReturn(List.of());
         }
         return islands;
     }

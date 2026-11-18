@@ -99,6 +99,8 @@ class MemberCostBreakdownBenchmarkTest {
             allColumnsText, allColumnsText - embeddingText);
         System.out.printf("⑤ parse embedding JSON only     : %d%n", parseOnly);
         System.out.printf("⑥ mean + cosine compute only    : %d%n", computeOnly);
+        long projection = medianMillis(() -> scrapRepository.findMemberVectorsByIslandId(islandId));
+        System.out.printf("⑦ findMemberVectorsByIslandId   : %d   (projection, 2026-11-18 개선 A)%n", projection);
         System.out.println("=================================================\n");
     }
 }

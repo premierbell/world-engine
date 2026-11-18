@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.worldengine.island.entity.Island;
 import com.worldengine.island.repository.IslandRepository;
-import com.worldengine.scrap.entity.Scrap;
+import com.worldengine.scrap.repository.IslandMemberVector;
 import com.worldengine.scrap.repository.ScrapRepository;
 import java.util.List;
 import java.util.Optional;
@@ -35,10 +35,9 @@ class IslandEmbeddingServiceTest {
     void refreshesToMeanOfMemberEmbeddingsIgnoringScrapsWithoutEmbedding() {
         Island island = island(1L, new float[]{9f, 9f});
         when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
-        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(
-            scrap(new float[]{1f, 2f}),
-            scrap(new float[]{3f, 4f}),
-            scrap(null)));
+        when(scrapRepository.findMemberVectorsByIslandId(1L)).thenReturn(List.of(
+            member(new float[]{1f, 2f}),
+            member(new float[]{3f, 4f})));
 
         islandEmbeddingService.refresh(1L);
 
@@ -50,7 +49,7 @@ class IslandEmbeddingServiceTest {
     void keepsExistingEmbeddingWhenNoMemberHasEmbedding() {
         Island island = island(1L, new float[]{9f, 9f});
         when(islandRepository.findById(1L)).thenReturn(Optional.of(island));
-        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(scrap(null)));
+        when(scrapRepository.findMemberVectorsByIslandId(1L)).thenReturn(List.of());
 
         islandEmbeddingService.refresh(1L);
 
@@ -65,8 +64,8 @@ class IslandEmbeddingServiceTest {
         when(islandRepository.findAll()).thenReturn(List.of(first, second));
         when(islandRepository.findById(1L)).thenReturn(Optional.of(first));
         when(islandRepository.findById(2L)).thenReturn(Optional.of(second));
-        when(scrapRepository.findByIslandId(1L)).thenReturn(List.of(scrap(new float[]{1f, 1f})));
-        when(scrapRepository.findByIslandId(2L)).thenReturn(List.of(scrap(new float[]{2f, 2f})));
+        when(scrapRepository.findMemberVectorsByIslandId(1L)).thenReturn(List.of(member(new float[]{1f, 1f})));
+        when(scrapRepository.findMemberVectorsByIslandId(2L)).thenReturn(List.of(member(new float[]{2f, 2f})));
 
         int refreshed = islandEmbeddingService.refreshAll();
 
@@ -81,8 +80,7 @@ class IslandEmbeddingServiceTest {
         return island;
     }
 
-    private Scrap scrap(float[] embedding) {
-        return new Scrap("https://example.com", "제목", "본문", "요약",
-            null, null, null, embedding);
+    private IslandMemberVector member(float[] embedding) {
+        return new IslandMemberVector(1L, "요약", embedding);
     }
 }
