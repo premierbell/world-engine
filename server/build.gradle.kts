@@ -51,8 +51,24 @@ dependencies {
 // `./gradlew liveTest`로 수동 실행한다.
 tasks.test {
 	useJUnitPlatform {
-		excludeTags("live")
+		excludeTags("live", "benchmark")
 	}
+}
+
+// "benchmark" 태그 테스트(규모별 추천 경로 지연 측정, Testcontainers 전용 DB에 수만 건을
+// 넣는다)는 오래 걸리고 Docker가 필요해서 기본 `test`에서 제외한다.
+// `./gradlew benchmarkTest`로 수동 실행한다.
+tasks.register<Test>("benchmarkTest") {
+	description = "규모별 추천 경로 지연을 재는 'benchmark' 태그 테스트만 실행한다."
+	group = "verification"
+	useJUnitPlatform {
+		includeTags("benchmark")
+	}
+	testClassesDirs = sourceSets["test"].output.classesDirs
+	classpath = sourceSets["test"].runtimeClasspath
+	maxHeapSize = "4g"
+	testLogging.showStandardStreams = true
+	shouldRunAfter(tasks.test)
 }
 
 tasks.register<Test>("liveTest") {
