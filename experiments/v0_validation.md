@@ -4866,3 +4866,24 @@ OpenAI 클라이언트 2개에는 타임아웃 설정이 없고, 재시도는 42
 **추정(Hypothesis, 미검증)**
 - 대기 상태는 사용자가 직접 버튼을 눌러야 복구됨. 정리 화면(목록)에는 아직 대기 표시가 없어서, 홈 화면을 벗어나면
   대기 스크랩을 알아보기 어려움 - 실사용에서 대기가 쌓이면 자동 재시도나 목록 표시를 검토
+
+## 결정 - 스키마 관리를 ddl-auto=update에서 Flyway로 전환 (2026-11-18)
+
+### 근거 (Evidence)
+- PR #135: `failureReason` 정수 저장 문제를 고치려고 smallint → varchar를 DB에서 직접 수정
+- PR #158: `ddl-auto=update`가 새 enum 컬럼(`pending_ai_step`)에 CHECK 제약까지 생성 → enum 값 추가 시 다시 DB 직접 수정 필요
+- 전환 전 실제 DB 스키마를 떠 보니 `scrap.failure_reason`에만 CHECK 제약이 없음(#135 직접 수정 때 빠짐).
+  빈 DB에 ddl-auto로 새로 만들면 생기는 제약이라, **같은 Entity인데 DB마다 스키마가 달랐음(drift)**
+
+### 적용
+- `V1__baseline.sql`: 실제 DB를 `pg_dump --schema-only`로 떠서 정리(drift 그대로 유지 - 실제 DB가 기준).
+  빈 Postgres 18.4에 V1을 적용해 다시 뜬 스키마와 실제 DB 스키마를 diff → **차이 0**
+- 기존 DB는 `baseline-on-migrate`로 V1 "적용됨" 표시만(실행 안 함), `ddl-auto=validate`로 Hibernate는 검사만
+- `FlywayMigrationTest`(Testcontainers Postgres 18.4): 빈 DB에 마이그레이션 적용 + validate. V1에서 컬럼 하나를
+  빼면 `Schema validation: missing column [pending_ai_step] in table [scrap]`로 실패하는 것 확인(음성 확인)
+- 실제 DB 전환: 백업 후 서버 실행 → `Successfully baselined schema with version: 1`, 데이터 82/10/8 그대로,
+  스키마 차이는 `flyway_schema_history` 테이블 추가뿐
+
+### 남긴 것
+- 외래키, PK 외 인덱스 없음(`findByUrl`의 url 포함) - 필요해지면 새 버전 파일로
+- enum CHECK 제약을 유지할지(값 추가마다 마이그레이션) 없앨지는 다음 enum 변경 때 결정
